@@ -1,0 +1,11 @@
+torch>=2.1.0
+transformers>=4.44
+huggingface_hub>=0.24.0
+accelerate
+numpy
+fastapi
+uvicorn[standard]
+python-multipart
+nltk
+openai>=1.0.0
+slowapi>=0.1.9

@@ -1,0 +1,44 @@
+services:
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        HF_MODEL_ID: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
+        HF_TOKEN: ${HF_TOKEN:-}
+    environment:
+      MODEL_DIR: /opt/model
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    volumes:
+      - ./backend:/app
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--reload",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+      ]
+    ports:
+      - "8000:8000"
+
+  frontend-dev:
+    image: node:20-bookworm
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend_dev_node_modules:/app/node_modules
+    environment:
+      VITE_API_PROXY_TARGET: http://backend-dev:8000
+    command:
+      ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend-dev
+
+volumes:
+  frontend_dev_node_modules:
