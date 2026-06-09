@@ -3,13 +3,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      args:
-        HF_MODEL_ID: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
-        HF_TOKEN: ${HF_TOKEN:-}
     environment:
-      MODEL_DIR: /opt/model
+      MODEL_DIR: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
+      HF_TOKEN: ${HF_TOKEN:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:80,http://127.0.0.1:80,http://localhost:5173,http://127.0.0.1:5173}
+    volumes:
+      - hf-cache:/hf-cache
     ports:
       - "8000:8000"
     healthcheck:
@@ -23,7 +23,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 120s
 
   frontend:
     build:
@@ -34,3 +34,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+volumes:
+  hf-cache:
