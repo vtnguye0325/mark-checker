@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-lint:
+    name: Backend – Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Lint
+        run: ruff check backend/
+        working-directory: ${{ github.workspace }}
+
+      - name: Format check
+        run: ruff format --check backend/
+        working-directory: ${{ github.workspace }}
+
+  backend-test:
+    name: Backend – Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install fastapi uvicorn[standard] httpx pytest pytest-asyncio slowapi python-multipart nltk openai
+        working-directory: backend
+
+      - name: Run unit tests (no model required)
+        run: pytest tests/test_text_formatter.py tests/test_api.py -v
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+  frontend-build:
+    name: Frontend – Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+
+  docker-build:
+    name: Docker – Build Images
+    runs-on: ubuntu-latest
+    needs: [backend-lint, backend-test, frontend-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: trademark-backend:${{ github.sha }}
+          build-args: |
+            HF_MODEL_ID=${{ secrets.HF_MODEL_ID }}
+            HF_TOKEN=${{ secrets.HF_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: trademark-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
