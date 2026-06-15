@@ -67,7 +67,24 @@ export default function ResultPanel({
           {debugOpen ? '▲' : '▼'} Model Input
         </button>
         {debugOpen && (
-          <pre className="debug-text">{result.formatted_input?.replace(/\. /g, '\n')}</pre>
+          <div className="debug-blocks">
+            <div className="debug-block">
+              <div className="debug-block-label">Classifier Input</div>
+              <pre className="debug-text">{result.formatted_input?.replace(/\. /g, '\n')}</pre>
+            </div>
+            {llmData?.prompt && (
+              <>
+                <div className="debug-block">
+                  <div className="debug-block-label">LLM System Prompt</div>
+                  <pre className="debug-text">{llmData.prompt.system}</pre>
+                </div>
+                <div className="debug-block">
+                  <div className="debug-block-label">LLM User Message</div>
+                  <pre className="debug-text">{llmData.prompt.user}</pre>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

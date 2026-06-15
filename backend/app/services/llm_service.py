@@ -125,6 +125,7 @@ def analyze_trademark(
     return {
         "analysis": response.choices[0].message.content.strip(),
         "sources": sources or None,
+        "prompt": {"system": _SYSTEM_PROMPT, "user": user_content},
     }
 
 
