@@ -7,7 +7,7 @@ import ResultPanel from './components/ResultPanel'
 
 export default function App() {
   const [form, setForm] = useState(EMPTY_FORM)
-  const [showAdvanced, setShowAdvanced] = useState(true)
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const { submit, reset, state } = useTrademarkPipeline()
 
   const onFieldChange = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
@@ -31,35 +31,46 @@ export default function App() {
   }
 
   const canSubmit = form.mark.trim() && form.description.trim() && form.nice_class
+  const hasActivity = state.loading || !!state.result
 
   return (
     <div className="app">
       <AppHeader />
+      <main className={`main${hasActivity ? '' : ' main--empty'}`}>
+        <div className="input-area">
+          <MarkForm
+            form={form}
+            onFieldChange={onFieldChange}
+            showAdvanced={showAdvanced}
+            onToggleAdvanced={() => setShowAdvanced(o => !o)}
+            error={state.error}
+            loading={state.loading}
+            result={state.result}
+            onSubmit={handleSubmit}
+            onReset={handleReset}
+            canSubmit={canSubmit}
+          />
+        </div>
 
-      <div className="workspace">
-        <MarkForm
-          form={form}
-          onFieldChange={onFieldChange}
-          showAdvanced={showAdvanced}
-          onToggleAdvanced={() => setShowAdvanced(o => !o)}
-          error={state.error}
-          loading={state.loading}
-          result={state.result}
-          onSubmit={handleSubmit}
-          onReset={handleReset}
-          canSubmit={canSubmit}
-        />
-
-        <ResultPanel
-          result={state.result}
-          liveMark={form.mark.trim().toUpperCase() || ''}
-          loading={state.loading}
-          explainLoading={state.explainLoading}
-          explainData={state.explainData}
-          llmLoading={state.llmLoading}
-          llmData={state.llmData}
-        />
-      </div>
+        {hasActivity && (
+          <>
+            <div className="result-divider">
+              <div className="divider-line" />
+              <span className="divider-label">Analysis Result</span>
+              <div className="divider-line" />
+            </div>
+            <ResultPanel
+              result={state.result}
+              liveMark={form.mark.trim().toUpperCase() || ''}
+              loading={state.loading}
+              explainLoading={state.explainLoading}
+              explainData={state.explainData}
+              llmLoading={state.llmLoading}
+              llmData={state.llmData}
+            />
+          </>
+        )}
+      </main>
     </div>
   )
 }
