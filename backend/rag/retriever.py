@@ -5,7 +5,7 @@ Delegates to agent.py for agentic tool-calling retrieval,
 then formats collected chunks for injection into the analysis prompt.
 """
 
-from backend.rag.agent import run_agent
+from rag.agent import run_agent
 
 
 def retrieve(

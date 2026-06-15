@@ -21,13 +21,14 @@ class AnalyzeRequest(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     analysis: str
+    sources: dict | None = None
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 @limiter.limit(ANALYZE_LIMIT)
 def analyze(request: Request, req: AnalyzeRequest) -> AnalyzeResponse:  # noqa: ARG001
     try:
-        text = analyze_trademark(
+        result = analyze_trademark(
             mark=req.mark,
             description=req.description,
             nice_class=req.nice_class,
@@ -37,4 +38,4 @@ def analyze(request: Request, req: AnalyzeRequest) -> AnalyzeResponse:  # noqa: 
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    return AnalyzeResponse(analysis=text)
+    return AnalyzeResponse(analysis=result["analysis"], sources=result.get("sources"))

@@ -754,6 +754,138 @@ body {
 .action-body { display:flex; align-items:baseline; gap:8px; }
 .action-arrow { color:var(--accent); font-size:16px; flex-shrink:0; font-weight:700; line-height:1.7; }
 
+/* ─── Legal Sources ─── */
+.legal-sources {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: fadeIn 0.2s ease both;
+}
+
+.legal-sources-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: none;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: left;
+  transition: color 0.15s, background 0.15s;
+}
+.legal-sources-toggle:hover { color: var(--accent); background: var(--surface); }
+
+.legal-sources-icon { font-size: 9px; }
+
+.legal-sources-count {
+  margin-left: auto;
+  background: var(--border);
+  border-radius: 100px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.legal-sources-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg);
+}
+
+.ls-group { display: flex; flex-direction: column; gap: 6px; }
+
+.ls-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.ls-chunk {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.ls-chunk-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ls-chunk-header:hover { background: var(--surface); }
+
+.ls-cite {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ls-title {
+  font-size: 11px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.ls-expand {
+  font-size: 13px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.ls-outcome {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.ls-outcome--affirmed { background: var(--not-dist-dim); color: var(--not-dist-strong); }
+.ls-outcome--reversed { background: var(--distinctive-dim); color: var(--distinctive-strong); }
+.ls-outcome--unknown  { background: var(--border); color: var(--text-muted); }
+
+.ls-nc {
+  font-size: 9px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.ls-text {
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--text);
+  padding: 0 12px 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ls-text--preview { color: var(--text-muted); }
+
 /* ─── Debug section ─── */
 .debug-section {
   margin-top: 4px;

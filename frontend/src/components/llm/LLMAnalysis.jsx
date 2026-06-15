@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   TIER_COLORS,
   TIER_ORDER,
@@ -111,6 +112,83 @@ function renderSection({ title, content }) {
   return <GenericCard key={title} title={title} content={content} />
 }
 
+function LegalSources({ sources }) {
+  const [open, setOpen] = useState(false)
+  if (!sources) return null
+  const tmep = sources.tmep || []
+  const ttab = sources.ttab || []
+  if (tmep.length === 0 && ttab.length === 0) return null
+
+  return (
+    <div className="legal-sources">
+      <button className="legal-sources-toggle" onClick={() => setOpen(o => !o)}>
+        <span className="legal-sources-icon">{open ? '▲' : '▼'}</span>
+        Legal Sources
+        <span className="legal-sources-count">{tmep.length + ttab.length}</span>
+      </button>
+      {open && (
+        <div className="legal-sources-body">
+          {tmep.length > 0 && (
+            <div className="ls-group">
+              <div className="ls-group-label">TMEP Doctrine</div>
+              {tmep.map((c) => (
+                <TMEPChunk key={c.id} chunk={c} />
+              ))}
+            </div>
+          )}
+          {ttab.length > 0 && (
+            <div className="ls-group">
+              <div className="ls-group-label">TTAB Cases</div>
+              {ttab.map((c) => (
+                <TTABChunk key={c.id} chunk={c} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TMEPChunk({ chunk }) {
+  const [expanded, setExpanded] = useState(false)
+  const { section_number, section_title } = chunk.metadata
+  const preview = chunk.text.slice(0, 180)
+  return (
+    <div className="ls-chunk">
+      <div className="ls-chunk-header" onClick={() => setExpanded(o => !o)}>
+        <span className="ls-cite">TMEP §{section_number}</span>
+        <span className="ls-title">{section_title}</span>
+        <span className="ls-expand">{expanded ? '−' : '+'}</span>
+      </div>
+      {expanded
+        ? <p className="ls-text">{chunk.text}</p>
+        : <p className="ls-text ls-text--preview">{preview}{chunk.text.length > 180 ? '…' : ''}</p>
+      }
+    </div>
+  )
+}
+
+function TTABChunk({ chunk }) {
+  const [expanded, setExpanded] = useState(false)
+  const { mark, nice_class, outcome } = chunk.metadata
+  const preview = chunk.text.slice(0, 180)
+  return (
+    <div className="ls-chunk">
+      <div className="ls-chunk-header" onClick={() => setExpanded(o => !o)}>
+        <span className="ls-cite">{mark}</span>
+        <span className={`ls-outcome ls-outcome--${outcome}`}>{outcome}</span>
+        {nice_class && <span className="ls-nc">NC{nice_class}</span>}
+        <span className="ls-expand">{expanded ? '−' : '+'}</span>
+      </div>
+      {expanded
+        ? <p className="ls-text">{chunk.text}</p>
+        : <p className="ls-text ls-text--preview">{preview}{chunk.text.length > 180 ? '…' : ''}</p>
+      }
+    </div>
+  )
+}
+
 export default function LLMAnalysis({ loading, data }) {
   if (loading) {
     return (
@@ -134,6 +212,7 @@ export default function LLMAnalysis({ loading, data }) {
       ) : (
         <p className="llm-card-body">{data.analysis}</p>
       )}
+      <LegalSources sources={data.sources} />
     </div>
   )
 }

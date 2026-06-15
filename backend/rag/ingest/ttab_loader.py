@@ -11,7 +11,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from backend.rag.chunker import split_text
+from rag.chunker import split_text
 
 _REASONING_START = re.compile(
     r"\b(we find|the board finds|the examining attorney|applicant argues|"

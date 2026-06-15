@@ -13,8 +13,8 @@ import os
 
 from openai import OpenAI
 
-from backend.rag.embedder import embed_query
-from backend.rag.store import get_tmep_collection, get_ttab_collection
+from rag.embedder import embed_query
+from rag.store import get_tmep_collection, get_ttab_collection
 
 MAX_ROUNDS = 3
 _TMEP_N = int(os.environ.get("RAG_TMEP_N_RESULTS", "3"))

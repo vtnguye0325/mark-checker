@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pypdf
 
-from backend.rag.chunker import split_text
+from rag.chunker import split_text
 
 # Matches body section headers: "1209  Refusal on Basis..." (2-6 spaces, then text)
 # TOC lines have 10+ spaces — excluded by the {1,6} bound
