@@ -37,7 +37,7 @@ The trademark spectrum runs from strongest to weakest protection: fanciful (inve
 Identify the two most plausible tiers this mark could fall into. For each tier, explain in one sentence what specific characteristic of THIS mark and THIS goods/services description supports that placement. Format each tier as a bullet on its own line: `- **TierName** — your one-sentence explanation.` (e.g., `- **Arbitrary** — the word has no connection to the goods.`) Then in a short paragraph after the bullets, explain what would push the mark toward the stronger tier vs. the weaker one — grounding this in the actual relationship between the mark text and the goods/services description. If legal doctrine was retrieved, cite the most relevant TMEP section (e.g., TMEP §1209.01) to anchor the tier placement.
 
 **Why the classifier leaned this way — key signals**
-Explain the signals in 2–3 short paragraphs (separate each with a blank line). Each paragraph should focus on one key signal. Start with the mark name: what does the word itself suggest — is it invented, a common word, or does it describe something about the product? Then explain how the goods/services description either reinforced or complicated that signal. Use concrete trademark reasoning: for example, "the word X pushed toward distinctive because it has no obvious connection to {nice_class_description} — a consumer seeing it on a {description} shelf would not immediately understand what the product is." If the mark is in the dictionary or has a translation, explain specifically how that factored in.
+Explain the signals in 2–3 short paragraphs (separate each with a blank line). Each paragraph should focus on one key signal. Start with the mark name: what does the word itself suggest — is it invented, a common word, or does it describe something about the product? Then explain how the goods/services description either reinforced or complicated that signal. Use concrete trademark reasoning: for example, "the word X pushed toward distinctive because it has no obvious connection to the goods in its class — a consumer seeing it on the shelf would not immediately understand what the product is." If the mark is in the dictionary or has a translation, explain specifically how that factored in.
 
 **What to do next**
 One concrete sentence based on confidence tier:
@@ -48,15 +48,13 @@ One concrete sentence based on confidence tier:
 ---
 
 Rules:
-- Use exactly `**Section Title**` (bold text on its own line) for each section header — no markdown headings (no # symbols).
-- The spectrum section must contain exactly two bullet lines in the format `- **TierName** — one sentence.` before any follow-up paragraph.
-- There is no word limit, as long as the response is clear and concise, but informative.
-- Never use ML jargon: no "SHAP," "logits," "fine-tuned," "probability," or "feature weight."
-- Never use legal jargon without an immediate plain-English gloss in parentheses.
-- Never assert a tier as fact — frame as "this mark appears to be" or "this looks more like."
-- Never guarantee registration or predict examiner behavior with certainty.
-- The spectrum section must reference the actual mark text and goods/services — no generic definitions.
-- If TMEP doctrine was retrieved above, you MUST cite at least one TMEP section in the spectrum section.\
+- Keep the whole response under ~400 words. Be clear and concise; never pad.
+- Headers: exactly `**Section Title**` on its own line — no `#` markdown headings.
+- Spectrum section: exactly two bullets `- **TierName** — one sentence.` before any follow-up paragraph.
+- TMEP citations: cite only section numbers that literally appear in the retrieved doctrine above. Never invent or recall one from memory. If none fit, write "no directly applicable TMEP section was retrieved" instead of guessing.
+- No jargon: no ML terms ("SHAP," "logits," "fine-tuned," "probability," "feature weight"); gloss any legal term in plain English in parentheses on first use.
+- Do not quote the raw confidence percentage — translate it to the tier (high / moderate / uncertain) in plain words. Field labels from the user message (e.g. "CONFIDENCE TIER", "IN DICTIONARY (WordNet)") are internal inputs — never echo them verbatim.
+- Never assert a tier as fact ("this mark appears to be…"), never guarantee registration, never predict examiner behavior with certainty.\
 """
 
 _USER_TMPL = """\
@@ -161,10 +159,10 @@ def _confidence_tier(prob_distinctive: float) -> str:
     # Distance from the 0.5 decision boundary in either direction.
     margin = abs(prob_distinctive - 0.5)
     if margin >= 0.4:
-        return "high confidence"
+        return "high"
     if margin >= 0.2:
-        return "moderate confidence"
-    return "low confidence (uncertain)"
+        return "moderate"
+    return "uncertain"
 
 
 def _field_value(attributions: list[dict], field: str, default: str) -> str:
