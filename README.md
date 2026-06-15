@@ -5,13 +5,15 @@ Binary trademark distinctiveness classifier backed by a fine-tuned **ModernBERT-
 ## Project structure
 
 ```
-trademark_app/
+mark-checker/
 ├── docker-compose.yml           # Production: Nginx + FastAPI
 ├── docker-compose.dev.yml       # Development: Vite + Uvicorn --reload
 ├── .env.example                 # Copy to .env for Docker (HF_MODEL_ID, etc.)
 ├── backend/
 │   ├── Dockerfile
 │   ├── .dockerignore
+│   ├── pyproject.toml           # Ruff config
+│   ├── requirements.txt
 │   ├── app/
 │   │   ├── main.py              # FastAPI app, CORS, rate limiter, /health
 │   │   ├── limiter.py           # Shared slowapi Limiter instance (100 req/hr per IP)
@@ -20,13 +22,14 @@ trademark_app/
 │   │   │   ├── explain.py       # POST /explain
 │   │   │   └── analyze.py       # POST /analyze
 │   │   └── services/
-│   │       ├── model_service.py # Model loader, predict_one(), explain_one()
+│   │       ├── model_service.py # ModelHandle, predict_one(), explain_one()
 │   │       ├── llm_service.py   # DeepSeek analysis via OpenAI-compat client
-│   │       └── text_formatter.py# Builds bert_input_processed string
-│   ├── scripts/
-│   │   └── docker_download_model.py  # HF snapshot at image build time
+│   │       └── text_formatter.py# format_mark() → FormattedMark{.text, .fields}
 │   ├── model/                   # Fine-tuned weights (local dev; Docker uses /opt/model from HF)
-│   └── requirements.txt
+│   └── scripts/
+│       └── docker_download_model.py  # HF snapshot at image build time
+├── docs/
+│   └── PLAN.md                  # RAG roadmap and deployment checklist
 ├── frontend/
 │   ├── Dockerfile
 │   ├── .dockerignore
@@ -34,27 +37,30 @@ trademark_app/
 │   ├── vite.config.js
 │   ├── package.json
 │   └── src/
-├── data/
-│   └── predictions.csv          # Saved predictions from training eval (used by smoke test)
+│       ├── hooks/
+│       │   └── useTrademarkPipeline.js  # predict → explain → analyze pipeline state
+│       └── lib/
+│           └── parseLegalAnalysis.js    # Pure parsers for LLM analysis sections
 ├── scripts/
-│   └── smoke_test.py            # Runs 50 known-correct predictions end-to-end
+│   └── smoke_test.py            # Runs predictions end-to-end against live model
 └── tests/
     ├── conftest.py
     ├── test_text_formatter.py   # Unit tests — no model required
     ├── test_model_service.py    # Integration tests — loads model
-    └── test_api.py              # FastAPI endpoint tests
+    ├── test_api.py              # FastAPI endpoint tests
+    └── test_model_predictions.py# Regression tests — 50 known-good predictions
 ```
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.11+
 - **Local (non-Docker) runs:** model weights at `backend/model/` (or set `MODEL_DIR` to a local folder or Hugging Face repo id).
 - **Docker runs:** model is baked from `HF_MODEL_ID` at image build time into `/opt/model` (see [Docker](#docker)).
 
 Install dependencies:
 
 ```bash
-cd trademark_app/backend
+cd backend
 pip install -r requirements.txt
 ```
 
@@ -66,7 +72,7 @@ Images **pre-download** your Hugging Face model at **build** time into `/opt/mod
 
 ### Setup
 
-From `trademark_app/`:
+From the project root:
 
 ```bash
 cp .env.example .env
@@ -77,7 +83,6 @@ cp .env.example .env
 ### Production (Nginx + API)
 
 ```bash
-cd trademark_app
 docker compose up --build
 ```
 
@@ -87,7 +92,6 @@ docker compose up --build
 ### Development (hot reload)
 
 ```bash
-cd trademark_app
 docker compose -f docker-compose.dev.yml up --build
 ```
 
@@ -102,11 +106,11 @@ You **do not** need `up --build` every time—only when Docker should **rebuild 
   `docker compose -f docker-compose.dev.yml up`
   Same for production: `docker compose up` (omit `--build` unless something below changed).
 
-- **Use `up --build`** (or `docker compose build` then `up`) when image inputs changed, for example:
+- **Use `up --build`** when image inputs changed, for example:
   - `backend/Dockerfile`, `backend/requirements.txt`, or **`HF_MODEL_ID` / `HF_TOKEN`** (backend model bake)
   - `frontend/Dockerfile`, or frontend **dependencies** baked into the image (`package.json` / `package-lock.json`)
 
-- **Dev bind mounts:** edits under `./backend` and `./frontend` are visible inside the containers; **Uvicorn `--reload`** and **Vite** pick up app code changes **without** rebuilding images.
+- **Dev bind mounts:** edits under `backend/` and `frontend/` are visible inside the containers; **Uvicorn `--reload`** and **Vite** pick up app code changes **without** rebuilding images.
 
 - **Stop / restart:** `Ctrl+C` or `docker compose -f docker-compose.dev.yml down`, then `docker compose -f docker-compose.dev.yml up` again. Add `--build` only when you intentionally want fresh images.
 
@@ -122,7 +126,7 @@ Expose the production stack to the public internet without router port forwardin
 
 **Internet → Cloudflare (HTTPS) → `cloudflared` on your server → Docker frontend on `localhost:80`**
 
-Cloudflare recommends **dashboard-managed (remotely-managed) tunnels** for production. Configuration lives in the Cloudflare dashboard; the server only runs `cloudflared` with a token. See also `PLAN.md` for the full deployment checklist.
+Cloudflare recommends **dashboard-managed (remotely-managed) tunnels** for production. Configuration lives in the Cloudflare dashboard; the server only runs `cloudflared` with a token. See also `docs/PLAN.md` for the full deployment checklist.
 
 Official docs: [Create a tunnel (dashboard)](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-remote-tunnel/), [Run as a service (Linux)](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/configure-tunnels/local-management/as-a-service/linux/), [Quick Tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/).
 
@@ -144,7 +148,6 @@ You do **not** need router port forwarding, a static public IP, or TLS certifica
 2. **Start the app on the server:**
 
    ```bash
-   cd trademark_app
    docker compose up -d
    curl -s -o /dev/null -w '%{http_code}\n' http://localhost   # expect 200
    ```
@@ -249,7 +252,7 @@ sudo journalctl -u cloudflared --since '30 min ago' --no-pager
 
 ### Quick test without a domain (TryCloudflare)
 
-For a temporary demo only — **not for production**:
+For a temporary demo only — **not for production**. Run from the project root:
 
 ```bash
 docker compose up -d
@@ -295,7 +298,7 @@ If installing the service with `sudo`, pass `--config` explicitly — otherwise 
 ## Running the backend
 
 ```bash
-cd trademark_app/backend
+cd backend
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -424,7 +427,7 @@ pip install pytest
 
 ### 2. Run all tests
 
-From the `trademark_app/` directory:
+From the project root:
 
 ```bash
 python -m pytest tests/ -v
@@ -442,9 +445,10 @@ Unit tests in `test_text_formatter.py` are fast (no model load). The other two f
 
 ### 4. What each test covers
 
-**`test_text_formatter.py`** (18 tests)
-- `format_input` produces exactly 8 dot-separated fields
-- Mark, NICE category, mark length, and NICE description fields are correctly placed
+**`test_text_formatter.py`** (26 tests)
+- `format_mark()` returns a `FormattedMark` with `.text` (joined string) and `.fields` (list)
+- `.text` produces exactly 8 dot-separated fields; mark, NICE category, mark length, and NICE description are correctly placed
+- `.fields` preserves period-laden descriptions as a single field (prevents attribution misalignment)
 - `translation`: empty input → `"no translation required"`, non-empty → returned verbatim
 - `_pseudo_mark`: explicit input returned verbatim; empty/whitespace → `"no Pseudo mark"`
 - All 45 NICE classes present and non-empty in `NICE_DESCRIPTIONS`
@@ -465,10 +469,9 @@ Unit tests in `test_text_formatter.py` are fast (no model load). The other two f
 
 ## Smoke test
 
-Runs the first 50 correct predictions from `data/predictions.csv` through the live model and verifies they match:
+Runs known-correct predictions from `data/predictions.csv` through the live model and verifies they match. The CSV is not committed to the repo — generate it from your training evaluation output and place it at `data/predictions.csv` before running.
 
 ```bash
-# From trademark_app/
 python scripts/smoke_test.py
 python scripts/smoke_test.py --verbose   # prints all 8 input fields + raw result per case
 ```
@@ -477,17 +480,14 @@ Expected output: `50 passed, 0 failed`.
 
 ## CI/CD
 
-A GitHub Actions pipeline is configured at `.github/workflows/ci.yml`. It runs on every push and pull request to `main`, with five jobs:
+A GitHub Actions pipeline is configured at `.github/workflows/ci.yml`. It runs on every push and pull request to `main` on **self-hosted local runners**, with four jobs:
 
 | Job | Trigger | What it does |
 |-----|---------|-------------|
-| **lint-backend** | push + PR | Ruff lint check + format check on `backend/`, `tests/`, `scripts/` |
-| **test-backend** | push + PR | Installs Python deps + NLTK data, runs unit tests (`tests/test_text_formatter.py` — no model needed) |
-| **build-frontend** | push + PR | `npm ci` + `npm run build` |
-| **docker-build** | after lint + test + build | Builds both Docker images via BuildKit with GitHub Actions cache layering, verifies imports |
-| **deploy** | push to `main` only | SSH into server, git pull, writes `.env`, `docker compose up --build -d`, runs health check |
-
-The pipeline uses the `docker/build-push-action` with `type=gha` caching, so repeat builds reuse the model layer (saved from the Hugging Face download).
+| **backend-lint** | push + PR | Creates a venv, installs Ruff, runs lint + format check on `backend/` |
+| **backend-test** | push + PR | Creates a venv, installs deps, runs unit tests (`tests/test_text_formatter.py` — no model needed) |
+| **frontend-build** | push + PR | `npm ci` + `npm run build` |
+| **deploy** | push to `main` only | Runs `docker compose build` then `docker compose up -d`, polls backend `/health` until healthy |
 
 ### Required secrets
 
@@ -498,10 +498,6 @@ Configure these in your repo **Settings → Secrets and variables → Actions**:
 | `HF_MODEL_ID` | Hugging Face model repo id (e.g. `vtnguye/automating-abercrombie`) |
 | `HF_TOKEN` | Token for private/gated Hugging Face models |
 | `DEEPSEEK_API_KEY` | API key for the `/analyze` DeepSeek LLM endpoint |
-| `DEPLOY_HOST` | Production server IP or domain |
-| `DEPLOY_USER` | SSH username for deployment |
-| `DEPLOY_SSH_KEY` | SSH private key (deploy key) |
-| `DEPLOY_DOMAIN` | Production domain (used for `CORS_ORIGINS`) |
 
 ### Running tests locally
 
@@ -522,4 +518,4 @@ The model was trained on an 8-field string joined with `". "`:
 NICE category is {k}. {nice_description}. {pseudo_mark}
 ```
 
-`text_formatter.format_input()` builds this string automatically from your inputs. Feeding raw mark text without description and NICE metadata will degrade accuracy.
+`text_formatter.format_mark()` builds this representation automatically and returns a `FormattedMark` with two attributes: `.text` (the joined string passed to the tokenizer) and `.fields` (the individual parts used for leave-one-out attribution). Feeding raw mark text without description and NICE metadata will degrade accuracy.
