@@ -15,11 +15,12 @@ export default function MarkForm({
   return (
     <form className="form-panel" onSubmit={onSubmit} noValidate>
       <div className="field-group">
+        <label className="field-label" htmlFor="mark">Trademark</label>
         <input
           id="mark"
           className="field-input field-input--mark"
           type="text"
-          placeholder="Trademark name…"
+          placeholder="e.g. APPLE"
           value={form.mark}
           onChange={onFieldChange('mark')}
           autoComplete="off"
@@ -28,27 +29,36 @@ export default function MarkForm({
       </div>
 
       <div className="form-row">
-        <textarea
-          id="description"
-          className="field-input field-input--textarea"
-          placeholder="Goods & services description…"
-          value={form.description}
-          onChange={onFieldChange('description')}
-          rows={3}
-        />
-        <div className="select-wrapper">
-          <select
-            id="nice_class"
-            className="field-input field-input--select"
-            value={form.nice_class}
-            onChange={onFieldChange('nice_class')}
-          >
-            <option value="">Class…</option>
-            {NICE_CLASSES.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-          <span className="select-arrow">⌄</span>
+        <div className="field-group" style={{ marginBottom: 0 }}>
+          <label className="field-label" htmlFor="description">Goods &amp; Services</label>
+          <textarea
+            id="description"
+            className="field-input field-input--textarea"
+            placeholder="Describe the goods or services the mark will be used for…"
+            value={form.description}
+            onChange={onFieldChange('description')}
+            rows={3}
+          />
+        </div>
+        <div className="field-group" style={{ marginBottom: 0 }}>
+          <label className="field-label" htmlFor="nice_class">
+            NICE Class
+            <span className="field-hint">International classification of goods &amp; services</span>
+          </label>
+          <div className="select-wrapper">
+            <select
+              id="nice_class"
+              className="field-input field-input--select"
+              value={form.nice_class}
+              onChange={onFieldChange('nice_class')}
+            >
+              <option value="">Select a class…</option>
+              {NICE_CLASSES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+            <span className="select-arrow">⌄</span>
+          </div>
         </div>
       </div>
 
@@ -57,7 +67,7 @@ export default function MarkForm({
         className="advanced-toggle"
         onClick={onToggleAdvanced}
       >
-        {showAdvanced ? '▲' : '▶'} Advanced fields
+        {showAdvanced ? '▲' : '▼'} Advanced fields
       </button>
 
       {showAdvanced && (
