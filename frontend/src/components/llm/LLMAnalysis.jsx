@@ -205,6 +205,7 @@ export default function LLMAnalysis({ loading, data }) {
   return (
     <div className="llm-section">
       <div className="llm-section-label">Legal Analysis</div>
+      <LegalSources sources={data.sources} />
       {sections ? (
         <div className="llm-cards">
           {sections.map(renderSection)}
@@ -212,7 +213,6 @@ export default function LLMAnalysis({ loading, data }) {
       ) : (
         <p className="llm-card-body">{data.analysis}</p>
       )}
-      <LegalSources sources={data.sources} />
     </div>
   )
 }
