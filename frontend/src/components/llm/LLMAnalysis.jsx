@@ -1,55 +1,16 @@
-function parseSections(text) {
-  const lines = text.split('\n')
-  const sections = []
-  let current = null
-  for (const line of lines) {
-    const m = line.match(/^\*\*(.+?)\*\*\s*$/) || line.match(/^#{1,4}\s+(.+?)\s*$/)
-    if (m) {
-      if (current) sections.push(current)
-      current = { title: m[1], content: '' }
-    } else if (current) {
-      current.content += (current.content ? '\n' : '') + line
-    }
-  }
-  if (current) sections.push(current)
-  sections.forEach(s => { s.content = s.content.trim() })
-  return sections.length > 0 ? sections : null
-}
+import {
+  TIER_COLORS,
+  TIER_ORDER,
+  parseSections,
+  extractVerdict,
+  parseSpectrumTiers,
+  splitSignals,
+} from '../../lib/parseLegalAnalysis'
 
 function renderInline(text) {
   return text.split(/\*\*(.+?)\*\*/).map((part, i) =>
     i % 2 === 1 ? <strong key={i}>{part}</strong> : part
   )
-}
-
-const TIER_COLORS = {
-  generic: '#9e2a2a', descriptive: '#b45a1a',
-  suggestive: '#6d5a1c', arbitrary: '#1a6b42', fanciful: '#158050',
-}
-const TIER_ORDER = ['generic', 'descriptive', 'suggestive', 'arbitrary', 'fanciful']
-
-function extractVerdict(text) {
-  const vm = text.match(/\b(not\s+distinctive|non[-\s]distinctive|distinctive)\b/i)
-  const verdict = vm ? vm[1].toLowerCase().replace(/\s+/g, ' ') : null
-  const isDistinctive = verdict !== null && !verdict.startsWith('not') && !verdict.startsWith('non')
-  const cm = text.match(/\b(high|moderate|low)\s+confidence\b/i)
-  return { isDistinctive, verdict, confidence: cm ? cm[1].toLowerCase() : null }
-}
-
-function parseSpectrumTiers(text) {
-  const re = /^[-•]\s+\*\*([^*]+)\*\*\s*[—–-]\s*(.+)$/gm
-  const tiers = []
-  let m
-  while ((m = re.exec(text)) !== null) {
-    const id = m[1].trim().toLowerCase()
-    tiers.push({ name: m[1].trim(), id, explanation: m[2].trim(), color: TIER_COLORS[id] ?? '#5a6356' })
-  }
-  const remainder = text.replace(re, '').trim()
-  return { tiers, remainder }
-}
-
-function splitSignals(text) {
-  return text.split(/\n{2,}/).map(s => s.trim()).filter(Boolean)
 }
 
 function GenericCard({ title, content }) {
@@ -87,12 +48,12 @@ function VerdictCard({ title, content }) {
 function SpectrumCard({ title, content }) {
   const { tiers, remainder } = parseSpectrumTiers(content)
   if (tiers.length === 0) return <GenericCard title={title} content={content} />
-  const lit = new Set(tiers.map(t => t.id))
+  const lit = new Set(tiers.map((t) => t.id))
   return (
     <div className="llm-card llm-card--spectrum">
       <div className="llm-card-title">{title}</div>
       <div className="mini-spectrum-bar">
-        {TIER_ORDER.map(id => (
+        {TIER_ORDER.map((id) => (
           <div key={id} className={`mini-seg ${lit.has(id) ? 'mini-seg--lit' : 'mini-seg--dim'}`}
             style={{ '--seg-color': TIER_COLORS[id] }} title={id} />
         ))}

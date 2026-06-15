@@ -10,79 +10,74 @@ from app.services.text_formatter import (
     _pseudo_mark,
     _translation,
     _wordnet_flag,
-    format_fields,
-    format_input,
+    format_mark,
 )
 
 
 # ---------------------------------------------------------------------------
-# format_input — structure
+# format_mark — text (joined string)
 # ---------------------------------------------------------------------------
 
 
-def test_format_input_has_eight_fields():
-    result = format_input("APPLE", "computers", 9)
-    parts = result.split(". ")
+def test_format_mark_text_has_eight_fields():
+    result = format_mark("APPLE", "computers", 9)
+    parts = result.text.split(". ")
     assert len(parts) == 8
 
 
-def test_format_input_first_field_is_mark():
-    result = format_input("APPLE", "computers", 9)
-    assert result.startswith("APPLE")
+def test_format_mark_text_first_field_is_mark():
+    assert format_mark("APPLE", "computers", 9).text.startswith("APPLE")
 
 
-def test_format_input_strips_whitespace():
-    result = format_input("  APPLE  ", "  computers  ", 9)
-    assert result.startswith("APPLE")
-    parts = result.split(". ")
-    assert parts[1] == "computers"
+def test_format_mark_strips_whitespace():
+    fmt = format_mark("  APPLE  ", "  computers  ", 9)
+    assert fmt.text.startswith("APPLE")
+    assert fmt.text.split(". ")[1] == "computers"
 
 
-def test_format_input_nice_category_field():
-    result = format_input("NIKE", "footwear", 25)
-    assert "NICE category is 25" in result
+def test_format_mark_nice_category_field():
+    assert "NICE category is 25" in format_mark("NIKE", "footwear", 25).text
 
 
-def test_format_input_mark_length_field():
-    result = format_input("TWO WORDS", "clothing", 25)
-    assert "mark length is 2" in result
+def test_format_mark_mark_length_field():
+    assert "mark length is 2" in format_mark("TWO WORDS", "clothing", 25).text
 
 
-def test_format_input_nice_description_embedded():
-    result = format_input("NIKE", "footwear", 25)
-    assert NICE_DESCRIPTIONS[25] in result
+def test_format_mark_nice_description_embedded():
+    assert NICE_DESCRIPTIONS[25] in format_mark("NIKE", "footwear", 25).text
 
 
-def test_format_input_unknown_nice_class_empty_description():
+def test_format_mark_unknown_nice_class_empty_description():
     # nice_class 99 doesn't exist; NICE_DESCRIPTIONS.get returns ""
-    result = format_input("MARK", "goods", 99)
-    parts = result.split(". ")
+    parts = format_mark("MARK", "goods", 99).text.split(". ")
     assert parts[6] == ""
 
 
 # ---------------------------------------------------------------------------
-# format_fields — boundaries (drives the attribution alignment fix)
+# format_mark — fields (attribution boundaries)
 # ---------------------------------------------------------------------------
 
 
-def test_format_fields_returns_eight():
-    assert len(format_fields("APPLE", "computers", 9)) == 8
+def test_format_mark_fields_returns_eight():
+    assert len(format_mark("APPLE", "computers", 9).fields) == 8
 
 
-def test_format_fields_join_equals_format_input():
-    args = ("APPLE", "computers and software", 9, "la pomme", "apple")
-    assert ". ".join(format_fields(*args)) == format_input(*args)
+def test_format_mark_fields_text_is_join_of_fields():
+    # FormattedMark enforces consistency by construction — no separate test needed.
+    # This documents the invariant for readers.
+    fmt = format_mark("APPLE", "computers and software", 9, "la pomme", "apple")
+    assert ". ".join(fmt.fields) == fmt.text
 
 
-def test_format_fields_keeps_period_laden_description_intact():
+def test_format_mark_keeps_period_laden_description_intact():
     # A description containing '. ' must stay a SINGLE field — this is exactly
     # what would have shifted every field if attribution re-split the joined
     # string on '. '.
     desc = "Sells phones. Also tablets. And cases."
-    fields = format_fields("APPLE", desc, 9)
-    assert len(fields) == 8
-    assert fields[0] == "APPLE"
-    assert fields[1] == desc
+    fmt = format_mark("APPLE", desc, 9)
+    assert len(fmt.fields) == 8
+    assert fmt.fields[0] == "APPLE"
+    assert fmt.fields[1] == desc
 
 
 # ---------------------------------------------------------------------------
