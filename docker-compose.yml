@@ -8,8 +8,13 @@ services:
       HF_TOKEN: ${HF_TOKEN:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:80,http://127.0.0.1:80,http://localhost:5173,http://127.0.0.1:5173}
+      EMBEDDER: ${EMBEDDER:-local}
+      HF_TOKEN: ${HF_TOKEN:-}
+      RAG_TMEP_N_RESULTS: ${RAG_TMEP_N_RESULTS:-3}
+      RAG_TTAB_N_RESULTS: ${RAG_TTAB_N_RESULTS:-2}
     volumes:
       - hf-cache:/hf-cache
+      - ./backend/rag/chroma_db:/app/rag/chroma_db
     ports:
       - "8000:8000"
     healthcheck:

@@ -25,11 +25,26 @@ mark-checker/
 │   │       ├── model_service.py # ModelHandle, predict_one(), explain_one()
 │   │       ├── llm_service.py   # DeepSeek analysis via OpenAI-compat client
 │   │       └── text_formatter.py# format_mark() → FormattedMark{.text, .fields}
+│   ├── rag/                     # RAG layer — grounds LLM analysis in legal doctrine
+│   │   ├── embedder.py          # bge-base-en-v1.5, local or HF Inference API
+│   │   ├── store.py             # ChromaDB PersistentClient, tmep + ttab collections
+│   │   ├── chunker.py           # RecursiveCharacterTextSplitter (600t / 80 overlap)
+│   │   ├── agent.py             # DeepSeek tool-calling loop → targeted doctrine queries
+│   │   ├── retriever.py         # run agent → collect chunks → format_context()
+│   │   ├── chroma_db/           # Persisted vector store (not committed to git)
+│   │   ├── data/                # Drop source zips here (not committed to git)
+│   │   └── ingest/
+│   │       ├── tmep_loader.py   # Parse TMEP PDF zip at section boundaries
+│   │       ├── ttab_loader.py   # Parse TTAB bulk XML, filter ex parte decisions
+│   │       └── landmark_cases.json  # 5 seeded landmark court opinions
 │   ├── model/                   # Fine-tuned weights (local dev; Docker uses /opt/model from HF)
 │   └── scripts/
 │       └── docker_download_model.py  # HF snapshot at image build time
 ├── docs/
 │   └── PLAN.md                  # RAG roadmap and deployment checklist
+├── scripts/
+│   ├── build_rag_index.py       # Ingest TMEP/TTAB zips into ChromaDB (idempotent)
+│   └── eval_rag_retrieval.py    # Section reachability + spot-check eval
 ├── frontend/
 │   ├── Dockerfile
 │   ├── .dockerignore

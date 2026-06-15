@@ -1,0 +1,37 @@
+[
+  {
+    "mark": "ABERCROMBIE & FITCH",
+    "citation": "Abercrombie & Fitch Co. v. Hunting World Inc., 537 F.2d 4 (2d Cir. 1976)",
+    "outcome": "reversed",
+    "nice_class": "25",
+    "reasoning": "Judge Friendly established the four-category spectrum for trademark distinctiveness: generic, descriptive, suggestive, and arbitrary or fanciful. Generic terms can never acquire trademark significance. Descriptive terms require proof of secondary meaning. Suggestive terms, which require imagination to connect the mark to the product, are inherently registrable. Arbitrary and fanciful marks are the strongest form of trademark and are always inherently distinctive."
+  },
+  {
+    "mark": "PARK 'N FLY",
+    "citation": "Park 'N Fly Inc. v. Dollar Park & Fly Inc., 469 U.S. 189 (1985)",
+    "outcome": "reversed",
+    "nice_class": "39",
+    "reasoning": "The Supreme Court held that incontestability under the Lanham Act is a defense against cancellation on descriptiveness grounds. A mark that has become incontestable cannot be challenged as merely descriptive even if it was originally descriptive. The Court rejected the argument that descriptiveness is always available as a defense to infringement or cancellation once incontestability attaches."
+  },
+  {
+    "mark": "ZATARAIN'S",
+    "citation": "Zatarains Inc. v. Oak Grove Smokehouse Inc., 698 F.2d 786 (5th Cir. 1983)",
+    "outcome": "affirmed",
+    "nice_class": "30",
+    "reasoning": "The court applied the primary significance test to determine whether FISH-FRI and CHICK-FRI were merely descriptive. The test asks whether the primary significance of the term to consumers is descriptive of the product rather than indicative of source. Competitors have a fair use right to use descriptive terms in their descriptive sense even when the plaintiff holds rights. Secondary meaning was found for FISH-FRI based on extensive sales and advertising, but fair use was still available to describe a product category."
+  },
+  {
+    "mark": "DIAL-A-MATTRESS",
+    "citation": "In re Dial-A-Mattress Operating Corp., 240 F.3d 1341 (Fed. Cir. 2001)",
+    "outcome": "reversed",
+    "nice_class": "20",
+    "reasoning": "The Federal Circuit reversed the TTAB's refusal to register 1-888-M-A-T-R-E-S-S on the ground that the telephone number format rendered it inherently distinctive. The court emphasized that the combination of elements can create a distinctive composite even when individual components are descriptive. The mark as a whole must be evaluated, not just its parts in isolation."
+  },
+  {
+    "mark": "IN RE NETT DESIGNS",
+    "citation": "In re Nett Designs Inc., 236 F.3d 1339 (Fed. Cir. 2001)",
+    "outcome": "affirmed",
+    "nice_class": "25",
+    "reasoning": "The Federal Circuit affirmed that a mark is generic when the primary significance of the claimed mark to the relevant public is the class or category of goods or services. The applicant bears the burden of showing acquired distinctiveness only after the examining attorney establishes a prima facie case of genericness through evidence of common usage in the trade."
+  }
+]

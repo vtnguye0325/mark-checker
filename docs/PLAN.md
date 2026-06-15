@@ -24,24 +24,26 @@ what trademark law *requires*, not what examiners *did*.
 ```
 Mark + description + NICE class + label + SHAP attributions
         ↓
-[LLM Call 1 — cheap/fast DeepSeek]
-Generate hypothetical legal reasoning paragraph (HyDE)
-        ↓
-Embed HyDE paragraph → query two separate vector collections in parallel
-        ├── TMEP collection  → top 3 subsection chunks
-        └── TTAB collection  → top 2 reasoning-section chunks
+[Agent LLM — DeepSeek with tool calling, up to 3 rounds]
+  Tools: search_tmep(query: str), search_ttab(query: str)
+  Round 1: agent reasons about the mark, issues targeted query
+  Round 2+: agent sees results, refines or queries a second angle
+  Agent signals done → collected chunks returned
         ↓
 Assemble context: TMEP doctrine (first) + TTAB illustrations (second)
         ↓
-[LLM Call 2 — full DeepSeek]
+[Analysis LLM — full DeepSeek, max_tokens=700]
 Analysis with grounded doctrine context + SHAP attributions
         ↓
 Analysis text shown to user
 ```
 
-**Why two separate LLM calls:** HyDE paragraph is a retrieval artifact only — does not
-need to be high quality, just legally-vocabulary-rich enough to embed well against TMEP.
-Small/fast call keeps total latency reasonable.
+**Why agentic over HyDE:** HyDE generates a fixed hypothetical paragraph then embeds
+it blindly. An agent sees retrieval results and can refine — if round 1 returns
+color-mark doctrine when the mark is descriptive, the agent issues a corrective query.
+It also routes naturally: a surname mark triggers a §1211 query without being
+pre-programmed to do so. Cost is 2–4 LLM calls instead of 1; each capped at
+`max_tokens=200` so total latency stays reasonable.
 
 **Why not use prob_distinctive for routing:** The ModernBERT model is heavily skewed
 toward class 1 (89.7% distinctive base rate, 99% recall on majority class). Confidence
@@ -110,16 +112,16 @@ Key sections to index:
 | Component | Choice | Rationale |
 |---|---|---|
 | Vector store | **ChromaDB** (local, file-persisted) | Zero infra, runs in Docker, two named collections |
-| Embeddings | **`text-embedding-3-small`** (OpenAI) | Fast, cheap (<$0.001/1K tokens), same API ecosystem |
-| HyDE model | **`deepseek-chat`** (low max_tokens=150) | Fast cheap call; output only needs to be embedable |
+| Embeddings | **`bge-base-en-v1.5`** (sentence-transformers, local) | No API key, MPS-accelerated on Apple Silicon, strong on legal vocabulary |
+| Agent model | **`deepseek-chat`** (tool calling, max_tokens=200/round) | Issues targeted TMEP/TTAB queries, self-corrects if results are off |
 | Analysis model | **`deepseek-chat`** (full, max_tokens=700) | Existing LLM service, unchanged |
 | Chunking | **LangChain `RecursiveCharacterTextSplitter`** | Handles legal text well |
 
 ---
 
-## HyDE Prompt Inputs
+## Agent Design
 
-The cheap LLM call receives (does NOT use `prob_distinctive`):
+The agent LLM receives (does NOT use `prob_distinctive`):
 
 ```
 mark:          {mark}
@@ -129,8 +131,12 @@ label:         {label}  (distinctive | not_distinctive)
 attributions:  {shap_attributions_block}
 ```
 
-Output: a 3–4 sentence hypothetical legal reasoning paragraph using Abercrombie
-vocabulary. This paragraph is embedded and used as the retrieval query vector.
+Available tools:
+- `search_tmep(query: str)` — embed query, return top-3 TMEP chunks with section metadata
+- `search_ttab(query: str)` — embed query, return top-2 TTAB/landmark chunks
+
+Loop cap: **3 rounds** to bound cost. Agent signals completion by returning without a
+tool call. Collected chunks from all rounds are deduped and assembled into context.
 
 ---
 
@@ -146,10 +152,10 @@ backend/rag/
 │   ├── ttab_loader.py          # parse TTAB bulk data → reasoning extraction
 │   └── landmark_cases.json     # hand-curated ~50 court opinions
 ├── chunker.py                  # text splitting + metadata tagging
-├── embedder.py                 # wraps text-embedding-3-small
+├── embedder.py                 # bge-base-en-v1.5, local or HF API (EMBEDDER=hf_api)
 ├── store.py                    # ChromaDB: two collections (tmep, ttab)
-├── hyde.py                     # cheap LLM call → hypothetical paragraph
-└── retriever.py                # embed HyDE → query both collections → merge
+├── agent.py                    # DeepSeek tool-calling loop → targeted TMEP/TTAB queries
+└── retriever.py                # run agent → collect chunks → format_context()
 ```
 
 ### Phase 1 — Data Pipeline
@@ -232,22 +238,23 @@ No new containers — ChromaDB runs in-process.
 | Risk | Mitigation |
 |---|---|
 | TTAB bulk data requires USPTO login (June 2026) | Create account; script auth once |
-| HyDE paragraph quality varies | HyDE only needs to be embedable, not perfect; eval retrieval precision on golden set |
+| Agent issues irrelevant queries | System prompt constrains to Abercrombie vocabulary; 3-round cap limits damage |
 | TMEP subsection boundaries irregular | Regex on `§XXXX` pattern + manual review of edge cases |
-| Two LLM calls doubles latency | HyDE call capped at max_tokens=150; target <1s for HyDE, <5s total |
+| Agent latency (2–4 LLM calls) | Each capped at max_tokens=200; target <3s for agent phase, <8s total |
 | TTAB reasoning extraction misses section | Fallback: use full decision text if heuristic fails to find reasoning block |
 
 ---
 
 ## Milestone Order
 
-1. [ ] TMEP ingest + ChromaDB `tmep` collection — validates pipeline end-to-end
-2. [ ] `hyde.py` — cheap LLM call + embedding smoke test
-3. [ ] `retriever.py` — query both collections, verify TMEP doctrine surfaces correctly
-4. [ ] TTAB loader — parse 1,000 decisions, validate reasoning extraction
+1. [x] TMEP ingest + ChromaDB `tmep` collection — 2,410 chunks, 4/5 reachability
+2. [x] Retrieval pipeline smoke test — HyDE confirmed working end-to-end (replaced by agent below)
+3. [x] `retriever.py` — parallel collection query + `format_context()` verified
+4. [ ] `agent.py` — DeepSeek tool-calling loop (search_tmep, search_ttab, 3-round cap)
 5. [ ] Modify `llm_service.py` — inject doctrine context into prompt
 6. [ ] Update Docker compose + env vars
-7. [ ] Landmark cases JSON — curate ~50 court opinions
-8. [ ] Full TTAB ingest (5K+ decisions)
+7. [ ] TTAB loader — parse 1,000 decisions, validate reasoning extraction
+8. [ ] Landmark cases JSON — curate ~50 court opinions
+9. [ ] Full TTAB ingest (5K+ decisions)
 9. [ ] Eval on 20-mark golden set (borderline cases)
 10. [ ] Frontend: collapsible sources panel

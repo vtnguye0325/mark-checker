@@ -50,3 +50,5 @@ logs/
 .agents
 .claude
 skills-lock.json
+chroma_db/
+backend/rag/data/
