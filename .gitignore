@@ -47,3 +47,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+.agents
+.claude
+skills-lock.json
