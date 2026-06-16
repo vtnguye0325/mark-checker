@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { EMPTY_FORM } from './constants/formDefaults'
 import { useTrademarkPipeline } from './hooks/useTrademarkPipeline'
 import AppHeader from './components/AppHeader'
 import MarkForm from './components/MarkForm'
 import ResultPanel from './components/ResultPanel'
 
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
+
 export default function App() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileRef = useRef(null)
   const { submit, reset, state } = useTrademarkPipeline()
 
   const onFieldChange = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
@@ -22,15 +26,22 @@ export default function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    submit(buildPayload())
+    submit(buildPayload(), turnstileToken, () => {
+      turnstileRef.current?.reset()
+      setTurnstileToken('')
+    })
   }
 
   const handleReset = () => {
     setForm(EMPTY_FORM)
+    turnstileRef.current?.reset()
+    setTurnstileToken('')
     reset()
   }
 
-  const canSubmit = form.mark.trim() && form.description.trim() && form.nice_class
+  const canSubmit =
+    form.mark.trim() && form.description.trim() && form.nice_class &&
+    (!TURNSTILE_SITE_KEY || turnstileToken)
   const hasActivity = state.loading || !!state.result
 
   return (
@@ -49,6 +60,9 @@ export default function App() {
             onSubmit={handleSubmit}
             onReset={handleReset}
             canSubmit={canSubmit}
+            turnstileRef={turnstileRef}
+            onTurnstileToken={setTurnstileToken}
+            turnstileSiteKey={TURNSTILE_SITE_KEY}
           />
         </div>
 

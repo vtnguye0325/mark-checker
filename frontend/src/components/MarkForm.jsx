@@ -1,4 +1,5 @@
 import { NICE_CLASSES } from '../constants/niceClasses'
+import TurnstileWidget from './TurnstileWidget'
 
 export default function MarkForm({
   form,
@@ -11,6 +12,9 @@ export default function MarkForm({
   onSubmit,
   onReset,
   canSubmit,
+  turnstileRef,
+  onTurnstileToken,
+  turnstileSiteKey,
 }) {
   return (
     <form className="form-panel" onSubmit={onSubmit} noValidate>
@@ -106,6 +110,12 @@ export default function MarkForm({
       )}
 
       {error && <div className="error-banner">{error}</div>}
+
+      <TurnstileWidget
+        ref={turnstileRef}
+        siteKey={turnstileSiteKey}
+        onToken={onTurnstileToken}
+      />
 
       <div className="form-actions">
         <button

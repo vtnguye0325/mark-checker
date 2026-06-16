@@ -10,7 +10,7 @@ export function useTrademarkPipeline() {
   const [llmData, setLlmData] = useState(null)
   const abortRef = useRef(null)
 
-  async function submit(payload) {
+  async function submit(payload, turnstileToken = '', onAnalyzeComplete = null) {
     if (abortRef.current) abortRef.current.abort()
     const ctrl = new AbortController()
     abortRef.current = ctrl
@@ -66,6 +66,7 @@ export function useTrademarkPipeline() {
             label: predictResult.label,
             prob_distinctive: predictResult.prob_distinctive,
             attributions: explainResult.attributions,
+            turnstile_token: turnstileToken,
           }
           const res3 = await fetch('/analyze', {
             method: 'POST',
@@ -74,8 +75,10 @@ export function useTrademarkPipeline() {
           })
           if (!res3.ok) throw new Error('Analyze request failed')
           setLlmData(await res3.json())
+          onAnalyzeComplete?.()
         } catch (err) {
           console.error(err)
+          onAnalyzeComplete?.()
         } finally {
           setLlmLoading(false)
         }

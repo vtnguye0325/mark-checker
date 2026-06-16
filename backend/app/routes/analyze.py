@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.limiter import ANALYZE_LIMIT, limiter
 from app.routes.explain import Attribution
 from app.services.llm_service import analyze_trademark
+from app.turnstile import verify_turnstile
 
 router = APIRouter()
 
@@ -17,6 +18,7 @@ class AnalyzeRequest(BaseModel):
     label: str = Field(..., max_length=64)
     prob_distinctive: float = Field(..., ge=0.0, le=1.0)
     attributions: list[Attribution] = Field(..., max_length=16)
+    turnstile_token: str = Field(..., min_length=1, max_length=2048)
 
 
 class AnalyzeResponse(BaseModel):
@@ -26,7 +28,11 @@ class AnalyzeResponse(BaseModel):
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 @limiter.limit(ANALYZE_LIMIT)
-def analyze(request: Request, req: AnalyzeRequest) -> AnalyzeResponse:  # noqa: ARG001
+async def analyze(
+    request: Request,
+    req: AnalyzeRequest,
+    _: None = Depends(verify_turnstile),
+) -> AnalyzeResponse:
     try:
         result = analyze_trademark(
             mark=req.mark,
