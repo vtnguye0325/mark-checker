@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import math
+from unittest.mock import MagicMock
+
+import torch
 
 from app.services import model_service
-from app.services.model_service import explain_one, predict_one
+from app.services.model_service import ModelHandle, explain_one, predict_one
 from app.services.text_formatter import format_mark
+
+_FAKE_HANDLE = ModelHandle(tokenizer=MagicMock(), model=MagicMock(), device=torch.device("cpu"))
 
 
 def _predict(mark: str, description: str, nice_class: int) -> dict:
@@ -90,7 +95,7 @@ def test_explain_one_aligns_each_field_despite_periods(monkeypatch):
 
     monkeypatch.setattr(model_service, "_score_batch", fake_score_batch)
 
-    result = explain_one(_FIELDS)
+    result = explain_one(_FIELDS, model_handle=_FAKE_HANDLE)
     assert len(result["attributions"]) == 8
 
     by_field = {a["field"]: a["value"] for a in result["attributions"]}
@@ -109,7 +114,7 @@ def test_explain_one_masks_each_field_independently(monkeypatch):
         return [0.5] * len(texts)
 
     monkeypatch.setattr(model_service, "_score_batch", fake_score_batch)
-    explain_one(_FIELDS)
+    explain_one(_FIELDS, model_handle=_FAKE_HANDLE)
 
     # seen[0] is baseline; seen[i+1] is field i blanked.
     for i in range(len(_FIELDS)):

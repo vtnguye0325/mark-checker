@@ -10,16 +10,16 @@ logging.basicConfig(
     datefmt="%Y-%m-%dT%H:%M:%S",
 )
 
-from fastapi import FastAPI, Response
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
+from fastapi import FastAPI, Response  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from slowapi import _rate_limit_exceeded_handler  # noqa: E402
+from slowapi.errors import RateLimitExceeded  # noqa: E402
 
-from app.limiter import limiter
-from app.routes.analyze import router as analyze_router
-from app.routes.explain import router as explain_router
-from app.routes.predict import router as predict_router
-from app.services.model_service import is_loaded, warm_up
+from app.limiter import limiter  # noqa: E402
+from app.routes.analyze import router as analyze_router  # noqa: E402
+from app.routes.explain import router as explain_router  # noqa: E402
+from app.routes.predict import router as predict_router  # noqa: E402
+from app.services.model_service import is_loaded, warm_up  # noqa: E402
 
 _DEFAULT_CORS = (
     "http://localhost:5173,http://localhost:3000,"
