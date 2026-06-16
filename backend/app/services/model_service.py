@@ -42,7 +42,7 @@ def warm_up() -> None:
     """Eagerly load the model so the first request doesn't pay cold-start cost.
 
     Called from the FastAPI lifespan startup; a load failure here crashes the
-    worker at boot (surfaced via /ready) instead of on a user's first request.
+    worker at boot (surfaced via /health returning 503) instead of on a user's first request.
     """
     _load(get_model_dir())
 

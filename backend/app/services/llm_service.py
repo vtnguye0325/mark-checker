@@ -130,11 +130,11 @@ def analyze_trademark(
     )
     log.debug("final LLM call: %.2fs", time.perf_counter() - t1)
     log.debug("analyze total: %.2fs", time.perf_counter() - t_start)
+    log.debug("prompt system=%r user=%r", _SYSTEM_PROMPT, user_content)
 
     return {
         "analysis": response.choices[0].message.content.strip(),
         "sources": sources or None,
-        "prompt": {"system": _SYSTEM_PROMPT, "user": user_content},
     }
 
 

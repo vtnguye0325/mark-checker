@@ -22,7 +22,6 @@ class AnalyzeRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     analysis: str
     sources: dict | None = None
-    prompt: dict | None = None
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
@@ -42,5 +41,4 @@ def analyze(request: Request, req: AnalyzeRequest) -> AnalyzeResponse:  # noqa: 
     return AnalyzeResponse(
         analysis=result["analysis"],
         sources=result.get("sources"),
-        prompt=result.get("prompt"),
     )
