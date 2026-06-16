@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 
 from openai import OpenAI
 
@@ -96,7 +97,12 @@ def analyze_trademark(
         f"  {a['field']}: {a['value']}  ({a['attribution']:+.4f})" for a in attributions
     )
 
+    t_start = time.perf_counter()
+    print(f"[TIMING] analyze start  mark={mark!r}", flush=True)
+
+    t0 = time.perf_counter()
     doctrine_prefix, sources = _retrieve_doctrine(mark, description, str(nice_class), label, attributions)
+    print(f"[TIMING]   RAG retrieval: {time.perf_counter() - t0:.2f}s", flush=True)
     user_content = doctrine_prefix + _USER_TMPL.format(
         mark=mark,
         description=description,
@@ -110,6 +116,7 @@ def analyze_trademark(
         attributions_block=attribution_lines,
     )
 
+    t1 = time.perf_counter()
     response = client.chat.completions.create(
         model="deepseek-chat",
         messages=[
@@ -119,6 +126,8 @@ def analyze_trademark(
         temperature=0.2,
         max_tokens=1000,
     )
+    print(f"[TIMING]   final LLM call: {time.perf_counter() - t1:.2f}s", flush=True)
+    print(f"[TIMING] analyze total: {time.perf_counter() - t_start:.2f}s", flush=True)
 
     return {
         "analysis": response.choices[0].message.content.strip(),

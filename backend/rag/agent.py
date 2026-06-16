@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 
 from openai import OpenAI
 
@@ -180,6 +181,7 @@ def run_agent(
 
     for _ in range(MAX_ROUNDS):
         rounds += 1
+        _t = time.perf_counter()
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,
@@ -188,6 +190,7 @@ def run_agent(
             max_tokens=200,
             temperature=0.1,
         )
+        print(f"[TIMING]     agent round {rounds} LLM: {time.perf_counter() - _t:.2f}s", flush=True)
 
         msg = response.choices[0].message
         messages.append(msg.model_dump(exclude_none=True))
@@ -200,6 +203,7 @@ def run_agent(
             args = json.loads(tool_call.function.arguments)
             query = args["query"]
 
+            _ts = time.perf_counter()
             if fn_name == "search_tmep":
                 chunks = _search_tmep(query)
                 for c in chunks:
@@ -218,6 +222,7 @@ def run_agent(
             else:
                 tool_result = "Unknown tool"
 
+            print(f"[TIMING]       {fn_name} embed+query: {time.perf_counter() - _ts:.2f}s", flush=True)
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,

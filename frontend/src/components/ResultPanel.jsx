@@ -15,13 +15,15 @@ export default function ResultPanel({
 }) {
   const [debugOpen, setDebugOpen] = useState(false)
 
-  if (loading) {
+  // Only block on the first stage (/predict). Once `result` lands, render the
+  // verdict and let the slower stages (features, LLM) fill in as each finishes.
+  if (loading && !result) {
     return (
       <div className="result-loading">
         {liveMark && <div className="result-mark result-mark--dim">{liveMark}</div>}
         <div className="loading-row">
           <div className="loading-dots"><span /><span /><span /></div>
-          <p className="loading-text">Analyzing mark…</p>
+          <p className="loading-text">Classifying mark…</p>
         </div>
       </div>
     )
