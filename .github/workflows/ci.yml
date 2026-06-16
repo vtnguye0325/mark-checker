@@ -34,11 +34,16 @@ jobs:
       - name: Set up virtualenv
         run: |
           python3 -m venv backend/.venv
-          backend/.venv/bin/pip install --quiet --upgrade pip
-          backend/.venv/bin/pip install --quiet fastapi uvicorn httpx pytest pytest-asyncio slowapi python-multipart nltk openai
+          backend/.venv/bin/pip install --quiet --upgrade pip pip-tools
+          backend/.venv/bin/pip install --quiet -r backend/requirements.lock httpx pytest pytest-asyncio
 
-      - name: Run unit tests (no model required)
-        run: backend/.venv/bin/pytest tests/test_text_formatter.py -v
+      - name: Verify lockfile is up to date
+        run: |
+          backend/.venv/bin/pip-compile backend/requirements.txt --output-file /tmp/requirements.lock --no-header --strip-extras --quiet
+          diff backend/requirements.lock /tmp/requirements.lock || (echo "requirements.lock is stale — run pip-compile backend/requirements.txt --output-file backend/requirements.lock --no-header --strip-extras" && exit 1)
+
+      - name: Run tests
+        run: backend/.venv/bin/pytest tests/ -v
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
 
