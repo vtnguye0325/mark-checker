@@ -1,6 +1,22 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import lru_cache
+
+
+@dataclass(frozen=True)
+class FormattedMark:
+    """The eight-field bert_input_processed representation of a trademark input.
+
+    ``fields`` preserves individual field boundaries needed by leave-one-out
+    attribution. ``text`` is the joined string passed to the model tokenizer.
+    Both are derived from the same single call — callers never have to choose
+    between two formatter functions or check their consistency.
+    """
+
+    fields: tuple[str, ...]
+    text: str
+
 
 # NICE class descriptions extracted verbatim from nice_description_preprocessed
 # in the training data (modern_bert/data/split/*.pkl).
@@ -53,26 +69,23 @@ NICE_DESCRIPTIONS: dict[int, str] = {
 }
 
 
-def format_fields(
+def format_mark(
     mark: str,
     description: str,
     nice_class: int,
     translation: str = "",
     pseudo_mark: str = "",
-) -> list[str]:
-    """
-    Build the eight ordered fields of the bert_input_processed representation.
+) -> FormattedMark:
+    """Build the eight-field bert_input_processed representation of a trademark.
+
+    Returns a ``FormattedMark`` carrying both the individual ``fields`` (for
+    leave-one-out attribution in ``model_service.explain_one``) and the joined
+    ``text`` (for tokenizer input). A single call gives callers everything they
+    need; the field/string consistency invariant is enforced by construction.
 
     Field order (matches training):
       mark, description, translation, wordnet_flag, mark_length,
       nice_category, nice_description, pseudo_mark
-
-    Joining these with '. ' yields the exact training-time string (see
-    ``format_input``). Returning the parts lets callers that need per-field
-    boundaries — e.g. leave-one-out attribution in ``model_service.explain_one``
-    — avoid re-splitting the joined string on '. ', which is ambiguous because
-    user-supplied fields (mark/description/translation/pseudo_mark) can
-    themselves contain '. ' and would shift every field's alignment.
 
     Args:
         translation: Foreign-language translation of the mark. Leave empty if not applicable.
@@ -81,7 +94,7 @@ def format_fields(
     mark = mark.strip()
     description = description.strip()
 
-    return [
+    fields = (
         mark,
         description,
         _translation(translation),
@@ -90,18 +103,8 @@ def format_fields(
         f"NICE category is {nice_class}",
         NICE_DESCRIPTIONS.get(nice_class, ""),
         _pseudo_mark(pseudo_mark),
-    ]
-
-
-def format_input(
-    mark: str,
-    description: str,
-    nice_class: int,
-    translation: str = "",
-    pseudo_mark: str = "",
-) -> str:
-    """Builds the bert_input_processed string matching training-time format."""
-    return ". ".join(format_fields(mark, description, nice_class, translation, pseudo_mark))
+    )
+    return FormattedMark(fields=fields, text=". ".join(fields))
 
 
 def _translation(user_input: str) -> str:

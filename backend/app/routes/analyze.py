@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.limiter import ANALYZE_LIMIT, limiter
 from app.routes.explain import Attribution
 from app.services.llm_service import analyze_trademark
+from app.turnstile import verify_turnstile
 
+log = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -17,17 +21,24 @@ class AnalyzeRequest(BaseModel):
     label: str = Field(..., max_length=64)
     prob_distinctive: float = Field(..., ge=0.0, le=1.0)
     attributions: list[Attribution] = Field(..., max_length=16)
+    turnstile_token: str = Field("", max_length=2048)
 
 
 class AnalyzeResponse(BaseModel):
     analysis: str
+    sources: dict | None = None
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 @limiter.limit(ANALYZE_LIMIT)
-def analyze(request: Request, req: AnalyzeRequest) -> AnalyzeResponse:  # noqa: ARG001
+async def analyze(
+    request: Request,
+    req: AnalyzeRequest,
+    _: None = Depends(verify_turnstile),
+) -> AnalyzeResponse:
+    log.info("analyze request  mark=%r class=%d label=%s", req.mark, req.nice_class, req.label)
     try:
-        text = analyze_trademark(
+        result = analyze_trademark(
             mark=req.mark,
             description=req.description,
             nice_class=req.nice_class,
@@ -36,5 +47,9 @@ def analyze(request: Request, req: AnalyzeRequest) -> AnalyzeResponse:  # noqa: 
             attributions=[a.model_dump() for a in req.attributions],
         )
     except RuntimeError as exc:
+        log.error("analyze failed: %s", exc)
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    return AnalyzeResponse(analysis=text)
+    return AnalyzeResponse(
+        analysis=result["analysis"],
+        sources=result.get("sources"),
+    )

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.limiter import DEFAULT_LIMIT, limiter
 from app.services.model_service import explain_one
-from app.services.text_formatter import format_fields
+from app.services.text_formatter import format_mark
 
 router = APIRouter()
 
@@ -35,12 +35,12 @@ class ExplainResponse(BaseModel):
 @router.post("/explain", response_model=ExplainResponse)
 @limiter.limit(DEFAULT_LIMIT)
 def explain(request: Request, req: ExplainRequest) -> ExplainResponse:  # noqa: ARG001
-    fields = format_fields(
+    fmt = format_mark(
         mark=req.mark,
         description=req.description,
         nice_class=req.nice_class,
         translation=req.translation,
         pseudo_mark=req.pseudo_mark,
     )
-    result = explain_one(fields)
-    return ExplainResponse(**result, formatted_input=". ".join(fields))
+    result = explain_one(list(fmt.fields))
+    return ExplainResponse(**result, formatted_input=fmt.text)

@@ -14,79 +14,80 @@ export default function ResultPanel({
   llmData,
 }) {
   const [debugOpen, setDebugOpen] = useState(false)
-  const displayMark = result?.mark || liveMark
 
-  if (loading) {
+  // Only block on the first stage (/predict). Once `result` lands, render the
+  // verdict and let the slower stages (features, LLM) fill in as each finishes.
+  if (loading && !result) {
     return (
-      <div className="result-panel result-panel--loading">
-        <div className="result-placeholder">
-          {liveMark && <div className="result-mark result-mark--dim">{liveMark}</div>}
+      <div className="result-loading">
+        {liveMark && <div className="result-mark result-mark--dim">{liveMark}</div>}
+        <div className="loading-row">
           <div className="loading-dots"><span /><span /><span /></div>
-          <p className="loading-text">Analyzing mark…</p>
+          <p className="loading-text">Classifying mark…</p>
         </div>
       </div>
     )
   }
 
-  if (!result) {
-    return (
-      <div className="result-panel result-panel--empty">
-        <div className="result-placeholder">
-          {liveMark ? (
-            <>
-              <div className="result-mark result-mark--preview">{liveMark}</div>
-              <p className="placeholder-hint">Complete the form to analyze</p>
-            </>
-          ) : (
-            <>
-              <div className="placeholder-icon">§</div>
-              <p className="placeholder-hint">Enter a mark to begin analysis</p>
-            </>
-          )}
-        </div>
-      </div>
-    )
-  }
+  if (!result) return null
 
   const isDistinctive = result.label === 'distinctive'
-  return (
-    <div className={`result-panel result-panel--done ${isDistinctive ? 'result--distinctive' : 'result--not'}`}>
-      <div className="result-content">
-        <div className="result-mark">{displayMark}</div>
+  const displayMark = result.mark || liveMark
 
+  return (
+    <div className={`result-content ${isDistinctive ? 'result--distinctive' : 'result--not'}`}>
+      <div className="result-hero">
+        <div className="result-mark">{displayMark}</div>
         <div className={`verdict-badge ${isDistinctive ? 'verdict--distinctive' : 'verdict--not'}`}>
           <span className="verdict-icon">{isDistinctive ? '◆' : '◇'}</span>
           <span className="verdict-text">
             {isDistinctive ? 'Distinctive' : 'Not Distinctive'}
           </span>
         </div>
+      </div>
 
-        <div className="prob-section">
-          <ProbBar label="Distinctiveness" value={result.prob_distinctive} isMain={isDistinctive} />
-        </div>
+      <div className="prob-section">
+        <ProbBar label="Distinctiveness" value={result.prob_distinctive} isMain={isDistinctive} />
+      </div>
 
-        <AbercrombieSpectrum />
+      <AbercrombieSpectrum />
 
-        <div className="result-actions">
-          {explainLoading && (
-            <span className="explain-status">
-              <span className="btn-spinner btn-spinner--sm" /> Analyzing features…
-            </span>
-          )}
-        </div>
+      <div className="result-actions">
+        {explainLoading && (
+          <span className="explain-status">
+            <span className="btn-spinner btn-spinner--sm" /> Analyzing features…
+          </span>
+        )}
+      </div>
 
-        {explainData && <AttributionChart attributions={explainData.attributions} />}
+      {explainData && <AttributionChart attributions={explainData.attributions} />}
 
-        <LLMAnalysis loading={llmLoading} data={llmData} />
+      <LLMAnalysis loading={llmLoading} data={llmData} />
 
-        <div className="debug-section">
-          <button className="debug-toggle" onClick={() => setDebugOpen(o => !o)}>
-            {debugOpen ? '▲' : '▼'} Model Input
-          </button>
-          {debugOpen && (
-            <pre className="debug-text">{result.formatted_input?.replace(/\. /g, '\n')}</pre>
-          )}
-        </div>
+      <div className="debug-section">
+        <button className="debug-toggle" onClick={() => setDebugOpen(o => !o)}>
+          {debugOpen ? '▲' : '▼'} Model Input
+        </button>
+        {debugOpen && (
+          <div className="debug-blocks">
+            <div className="debug-block">
+              <div className="debug-block-label">Classifier Input</div>
+              <pre className="debug-text">{result.formatted_input?.replace(/\. /g, '\n')}</pre>
+            </div>
+            {llmData?.prompt && (
+              <>
+                <div className="debug-block">
+                  <div className="debug-block-label">LLM System Prompt</div>
+                  <pre className="debug-text">{llmData.prompt.system}</pre>
+                </div>
+                <div className="debug-block">
+                  <div className="debug-block-label">LLM User Message</div>
+                  <pre className="debug-text">{llmData.prompt.user}</pre>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

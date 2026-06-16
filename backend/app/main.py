@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+logging.basicConfig(
+    level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -47,5 +54,8 @@ app.include_router(analyze_router)
 
 
 @app.get("/health")
-def health() -> dict:
-    return {"status": "ok" if is_loaded() else "model_loading"}
+def health(response: Response) -> dict:
+    if not is_loaded():
+        response.status_code = 503
+        return {"status": "model_loading"}
+    return {"status": "ok"}

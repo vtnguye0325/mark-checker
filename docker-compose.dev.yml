@@ -3,15 +3,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      args:
-        HF_MODEL_ID: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
-        HF_TOKEN: ${HF_TOKEN:-}
     environment:
-      MODEL_DIR: /opt/model
+      MODEL_DIR: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
+      HF_TOKEN: ${HF_TOKEN:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
     volumes:
       - ./backend:/app
+      - hf-cache:/hf-cache
     command:
       [
         "uvicorn",
@@ -42,3 +41,4 @@ services:
 
 volumes:
   frontend_dev_node_modules:
+  hf-cache:

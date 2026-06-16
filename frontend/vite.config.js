@@ -8,6 +8,8 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '0.0.0.0',
+    // macOS + Docker volume mounts drop inotify events; poll so HMR actually fires.
+    watch: { usePolling: true, interval: 300 },
     proxy: {
       '/predict': apiTarget,
       '/explain': apiTarget,

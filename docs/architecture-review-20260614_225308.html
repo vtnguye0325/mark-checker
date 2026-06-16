@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Architecture Review — Mark Checker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  body { font-family: 'Inter', sans-serif; background: #0f0f13; color: #e2e2ea; }
+  code, pre { font-family: 'JetBrains Mono', monospace; }
+  .card { background: #18181f; border: 1px solid #2a2a35; border-radius: 12px; }
+  .card-inner { background: #1e1e28; border: 1px solid #2e2e3e; border-radius: 8px; }
+  .badge-strong { background: #1a3a1a; color: #4ade80; border: 1px solid #166534; }
+  .badge-worth { background: #2a2a0d; color: #facc15; border: 1px solid #713f12; }
+  .badge-speculative { background: #1e1e2e; color: #a78bfa; border: 1px solid #4c1d95; }
+  .mermaid { background: #1e1e28; border-radius: 8px; padding: 16px; }
+  .section-pill { display: inline-block; background: #2a1a40; color: #c084fc; border-radius: 6px; padding: 2px 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .top-rec { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid #3b5998; border-radius: 12px; }
+  .file-chip { display: inline-block; background: #1a1a2e; color: #818cf8; border: 1px solid #3730a3; border-radius: 4px; padding: 1px 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin: 2px; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<div class="border-b border-gray-800 bg-[#0d0d12]">
+  <div class="max-w-5xl mx-auto px-6 py-8">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Architecture Review</p>
+        <h1 class="text-3xl font-bold text-white">Mark Checker</h1>
+        <p class="text-gray-400 mt-2 max-w-xl">Trademark distinctiveness classifier — ModernBERT + DeepSeek LLM + React. Four deepening opportunities surfaced below.</p>
+      </div>
+      <div class="text-right text-sm text-gray-500">
+        <div>2026-06-14</div>
+        <div class="mt-1 text-xs">rag-system branch</div>
+      </div>
+    </div>
+
+    <!-- Summary pills -->
+    <div class="flex gap-3 mt-6">
+      <span class="badge-strong text-xs px-3 py-1 rounded-full font-medium">2 Strong</span>
+      <span class="badge-worth text-xs px-3 py-1 rounded-full font-medium">1 Worth Exploring</span>
+      <span class="badge-speculative text-xs px-3 py-1 rounded-full font-medium">1 Speculative</span>
+    </div>
+  </div>
+</div>
+
+<div class="max-w-5xl mx-auto px-6 py-10 space-y-8">
+
+<!-- ══════════════════════════════════════════════════════
+     CANDIDATE 1: FormattedMark unification
+     ══════════════════════════════════════════════════════ -->
+<div class="card p-6">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <span class="section-pill mb-3 block w-fit">Candidate 1</span>
+      <h2 class="text-xl font-semibold text-white">Unify <code class="text-purple-400 text-lg">format_input</code> / <code class="text-purple-400 text-lg">format_fields</code> into a single <code class="text-purple-400 text-lg">FormattedMark</code></h2>
+    </div>
+    <span class="badge-strong text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ml-4">Strong</span>
+  </div>
+
+  <!-- Files -->
+  <div class="mb-4">
+    <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Files</p>
+    <span class="file-chip">backend/app/services/text_formatter.py</span>
+    <span class="file-chip">backend/app/routes/predict.py</span>
+    <span class="file-chip">backend/app/routes/explain.py</span>
+    <span class="file-chip">tests/test_text_formatter.py</span>
+  </div>
+
+  <!-- Problem -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Problem — Shallow Dual Interface</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      <code>text_formatter</code> exports <strong>two separate entry points</strong> for the same underlying operation: <code>format_input()</code> returns a joined string (for <code>/predict</code>), and <code>format_fields()</code> returns a list (for <code>/explain</code>). The caller — the route — must know which to call, and must trust that they stay in sync. A test in <code>test_text_formatter.py</code> exists precisely to assert their consistency, which is the smell: <strong>an invariant encoded in a test that should be encoded in a type.</strong>
+    </p>
+    <p class="text-gray-300 text-sm leading-relaxed mt-2">
+      The root cause: field boundaries must be preserved for leave-one-out attribution (descriptions can contain <code>". "</code>), so re-splitting the joined string would be wrong. But instead of solving this once inside the module, it's split across two exported functions and a consistency test.
+    </p>
+    <p class="text-gray-400 text-xs mt-2 italic">Deletion test: delete <code>format_input</code>. Routes calling it fail. But the complexity doesn't vanish — it migrates: routes would call <code>format_fields</code> and join themselves. The invariant disappears from the module and reappears in every caller. That's the sign it belongs inside.</p>
+  </div>
+
+  <!-- Solution -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Solution</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      Replace both functions with a single <code>FormattedMark</code> value object. Callers call one function — <code>format_mark(mark, description, nice_class, ...)</code> — and get back a struct with both <code>.text</code> (joined string) and <code>.fields</code> (list). The seam is now a single type, not two functions. The consistency invariant is gone — it was never possible to have them diverge if there's only one call.
+    </p>
+  </div>
+
+  <!-- Benefits -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Benefits — Locality &amp; Leverage</p>
+    <ul class="text-gray-300 text-sm space-y-1 list-disc list-inside">
+      <li><strong>Locality:</strong> the field/string duality is a single concept; it now lives in one place.</li>
+      <li><strong>Leverage:</strong> routes call one function and get everything they need; the consistency test is deleted.</li>
+      <li><strong>Testability:</strong> test the shape of <code>FormattedMark</code> once; route tests become trivially simple.</li>
+      <li><strong>RAG-ready:</strong> when RAG retrieval needs to pass formatted text to the retriever, it takes <code>FormattedMark.text</code> — no decisions to make.</li>
+    </ul>
+  </div>
+
+  <!-- Diagram -->
+  <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Before / After</p>
+  <div class="grid grid-cols-2 gap-4">
+    <!-- Before -->
+    <div>
+      <p class="text-xs text-red-400 font-medium mb-2 uppercase tracking-wider">Before — shallow, split</p>
+      <div class="card-inner p-4">
+        <div class="mermaid text-sm">
+graph TD
+  PR["/predict route"] -->|"format_input()"| TF["text_formatter"]
+  EX["/explain route"] -->|"format_fields()"| TF
+  TF -->|"str"| PR
+  TF -->|"list[str]"| EX
+  T["⚠ consistency test"] -..->|"asserts str == join(list)"| TF
+  style T fill:#3a1a1a,stroke:#7f1d1d,color:#fca5a5
+  style TF fill:#2a1a2a,stroke:#6b21a8,color:#d8b4fe
+        </div>
+      </div>
+    </div>
+    <!-- After -->
+    <div>
+      <p class="text-xs text-green-400 font-medium mb-2 uppercase tracking-wider">After — deep, unified</p>
+      <div class="card-inner p-4">
+        <div class="mermaid text-sm">
+graph TD
+  PR["/predict route"] -->|"format_mark()"| TF["text_formatter"]
+  EX["/explain route"] -->|"format_mark()"| TF
+  TF -->|"FormattedMark{.text, .fields}"| PR
+  TF -->|"FormattedMark{.text, .fields}"| EX
+  style TF fill:#1a2a1a,stroke:#166534,color:#86efac
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CANDIDATE 2: useTrademarkPipeline hook
+     ══════════════════════════════════════════════════════ -->
+<div class="card p-6">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <span class="section-pill mb-3 block w-fit">Candidate 2</span>
+      <h2 class="text-xl font-semibold text-white">Extract pipeline orchestration into <code class="text-purple-400 text-lg">useTrademarkPipeline</code></h2>
+    </div>
+    <span class="badge-strong text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ml-4">Strong</span>
+  </div>
+
+  <!-- Files -->
+  <div class="mb-4">
+    <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Files</p>
+    <span class="file-chip">frontend/src/App.jsx</span>
+    <span class="file-chip">frontend/src/hooks/useTrademarkPipeline.js (new)</span>
+  </div>
+
+  <!-- Problem -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Problem — Business Logic Entangled in a React Component</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      <code>App.jsx</code> holds <strong>6+ state variables</strong> and directly orchestrates the three-step predict → explain → analyze pipeline with chained <code>.then()</code> calls. This is business-layer logic — sequencing, error recovery, cancellation — embedded in a presentation component. The seam between "how the UI looks" and "how the pipeline runs" is non-existent.
+    </p>
+    <p class="text-gray-300 text-sm leading-relaxed mt-2">
+      The result: you cannot test pipeline sequencing (e.g., "if /explain fails, /analyze is skipped") without rendering a React component. The AbortController setup, the loading flags, and the chained API calls are interleaved with JSX rendering — <strong>no locality, low leverage.</strong>
+    </p>
+    <p class="text-gray-400 text-xs mt-2 italic">Deletion test: remove the pipeline orchestration from App.jsx. The complexity re-appears at every call site (or nowhere, meaning the app stops working). It earns its keep.</p>
+  </div>
+
+  <!-- Solution -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Solution</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      Extract all sequencing logic into a <code>useTrademarkPipeline()</code> custom hook. The hook owns: AbortController lifecycle, the three fetch calls in order, all loading/error state, and result accumulation. <code>App.jsx</code> calls <code>const { submit, state } = useTrademarkPipeline()</code> and passes state down as props. The hook has no JSX. The component has no fetch logic.
+    </p>
+  </div>
+
+  <!-- Benefits -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Benefits — Locality &amp; Leverage</p>
+    <ul class="text-gray-300 text-sm space-y-1 list-disc list-inside">
+      <li><strong>Locality:</strong> all pipeline logic — sequencing, cancellation, error handling — lives in one file.</li>
+      <li><strong>Leverage:</strong> <code>App.jsx</code> shrinks from 157 lines to ~60. State props become a single <code>state</code> object.</li>
+      <li><strong>Testability:</strong> test the hook with <code>renderHook</code> — no component rendering needed. Test "explain fails → analyze skipped" purely in JS.</li>
+      <li><strong>RAG-ready:</strong> when the pipeline adds a retrieval step, it's one place to change.</li>
+    </ul>
+  </div>
+
+  <!-- Diagram — cross-section style -->
+  <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Before / After</p>
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <p class="text-xs text-red-400 font-medium mb-2 uppercase tracking-wider">Before — flat, mixed concerns</p>
+      <div class="card-inner p-4 space-y-1">
+        <!-- Mass diagram: layers stacked in App.jsx -->
+        <div class="rounded bg-[#3a1a1a] border border-red-900 px-3 py-2 text-xs text-red-300">App.jsx renders JSX</div>
+        <div class="rounded bg-[#3a1a1a] border border-red-900 px-3 py-2 text-xs text-red-300">App.jsx manages 6 state vars</div>
+        <div class="rounded bg-[#3a1a1a] border border-red-900 px-3 py-2 text-xs text-red-300">App.jsx chains predict → explain → analyze</div>
+        <div class="rounded bg-[#3a1a1a] border border-red-900 px-3 py-2 text-xs text-red-300">App.jsx owns AbortController</div>
+        <div class="rounded bg-[#3a1a1a] border border-red-900 px-3 py-2 text-xs text-red-300">App.jsx handles errors inline</div>
+        <p class="text-red-500 text-xs text-center mt-2">⚠ cannot test sequencing without rendering</p>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs text-green-400 font-medium mb-2 uppercase tracking-wider">After — clean seam</p>
+      <div class="card-inner p-4 space-y-2">
+        <div class="rounded bg-[#1a2a1a] border border-green-900 px-3 py-2 text-xs text-green-300">App.jsx renders JSX only</div>
+        <div class="rounded bg-[#1a2a3a] border border-blue-900 px-3 py-2 text-xs text-blue-300">useTrademarkPipeline: state vars</div>
+        <div class="rounded bg-[#1a2a3a] border border-blue-900 px-3 py-2 text-xs text-blue-300">useTrademarkPipeline: predict→explain→analyze</div>
+        <div class="rounded bg-[#1a2a3a] border border-blue-900 px-3 py-2 text-xs text-blue-300">useTrademarkPipeline: AbortController + errors</div>
+        <p class="text-green-400 text-xs text-center mt-2">✓ hook testable with renderHook, no JSX</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CANDIDATE 3: LLMAnalysis parser extraction
+     ══════════════════════════════════════════════════════ -->
+<div class="card p-6">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <span class="section-pill mb-3 block w-fit">Candidate 3</span>
+      <h2 class="text-xl font-semibold text-white">Extract <code class="text-purple-400 text-lg">parseLegalAnalysis</code> from <code class="text-purple-400 text-lg">LLMAnalysis.jsx</code></h2>
+    </div>
+    <span class="badge-worth text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ml-4">Worth Exploring</span>
+  </div>
+
+  <!-- Files -->
+  <div class="mb-4">
+    <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Files</p>
+    <span class="file-chip">frontend/src/components/llm/LLMAnalysis.jsx</span>
+    <span class="file-chip">frontend/src/lib/parseLegalAnalysis.js (new)</span>
+  </div>
+
+  <!-- Problem -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Problem — Parser Buried Inside a Renderer</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      <code>LLMAnalysis.jsx</code> at 178 lines is the largest frontend file. But almost all of that mass is <strong>parsing logic</strong>, not rendering logic: <code>parseSections()</code> splits on markdown headers, then per-section parsers extract verdict tiers, spectrum bullets, and signal blocks. This is domain logic — it understands the structure of a legal analysis response — and it's trapped inside a React component.
+    </p>
+    <p class="text-gray-300 text-sm leading-relaxed mt-2">
+      The parser is untestable without rendering. If DeepSeek's output format changes, you find out when the UI breaks in a browser — not from a failing unit test.
+    </p>
+  </div>
+
+  <!-- Solution -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Solution</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      Extract <code>parseLegalAnalysis(rawText)</code> as a pure function in <code>frontend/src/lib/parseLegalAnalysis.js</code>. It returns a structured object: <code>{ sections: [{type, title, content, parsed}] }</code>. <code>LLMAnalysis.jsx</code> calls the parser and renders the result — no parsing logic remains in JSX. The parser can be unit-tested with plain strings; the component becomes thin.
+    </p>
+  </div>
+
+  <!-- Benefits -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Benefits — Locality &amp; Leverage</p>
+    <ul class="text-gray-300 text-sm space-y-1 list-disc list-inside">
+      <li><strong>Locality:</strong> all LLM output parsing in one JS file; rendering in another.</li>
+      <li><strong>Testability:</strong> write tests like <code>expect(parseLegalAnalysis(sample)).toMatchObject({sections: [...]})</code> — no React needed.</li>
+      <li><strong>Leverage:</strong> <code>LLMAnalysis.jsx</code> shrinks to ~50 lines. New section types need changes in one parser file only.</li>
+    </ul>
+  </div>
+
+  <!-- Diagram -->
+  <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Before / After</p>
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <p class="text-xs text-red-400 font-medium mb-2 uppercase tracking-wider">Before</p>
+      <div class="card-inner p-4">
+        <div class="mermaid text-sm">
+graph TD
+  R["LLMAnalysis.jsx\n178 lines"] --> P["parseSections()"]
+  R --> V["VerdictCard()"]
+  R --> S["SpectrumCard()"]
+  R --> SG["SignalsCard()"]
+  R --> A["ActionCard()"]
+  style R fill:#3a1a1a,stroke:#7f1d1d,color:#fca5a5
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs text-green-400 font-medium mb-2 uppercase tracking-wider">After</p>
+      <div class="card-inner p-4">
+        <div class="mermaid text-sm">
+graph TD
+  PL["parseLegalAnalysis.js\npure fn, testable"] -->|"ParsedAnalysis"| R["LLMAnalysis.jsx\n~50 lines, renders only"]
+  R --> V["VerdictCard()"]
+  R --> S["SpectrumCard()"]
+  R --> SG["SignalsCard()"]
+  R --> A["ActionCard()"]
+  style PL fill:#1a2a3a,stroke:#1d4ed8,color:#93c5fd
+  style R fill:#1a2a1a,stroke:#166534,color:#86efac
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     CANDIDATE 4: Model Service split
+     ══════════════════════════════════════════════════════ -->
+<div class="card p-6">
+  <div class="flex items-start justify-between mb-4">
+    <div>
+      <span class="section-pill mb-3 block w-fit">Candidate 4</span>
+      <h2 class="text-xl font-semibold text-white">Split <code class="text-purple-400 text-lg">model_service</code> into <code class="text-purple-400 text-lg">ModelLoader</code> + <code class="text-purple-400 text-lg">Inference</code></h2>
+    </div>
+    <span class="badge-speculative text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ml-4">Speculative</span>
+  </div>
+
+  <!-- Files -->
+  <div class="mb-4">
+    <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Files</p>
+    <span class="file-chip">backend/app/services/model_service.py</span>
+    <span class="file-chip">tests/test_model_service.py</span>
+  </div>
+
+  <!-- Problem -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Problem — Lifecycle Mixed with Computation</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      <code>model_service.py</code> does three things: (1) resolves the model directory from env vars, (2) loads and caches the tokenizer + model + device via <code>@lru_cache</code>, (3) runs inference (<code>predict_one</code>, <code>explain_one</code>, <code>_score_batch</code>). The loading concern and the inference concern share a module, with inference functions calling <code>_load()</code> internally.
+    </p>
+    <p class="text-gray-300 text-sm leading-relaxed mt-2">
+      This makes it hard to test loading failure scenarios (model dir missing, CUDA unavailable) without running inference. Conversely, mocking <code>_load</code> in inference tests is awkward.
+    </p>
+    <p class="text-gray-400 text-xs mt-2 italic">Deletion test: the current design works well at this scale. The friction is mild — hence Speculative. Consider this if the RAG layer adds a second model (e.g., an embedder), at which point the lifecycle pattern would need to generalize.</p>
+  </div>
+
+  <!-- Solution -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Solution</p>
+    <p class="text-gray-300 text-sm leading-relaxed">
+      Introduce a <code>ModelLoader</code> protocol / class that owns lifecycle (<code>load()</code>, <code>is_loaded()</code>, <code>device</code>). <code>Inference</code> takes a loaded model as a dependency rather than calling <code>_load()</code> directly. The seam between loading and computing becomes explicit. This mirrors what the RAG plan will likely need for its embedding model.
+    </p>
+  </div>
+
+  <!-- Benefits -->
+  <div class="card-inner p-4 mb-4">
+    <p class="text-xs text-gray-400 uppercase tracking-widest mb-2 font-medium">Benefits</p>
+    <ul class="text-gray-300 text-sm space-y-1 list-disc list-inside">
+      <li><strong>Locality:</strong> loading errors vs. inference errors are distinct concerns in distinct places.</li>
+      <li><strong>Testability:</strong> inject a fake loaded model to test <code>predict_one</code>/<code>explain_one</code> without I/O.</li>
+      <li><strong>Leverage:</strong> low — the current LRU cache approach is simpler. Recommend deferring until a second model is added.</li>
+    </ul>
+  </div>
+
+  <!-- Diagram -->
+  <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Before / After</p>
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <p class="text-xs text-red-400 font-medium mb-2 uppercase tracking-wider">Before</p>
+      <div class="card-inner p-4">
+        <div class="mermaid text-sm">
+graph TD
+  MS["model_service.py"] --> LD["_load() – lifecycle"]
+  MS --> PI["predict_one() – inference"]
+  MS --> EX["explain_one() – inference"]
+  PI -->|calls| LD
+  EX -->|calls| LD
+  style MS fill:#3a1a1a,stroke:#7f1d1d,color:#fca5a5
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs text-green-400 font-medium mb-2 uppercase tracking-wider">After</p>
+      <div class="card-inner p-4">
+        <div class="mermaid text-sm">
+graph TD
+  ML["ModelLoader\n_load(), is_loaded()"] -->|"loaded model"| INF["Inference\npredict_one(), explain_one()"]
+  style ML fill:#1a2a3a,stroke:#1d4ed8,color:#93c5fd
+  style INF fill:#1a2a1a,stroke:#166534,color:#86efac
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TOP RECOMMENDATION
+     ══════════════════════════════════════════════════════ -->
+<div class="top-rec p-8">
+  <p class="text-xs text-blue-300 uppercase tracking-widest mb-2 font-semibold">Top Recommendation</p>
+  <h2 class="text-2xl font-bold text-white mb-4">Start with Candidate 1 — <code class="text-purple-300">FormattedMark</code></h2>
+
+  <div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="card-inner p-4 text-center">
+      <p class="text-2xl font-bold text-white">~20 lines</p>
+      <p class="text-xs text-gray-400 mt-1">code to add</p>
+    </div>
+    <div class="card-inner p-4 text-center">
+      <p class="text-2xl font-bold text-white">1 test deleted</p>
+      <p class="text-xs text-gray-400 mt-1">the consistency test</p>
+    </div>
+    <div class="card-inner p-4 text-center">
+      <p class="text-2xl font-bold text-white">3 callers simplified</p>
+      <p class="text-xs text-gray-400 mt-1">/predict, /explain, RAG</p>
+    </div>
+  </div>
+
+  <p class="text-gray-300 text-sm leading-relaxed mb-4">
+    <strong>Why first:</strong> It's the smallest change with the highest signal-to-noise. The consistency test is a red flag — it exists because two interfaces encode one invariant, and that invariant is invisible to callers. Turning it into a type costs ~20 lines and deletes complexity. It also directly unblocks the RAG initiative: when the retriever needs to embed a formatted trademark string, it calls <code>format_mark().text</code> — one call, no decision about which formatter function to use.
+  </p>
+
+  <p class="text-gray-300 text-sm leading-relaxed">
+    <strong>After that:</strong> Candidate 2 (<code>useTrademarkPipeline</code>) is the biggest quality-of-life improvement — it pays for itself the first time you add a fourth pipeline step (RAG retrieval call). Candidate 3 is a good housekeeping win. Candidate 4 is best deferred until the RAG embedder lands.
+  </p>
+</div>
+
+</div>
+
+<div class="text-center py-8 text-gray-600 text-xs border-t border-gray-800">
+  Generated by Claude Code &nbsp;·&nbsp; mark-checker / rag-system &nbsp;·&nbsp; 2026-06-14
+</div>
+
+<script>mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#1e1e28', primaryTextColor: '#e2e2ea', primaryBorderColor: '#3b3b4f', lineColor: '#6b6b80', secondaryColor: '#2a2a35', tertiaryColor: '#18181f' } });</script>
+</body>
+</html>

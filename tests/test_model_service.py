@@ -6,12 +6,11 @@ import math
 
 from app.services import model_service
 from app.services.model_service import explain_one, predict_one
-from app.services.text_formatter import format_input
+from app.services.text_formatter import format_mark
 
 
 def _predict(mark: str, description: str, nice_class: int) -> dict:
-    text = format_input(mark, description, nice_class)
-    return predict_one(text)
+    return predict_one(format_mark(mark, description, nice_class).text)
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +84,7 @@ _FIELDS = [
 def test_explain_one_aligns_each_field_despite_periods(monkeypatch):
     # Baseline + one masked variant per field. Give each masked variant a
     # distinct score so a misalignment would be detectable.
-    def fake_score_batch(texts, model_dir):
+    def fake_score_batch(texts, handle):
         assert len(texts) == len(_FIELDS) + 1  # baseline + 8 masks, no over-splitting
         return [0.90] + [0.01 * i for i in range(len(texts) - 1)]
 
@@ -105,7 +104,7 @@ def test_explain_one_masks_each_field_independently(monkeypatch):
     # Record what gets masked: the i-th masked text must blank exactly field i.
     seen = []
 
-    def fake_score_batch(texts, model_dir):
+    def fake_score_batch(texts, handle):
         seen.extend(texts)
         return [0.5] * len(texts)
 
