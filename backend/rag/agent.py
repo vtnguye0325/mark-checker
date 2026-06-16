@@ -199,7 +199,8 @@ def run_agent(
             max_tokens=200,
             temperature=0.1,
         )
-        log.debug("agent round %d LLM: %.2fs", rounds, time.perf_counter() - _t)
+        log.info("agent round %d LLM: %.2fs  tool_calls=%d", rounds, time.perf_counter() - _t,
+                 len(msg.tool_calls) if msg.tool_calls else 0)
 
         msg = response.choices[0].message
         messages.append(msg.model_dump(exclude_none=True))
@@ -240,7 +241,7 @@ def run_agent(
                 tool_result = "Unknown tool"
 
             elapsed = time.perf_counter() - _ts
-            log.debug("%s embed+query: %.2fs", fn_name, elapsed)
+            log.info("%s embed+query: %.2fs  result=%s", fn_name, elapsed, tool_result)
             messages.append(
                 {
                     "role": "tool",

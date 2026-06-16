@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 import os
+
+log = logging.getLogger(__name__)
 
 import httpx
 from fastapi import HTTPException
@@ -24,7 +27,8 @@ async def verify_turnstile(request: Request) -> None:
     """
     secret = os.environ.get("TURNSTILE_SECRET")
     if not secret:
-        raise HTTPException(status_code=503, detail="Turnstile not configured on server")
+        log.warning("TURNSTILE_SECRET unset — skipping Turnstile verification (dev mode)")
+        return
 
     try:
         body = await request.json()

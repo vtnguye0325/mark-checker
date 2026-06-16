@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
@@ -8,6 +9,8 @@ from typing import Any
 
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+log = logging.getLogger(__name__)
 
 _DEFAULT_MODEL_DIR = str(Path(__file__).resolve().parents[2] / "model")
 
@@ -44,7 +47,9 @@ def warm_up() -> None:
     Called from the FastAPI lifespan startup; a load failure here crashes the
     worker at boot (surfaced via /health returning 503) instead of on a user's first request.
     """
+    log.info("warm_up: loading model from %s", get_model_dir())
     _load(get_model_dir())
+    log.info("warm_up: model ready on %s", _load(get_model_dir()).device)
 
 
 def is_loaded() -> bool:
@@ -57,7 +62,9 @@ def _load(model_dir: str) -> ModelHandle:
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     os.environ.setdefault("TORCH_COMPILE_DISABLE", "1")
 
+    log.info("_load: tokenizer from %s", model_dir)
     tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True, trust_remote_code=True)
+    log.info("_load: loading model weights")
     try:
         model = AutoModelForSequenceClassification.from_pretrained(
             model_dir,
@@ -74,8 +81,10 @@ def _load(model_dir: str) -> ModelHandle:
         )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info("_load: moving model to %s", device)
     model.to(device)
     model.eval()
+    log.info("_load: done — %d parameters", sum(p.numel() for p in model.parameters()))
     return ModelHandle(tokenizer=tokenizer, model=model, device=device)
 
 

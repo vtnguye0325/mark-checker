@@ -32,16 +32,16 @@ ENV HF_HOME=/hf-cache
 #   snapshot_download('BAAI/bge-base-en-v1.5', revision='<sha>', local_dir=...)
 # Get the SHA once: python -c "from huggingface_hub import model_info; print(model_info('BAAI/bge-base-en-v1.5').sha)"
 ENV BGE_DIR=/opt/models/bge-base-en-v1.5
-RUN python -c "
+RUN python3 <<'PYEOF'
 from huggingface_hub import snapshot_download
 snapshot_download('BAAI/bge-base-en-v1.5', local_dir='/opt/models/bge-base-en-v1.5')
 print('BGE model baked to /opt/models/bge-base-en-v1.5')
-"
+PYEOF
 
 # Seed the TTAB collection with landmark cases (bundled JSON; no external data
 # required). The chroma_db is baked into the image layer; Docker seeds the
 # named volume from it on first mount so a fresh deploy has a working baseline.
-RUN python -c "
+RUN python3 <<'PYEOF'
 import sys; sys.path.insert(0, '/app')
 from rag.store import get_ttab_collection
 from rag.embedder import embed_documents
@@ -56,7 +56,7 @@ col.upsert(
     metadatas=[c['metadata'] for c in chunks],
 )
 print(f'Seeded {len(chunks)} landmark chunks')
-"
+PYEOF
 
 EXPOSE 8000
 
