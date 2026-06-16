@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import contextlib
+import os
 from pathlib import Path
 
 import chromadb
 
-_CHROMA_PATH = Path(__file__).parent / "chroma_db"
+_CHROMA_PATH = Path(os.getenv("CHROMA_PATH", str(Path(__file__).parent / "chroma_db")))
 
 _client: chromadb.PersistentClient | None = None
 

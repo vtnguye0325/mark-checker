@@ -310,6 +310,62 @@ sudo systemctl start cloudflared
 
 If installing the service with `sudo`, pass `--config` explicitly — otherwise systemd looks in `/root/.cloudflared/`.
 
+## RAG / ChromaDB
+
+The `/analyze` endpoint grounds DeepSeek responses in real legal doctrine using a ChromaDB vector store (embedded mode — no separate server or exposed port). The database holds three collections: `tmep` (TMEP sections), `ttab` (TTAB decisions), and `statute` (Lanham Act / 37 CFR).
+
+**The index is not baked into the Docker image.** You must build it on the host before starting the stack. The compose file bind-mounts `./data/chroma` into the container at `/data/chroma`, so the index persists across restarts and redeploys without rebuilding the image.
+
+### First deploy (required before `docker compose up`)
+
+Build the baseline index (landmark TTAB cases only — no external data files needed):
+
+```bash
+CHROMA_PATH=./data/chroma python scripts/build_rag_index.py
+```
+
+This writes the index to `./data/chroma/` on the host. The container reads it via the bind mount. Start the stack after:
+
+```bash
+docker compose up -d
+```
+
+### Full index (optional — adds TMEP, TTAB bulk, Lanham Act)
+
+Source data files are not committed to the repo — obtain them separately and place under `backend/rag/data/`.
+
+```bash
+CHROMA_PATH=./data/chroma python scripts/build_rag_index.py \
+  --tmep backend/rag/data/tmep_2026.zip \
+  --ttab backend/rag/data/ttab_bulk.zip \
+  --lanham backend/rag/data/tmlaw.pdf
+```
+
+### Rebuilding from scratch
+
+```bash
+docker compose down
+rm -rf ./data/chroma
+CHROMA_PATH=./data/chroma python scripts/build_rag_index.py --reset \
+  --tmep backend/rag/data/tmep_2026.zip \
+  --ttab backend/rag/data/ttab_bulk.zip \
+  --lanham backend/rag/data/tmlaw.pdf
+docker compose up -d
+```
+
+### Evaluating retrieval quality
+
+```bash
+CHROMA_PATH=./data/chroma python scripts/eval_rag_retrieval.py
+```
+
+### Notes
+
+- Embedded mode (`chromadb.PersistentClient`) — no HTTP server, no port to expose.
+- chromadb is pinned to `==1.5.9` in `requirements.txt`; major versions have breaking on-disk format changes — upgrade intentionally and rebuild the index after.
+- `/analyze` returns `503` (not `500`) when `DEEPSEEK_API_KEY` is missing.
+- `CHROMA_PATH` defaults to `backend/rag/chroma_db/` for local (non-Docker) runs.
+
 ## Running the backend
 
 ```bash
