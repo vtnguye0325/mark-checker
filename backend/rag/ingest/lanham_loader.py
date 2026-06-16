@@ -3,8 +3,8 @@ Parse tmlaw.pdf (USPTO "U.S. Trademark Law — Rules of Practice & Federal Statu
 → section-level chunks for the statute ChromaDB collection.
 
 Structure:
-  pp. 1–220: 37 CFR Trademark Rules of Practice (Parts 2, 7, 11, etc.)
-  pp. 221–296: Lanham Act / 15 U.S.C. federal statutes
+  pp. 1-220: 37 CFR Trademark Rules of Practice (Parts 2, 7, 11, etc.)
+  pp. 221-296: Lanham Act / 15 U.S.C. federal statutes
 
 Header formats in the PDF body (no leading whitespace — TOC lines are indented 8+):
   CFR:     § 2.35  Adding, deleting, or substituting bases.
@@ -28,9 +28,7 @@ _CFR_RE = re.compile(r"^§ (\d+\.\d+)\s{2,}(.+)$")
 # Statute body headers: "§ 1 (15 U.S.C. §                               1051).  Title"
 # \s* handles whitespace corruption in USC citation numbers.
 # \)?\.? — closing paren and period both optional (§16A/§16B truncated-line edge cases).
-_STATUTE_RE = re.compile(
-    r"^§ (\d+[A-Z]?)\s+\(15 U\.S\.C\. §\s*(\d+[a-z]*)\)?\.?\s*(.*)"
-)
+_STATUTE_RE = re.compile(r"^§ (\d+[A-Z]?)\s+\(15 U\.S\.C\. §\s*(\d+[a-z]*)\)?\.?\s*(.*)")
 
 
 def _sanitize_id(s: str) -> str:
@@ -112,8 +110,9 @@ def load_lanham_chunks(pdf_path: str | Path) -> list[dict]:
     pdf_path = Path(pdf_path)
     pages = _extract_pages(pdf_path)
     sections = _parse_sections(pages)
-    print(f"  Found {len(sections)} sections ({sum(1 for s in sections if s['doc_type'] == 'cfr_rule')} CFR, "
-          f"{sum(1 for s in sections if s['doc_type'] == 'statute')} statute)")
+    n_cfr = sum(1 for s in sections if s["doc_type"] == "cfr_rule")
+    n_statute = sum(1 for s in sections if s["doc_type"] == "statute")
+    print(f"  Found {len(sections)} sections ({n_cfr} CFR, {n_statute} statute)")
 
     chunks = []
     for sec in sections:
@@ -123,17 +122,19 @@ def load_lanham_chunks(pdf_path: str | Path) -> list[dict]:
         full_text = f"{sec['citation']} — {sec['title']}\n\n{body}"
         for i, chunk_text in enumerate(split_text(full_text)):
             chunk_id = f"statute-{_sanitize_id(sec['section'])}-{i}"
-            chunks.append({
-                "id": chunk_id,
-                "text": chunk_text,
-                "metadata": {
-                    "doc_type": sec["doc_type"],
-                    "section_number": sec["section"],
-                    "section_title": sec["title"],
-                    "citation": sec["citation"],
-                    "source": "statute",
-                    "page": sec["page"],
-                },
-            })
+            chunks.append(
+                {
+                    "id": chunk_id,
+                    "text": chunk_text,
+                    "metadata": {
+                        "doc_type": sec["doc_type"],
+                        "section_number": sec["section"],
+                        "section_title": sec["title"],
+                        "citation": sec["citation"],
+                        "source": "statute",
+                        "page": sec["page"],
+                    },
+                }
+            )
 
     return chunks

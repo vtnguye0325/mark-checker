@@ -52,3 +52,4 @@ logs/
 skills-lock.json
 chroma_db/
 backend/rag/data/
+graphify-out

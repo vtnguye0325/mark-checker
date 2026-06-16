@@ -17,6 +17,7 @@ class FormattedMark:
     fields: tuple[str, ...]
     text: str
 
+
 # NICE class descriptions extracted verbatim from nice_description_preprocessed
 # in the training data (modern_bert/data/split/*.pkl).
 NICE_DESCRIPTIONS: dict[int, str] = {

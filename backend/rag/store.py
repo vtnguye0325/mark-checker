@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import chromadb
+import contextlib
 from pathlib import Path
+
+import chromadb
 
 _CHROMA_PATH = Path(__file__).parent / "chroma_db"
 
@@ -16,27 +18,19 @@ def _get_client() -> chromadb.PersistentClient:
 
 
 def get_tmep_collection() -> chromadb.Collection:
-    return _get_client().get_or_create_collection(
-        "tmep", metadata={"hnsw:space": "cosine"}
-    )
+    return _get_client().get_or_create_collection("tmep", metadata={"hnsw:space": "cosine"})
 
 
 def get_ttab_collection() -> chromadb.Collection:
-    return _get_client().get_or_create_collection(
-        "ttab", metadata={"hnsw:space": "cosine"}
-    )
+    return _get_client().get_or_create_collection("ttab", metadata={"hnsw:space": "cosine"})
 
 
 def get_statute_collection() -> chromadb.Collection:
-    return _get_client().get_or_create_collection(
-        "statute", metadata={"hnsw:space": "cosine"}
-    )
+    return _get_client().get_or_create_collection("statute", metadata={"hnsw:space": "cosine"})
 
 
 def reset_collections() -> None:
     client = _get_client()
     for name in ("tmep", "ttab", "statute"):
-        try:
+        with contextlib.suppress(Exception):
             client.delete_collection(name)
-        except Exception:
-            pass

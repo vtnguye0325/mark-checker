@@ -35,7 +35,9 @@ def format_context(retrieval_result: dict) -> str:
     offset = len(retrieval_result["tmep"]) + len(statute_chunks)
     for i, chunk in enumerate(retrieval_result["ttab"], offset + 1):
         meta = chunk["metadata"]
-        prefix = f"{meta.get('mark', '')} (NC{meta.get('nice_class', '')}, {meta.get('outcome', '')})"
+        prefix = (
+            f"{meta.get('mark', '')} (NC{meta.get('nice_class', '')}, {meta.get('outcome', '')})"
+        )
         lines.append(f"[{i}] {prefix} — {chunk['text']}")
 
     return "\n".join(lines)

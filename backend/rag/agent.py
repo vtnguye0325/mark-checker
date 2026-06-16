@@ -9,15 +9,18 @@ Stops early when agent returns without a tool call.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 
 from openai import OpenAI
 
 from rag.embedder import embed_query
-from rag.store import get_tmep_collection, get_ttab_collection, get_statute_collection
+from rag.store import get_statute_collection, get_tmep_collection, get_ttab_collection
 
-MAX_ROUNDS = 4
+log = logging.getLogger(__name__)
+
+MAX_ROUNDS = 2
 _TMEP_N = int(os.environ.get("RAG_TMEP_N_RESULTS", "3"))
 _TTAB_N = int(os.environ.get("RAG_TTAB_N_RESULTS", "2"))
 _STATUTE_N = int(os.environ.get("RAG_STATUTE_N_RESULTS", "2"))
@@ -29,7 +32,7 @@ _TOOLS = [
             "name": "search_tmep",
             "description": (
                 "Search the Trademark Manual of Examining Procedure (TMEP) for relevant "
-                "doctrine sections. Prioritize §§1209–1213 for distinctiveness questions. "
+                "doctrine sections. Prioritize §§1209-1213 for distinctiveness questions. "
                 "Use precise Abercrombie vocabulary in the query."
             ),
             "parameters": {
@@ -107,13 +110,12 @@ primary statutory authority, and TTAB decisions for a distinctiveness analysis u
 the Abercrombie spectrum.
 
 Strategy:
-1. Call search_tmep with a query targeting the most likely doctrine section for this mark.
-2. If the results cover a different doctrine than expected, call search_tmep again with a \
-refined query.
-3. Call search_statute once to retrieve the primary statutory authority (Lanham Act or \
-37 CFR) underlying the relevant refusal ground.
-4. Call search_ttab once to find an illustrative case.
-5. Stop — do not call more than 4 tools total.
+- In your FIRST response, call all three tools in parallel: search_tmep (doctrine), \
+search_statute (primary law), search_ttab (illustrative case).
+- If and only if the tmep results are clearly off-target, call search_tmep once more \
+with a refined query. Do NOT repeat search_statute or search_ttab.
+- After your first response (or one refinement at most), return your final answer \
+with NO further tool calls. Do not loop.
 
 Use exact trademark vocabulary: fanciful, arbitrary, suggestive, merely descriptive, \
 generic, acquired distinctiveness, secondary meaning, primary significance test, \
@@ -150,11 +152,13 @@ def _search_tmep(query: str) -> list[dict]:
     results = col.query(query_embeddings=[emb], n_results=_TMEP_N)
     chunks = []
     for i, doc in enumerate(results["documents"][0]):
-        chunks.append({
-            "id": results["ids"][0][i],
-            "text": doc,
-            "metadata": results["metadatas"][0][i],
-        })
+        chunks.append(
+            {
+                "id": results["ids"][0][i],
+                "text": doc,
+                "metadata": results["metadatas"][0][i],
+            }
+        )
     return chunks
 
 
@@ -164,11 +168,13 @@ def _search_ttab(query: str) -> list[dict]:
     results = col.query(query_embeddings=[emb], n_results=_TTAB_N)
     chunks = []
     for i, doc in enumerate(results["documents"][0]):
-        chunks.append({
-            "id": results["ids"][0][i],
-            "text": doc,
-            "metadata": results["metadatas"][0][i],
-        })
+        chunks.append(
+            {
+                "id": results["ids"][0][i],
+                "text": doc,
+                "metadata": results["metadatas"][0][i],
+            }
+        )
     return chunks
 
 
@@ -178,11 +184,13 @@ def _search_statute(query: str) -> list[dict]:
     results = col.query(query_embeddings=[emb], n_results=_STATUTE_N)
     chunks = []
     for i, doc in enumerate(results["documents"][0]):
-        chunks.append({
-            "id": results["ids"][0][i],
-            "text": doc,
-            "metadata": results["metadatas"][0][i],
-        })
+        chunks.append(
+            {
+                "id": results["ids"][0][i],
+                "text": doc,
+                "metadata": results["metadatas"][0][i],
+            }
+        )
     return chunks
 
 
@@ -236,7 +244,7 @@ def run_agent(
             max_tokens=200,
             temperature=0.1,
         )
-        print(f"[TIMING]     agent round {rounds} LLM: {time.perf_counter() - _t:.2f}s", flush=True)
+        log.debug("agent round %d LLM: %.2fs", rounds, time.perf_counter() - _t)
 
         msg = response.choices[0].message
         messages.append(msg.model_dump(exclude_none=True))
@@ -246,17 +254,25 @@ def run_agent(
 
         for tool_call in msg.tool_calls:
             fn_name = tool_call.function.name
-            args = json.loads(tool_call.function.arguments)
-            query = args["query"]
+            try:
+                args = json.loads(tool_call.function.arguments)
+                query = args["query"]
+            except (json.JSONDecodeError, KeyError):
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": "Error: malformed tool arguments — skipped.",
+                    }
+                )
+                continue
 
             _ts = time.perf_counter()
             if fn_name == "search_tmep":
                 chunks = _search_tmep(query)
                 for c in chunks:
                     collected_tmep.setdefault(c["id"], c)
-                sections = ", ".join(
-                    f"§{c['metadata']['section_number']}" for c in chunks
-                )
+                sections = ", ".join(f"§{c['metadata']['section_number']}" for c in chunks)
                 tool_result = f"Found {len(chunks)} chunks: {sections}"
 
             elif fn_name == "search_ttab":
@@ -275,12 +291,15 @@ def run_agent(
             else:
                 tool_result = "Unknown tool"
 
-            print(f"[TIMING]       {fn_name} embed+query: {time.perf_counter() - _ts:.2f}s", flush=True)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": tool_result,
-            })
+            elapsed = time.perf_counter() - _ts
+            log.debug("%s embed+query: %.2fs", fn_name, elapsed)
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": tool_result,
+                }
+            )
 
     return {
         "tmep": list(collected_tmep.values()),

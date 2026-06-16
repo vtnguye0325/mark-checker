@@ -7,8 +7,8 @@ the heuristic can't locate it.
 """
 
 import re
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
 from rag.chunker import split_text
@@ -71,7 +71,12 @@ def _parse_decision(elem: ET.Element) -> dict | None:
     nice_class = find_text("internationalClassNumber") or find_text("class") or ""
     serial = find_text("serialNumber") or find_text("serial") or ""
     outcome_raw = (find_text("disposition") or find_text("outcome") or "").lower()
-    outcome = "affirmed" if "affirm" in outcome_raw else "reversed" if "revers" in outcome_raw else "unknown"
+    if "affirm" in outcome_raw:
+        outcome = "affirmed"
+    elif "revers" in outcome_raw:
+        outcome = "reversed"
+    else:
+        outcome = "unknown"
 
     reasoning = _extract_reasoning(full_text)
     return {
@@ -119,10 +124,7 @@ def load_ttab_chunks(zip_path: str | Path, max_decisions: int | None = None) -> 
                     continue
 
                 decision_count += 1
-                prefix = (
-                    f"{decision['mark']} (NC{decision['nice_class']}, "
-                    f"{decision['outcome']})"
-                )
+                prefix = f"{decision['mark']} (NC{decision['nice_class']}, {decision['outcome']})"
                 full_text = f"{prefix} — {decision['reasoning']}"
 
                 for i, chunk_text in enumerate(split_text(full_text)):
@@ -152,7 +154,7 @@ def load_landmark_chunks(json_path: str | Path) -> list[dict]:
     if not json_path.exists():
         return []
 
-    with open(json_path) as f:
+    with json_path.open() as f:
         cases = json.load(f)
 
     chunks = []

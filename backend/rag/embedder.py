@@ -22,6 +22,7 @@ def _get_local_model():
     global _local_model
     if _local_model is None:
         from sentence_transformers import SentenceTransformer
+
         _local_model = SentenceTransformer(_MODEL_NAME)
     return _local_model
 
@@ -40,6 +41,7 @@ def _get_hf_client():
     global _hf_client
     if _hf_client is None:
         from huggingface_hub import InferenceClient
+
         _hf_client = InferenceClient(token=os.environ["HF_TOKEN"])
     return _hf_client
 

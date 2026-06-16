@@ -98,11 +98,13 @@ def analyze_trademark(
     )
 
     t_start = time.perf_counter()
-    print(f"[TIMING] analyze start  mark={mark!r}", flush=True)
+    log.debug("analyze start  mark=%r", mark)
 
     t0 = time.perf_counter()
-    doctrine_prefix, sources = _retrieve_doctrine(mark, description, str(nice_class), label, attributions)
-    print(f"[TIMING]   RAG retrieval: {time.perf_counter() - t0:.2f}s", flush=True)
+    doctrine_prefix, sources = _retrieve_doctrine(
+        mark, description, str(nice_class), label, attributions
+    )
+    log.debug("RAG retrieval: %.2fs", time.perf_counter() - t0)
     user_content = doctrine_prefix + _USER_TMPL.format(
         mark=mark,
         description=description,
@@ -126,8 +128,8 @@ def analyze_trademark(
         temperature=0.2,
         max_tokens=1000,
     )
-    print(f"[TIMING]   final LLM call: {time.perf_counter() - t1:.2f}s", flush=True)
-    print(f"[TIMING] analyze total: {time.perf_counter() - t_start:.2f}s", flush=True)
+    log.debug("final LLM call: %.2fs", time.perf_counter() - t1)
+    log.debug("analyze total: %.2fs", time.perf_counter() - t_start)
 
     return {
         "analysis": response.choices[0].message.content.strip(),
@@ -146,9 +148,9 @@ def _retrieve_doctrine(
     """Return (doctrine_prefix, sources_dict). Both empty/None on failure."""
     try:
         try:
-            from rag.retriever import retrieve, format_context
+            from rag.retriever import format_context, retrieve
         except ImportError:
-            from backend.rag.retriever import retrieve, format_context
+            from backend.rag.retriever import format_context, retrieve
 
         attr_str = ", ".join(
             f"{a['field']}: {a['attribution']:+.2f}"

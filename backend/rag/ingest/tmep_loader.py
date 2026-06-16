@@ -2,7 +2,7 @@
 Parse a TMEP zip archive (PDF edition) → subsection chunks with metadata.
 
 Expected zip layout (USPTO PDF distribution):
-  TMEP/tmep-1200.pdf  ← the file we care about (§§1200–1213 distinctiveness)
+  TMEP/tmep-1200.pdf  ← the file we care about (§§1200-1213 distinctiveness)
   TMEP/tmep-XXXX.pdf  ← other chapters, skipped
 
 Section headers in the PDF appear as lines matching §XXXX or §XXXX.XX.
@@ -125,8 +125,7 @@ def load_tmep_chunks(zip_path: str | Path) -> list[dict]:
 
     with zipfile.ZipFile(zip_path) as zf:
         pdf_files = [
-            n for n in zf.namelist()
-            if n.lower().endswith(".pdf") and Path(n).name in _TARGET_PDFS
+            n for n in zf.namelist() if n.lower().endswith(".pdf") and Path(n).name in _TARGET_PDFS
         ]
         if not pdf_files:
             raise ValueError(

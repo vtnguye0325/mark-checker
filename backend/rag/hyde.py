@@ -6,6 +6,7 @@ rich in Abercrombie vocabulary. Used as the retrieval query vector.
 """
 
 import os
+
 from openai import OpenAI
 
 _client: OpenAI | None = None
