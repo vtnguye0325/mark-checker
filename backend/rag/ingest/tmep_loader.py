@@ -18,8 +18,12 @@ import pypdf
 from rag.chunker import split_text
 
 # Matches body section headers: "1209  Refusal on Basis..." (2-6 spaces, then text)
-# TOC lines have 10+ spaces — excluded by the {1,6} bound
-_SECTION_RE = re.compile(r"^(\d{4}(?:\.\d+[a-z]*)?)\s{1,6}[A-Z\"]")
+# Captures paren subsections too: "1209.01(c)  Generic Terms",
+# "1209.01(c)(i)  Test for Genericness". Without the (?:\([a-z]+\))* group the
+# header has no space after "1209.01" (it's "1209.01(c)") so the line failed to
+# match and the whole subsection got swallowed into the flat parent §1209.01.
+# TOC lines have 10+ spaces — excluded by the {1,6} bound.
+_SECTION_RE = re.compile(r"^(\d{4}(?:\.\d+)?(?:\([a-z]+\))*)\s{1,6}[A-Z\"]")
 
 # Keys must be ordered longest-first so "1209.01(a)" matches before "1209.01" before "1209"
 ABERCROMBIE_MAP = {
