@@ -199,10 +199,13 @@ def run_agent(
             max_tokens=200,
             temperature=0.1,
         )
-        log.info("agent round %d LLM: %.2fs  tool_calls=%d", rounds, time.perf_counter() - _t,
-                 len(msg.tool_calls) if msg.tool_calls else 0)
-
         msg = response.choices[0].message
+        log.info(
+            "agent round %d LLM: %.2fs  tool_calls=%d",
+            rounds,
+            time.perf_counter() - _t,
+            len(msg.tool_calls) if msg.tool_calls else 0,
+        )
         messages.append(msg.model_dump(exclude_none=True))
 
         if not msg.tool_calls:

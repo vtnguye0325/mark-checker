@@ -98,15 +98,24 @@ def analyze_trademark(
     )
 
     t_start = time.perf_counter()
-    log.info("analyze start  mark=%r class=%d label=%s prob=%.2f", mark, nice_class, label, prob_distinctive)
+    log.info(
+        "analyze start  mark=%r class=%d label=%s prob=%.2f",
+        mark,
+        nice_class,
+        label,
+        prob_distinctive,
+    )
 
     t0 = time.perf_counter()
     doctrine_prefix, sources = _retrieve_doctrine(
         mark, description, str(nice_class), label, attributions
     )
-    log.info("RAG retrieval: %.2fs  tmep=%s ttab=%s", time.perf_counter() - t0,
-             bool(sources.get("tmep")) if sources else False,
-             bool(sources.get("ttab")) if sources else False)
+    log.info(
+        "RAG retrieval: %.2fs  tmep=%s ttab=%s",
+        time.perf_counter() - t0,
+        bool(sources.get("tmep")) if sources else False,
+        bool(sources.get("ttab")) if sources else False,
+    )
     user_content = doctrine_prefix + _USER_TMPL.format(
         mark=mark,
         description=description,
@@ -130,10 +139,12 @@ def analyze_trademark(
         temperature=0.2,
         max_tokens=1000,
     )
-    log.info("LLM call: %.2fs  tokens_in=%s tokens_out=%s",
-             time.perf_counter() - t1,
-             getattr(response.usage, "prompt_tokens", "?"),
-             getattr(response.usage, "completion_tokens", "?"))
+    log.info(
+        "LLM call: %.2fs  tokens_in=%s tokens_out=%s",
+        time.perf_counter() - t1,
+        getattr(response.usage, "prompt_tokens", "?"),
+        getattr(response.usage, "completion_tokens", "?"),
+    )
     log.info("analyze total: %.2fs", time.perf_counter() - t_start)
     log.debug("prompt system=%r user=%r", _SYSTEM_PROMPT, user_content)
 

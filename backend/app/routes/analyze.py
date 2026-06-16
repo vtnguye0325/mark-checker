@@ -32,7 +32,7 @@ class AnalyzeResponse(BaseModel):
 @router.post("/analyze", response_model=AnalyzeResponse)
 @limiter.limit(ANALYZE_LIMIT)
 async def analyze(
-    request: Request,
+    request: Request,  # noqa: ARG001
     req: AnalyzeRequest,
     _: None = Depends(verify_turnstile),
 ) -> AnalyzeResponse:
