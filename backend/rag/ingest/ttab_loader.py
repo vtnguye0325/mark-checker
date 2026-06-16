@@ -169,6 +169,8 @@ def load_landmark_chunks(json_path: str | Path) -> list[dict]:
                         "citation": case.get("citation", ""),
                         "outcome": case.get("outcome", ""),
                         "nice_class": case.get("nice_class", ""),
+                        "tier": case.get("tier", ""),
+                        "source_url": case.get("source_url", ""),
                         "source": "court",
                     },
                 }

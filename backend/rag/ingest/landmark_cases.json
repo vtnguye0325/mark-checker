@@ -1,37 +1,83 @@
 [
   {
-    "mark": "ABERCROMBIE & FITCH",
-    "citation": "Abercrombie & Fitch Co. v. Hunting World Inc., 537 F.2d 4 (2d Cir. 1976)",
+    "mark": "SAFARI",
+    "citation": "Abercrombie & Fitch Co. v. Hunting World, Inc., 537 F.2d 4 (2d Cir. 1976)",
+    "source_url": "https://openjurist.org/537/f2d/4/abercrombie-fitch-company-v-hunting-world-incorporated",
+    "outcome": "mixed",
+    "nice_class": "25",
+    "tier": "framework",
+    "reasoning": "Judge Friendly arranged trademarks along a spectrum of increasing distinctiveness: generic, descriptive, suggestive, and arbitrary or fanciful. A generic term refers to the genus of which the particular product is a species and can never be protected. A descriptive term is protected only on proof of secondary meaning, while a suggestive term — one requiring 'imagination, thought and perception to reach a conclusion as to the nature of goods' — is protected without such proof, and arbitrary or fanciful marks receive the strongest protection because they bear no relationship to the goods. Applying this framework to SAFARI on clothing and related goods, the court affirmed dismissal of the infringement complaint but ordered only partial cancellation of the registrations."
+  },
+  {
+    "mark": "TACO CABANA TRADE DRESS",
+    "citation": "Two Pesos, Inc. v. Taco Cabana, Inc., 505 U.S. 763 (1992)",
+    "source_url": "https://www.law.cornell.edu/supremecourt/text/505/763",
+    "outcome": "affirmed",
+    "nice_class": "43",
+    "tier": "arbitrary",
+    "reasoning": "The Supreme Court held that trade dress which is inherently distinctive is protectable under Section 43(a) of the Lanham Act without any showing that it has acquired secondary meaning. Inherently distinctive trade dress is, by definition, 'capable of identifying products or services as coming from a specific source,' so requiring proof of secondary meaning would add a burden the statute does not impose. The Abercrombie distinctiveness categories apply to trade dress just as they apply to word marks, because trademark and trade dress protection under Section 43(a) serve the same purpose of preventing deception and unfair competition. The restaurant's festive decor was found inherently distinctive and protected without secondary meaning."
+  },
+  {
+    "mark": "GREEN-GOLD PRESS PAD COLOR",
+    "citation": "Qualitex Co. v. Jacobson Products Co., 514 U.S. 159 (1995)",
+    "source_url": "https://www.law.cornell.edu/supremecourt/text/514/159",
+    "outcome": "reversed",
+    "nice_class": "21",
+    "tier": "descriptive",
+    "reasoning": "The Supreme Court held that a color alone, here the green-gold of dry-cleaning press pads, can serve as a trademark once it has acquired secondary meaning and is not functional. A color is never inherently distinctive because consumers do not at first perceive color as a source identifier, but over time a color can come to signify the brand rather than the product itself. The functionality doctrine bars protection where the color is essential to the use or purpose of the article or affects its cost or quality, preserving legitimate competition. Because Qualitex's color met these requirements, the Court reversed and allowed the color mark."
+  },
+  {
+    "mark": "SAMARA PRODUCT DESIGN",
+    "citation": "Wal-Mart Stores, Inc. v. Samara Bros., Inc., 529 U.S. 205 (2000)",
+    "source_url": "https://www.law.cornell.edu/supremecourt/text/529/205",
     "outcome": "reversed",
     "nice_class": "25",
-    "reasoning": "Judge Friendly established the four-category spectrum for trademark distinctiveness: generic, descriptive, suggestive, and arbitrary or fanciful. Generic terms can never acquire trademark significance. Descriptive terms require proof of secondary meaning. Suggestive terms, which require imagination to connect the mark to the product, are inherently registrable. Arbitrary and fanciful marks are the strongest form of trademark and are always inherently distinctive."
+    "tier": "descriptive",
+    "reasoning": "The Supreme Court held that product-design trade dress can never be inherently distinctive and is protectable under Section 43(a) only on a showing of secondary meaning. Consumers understand product design as intended to render the article 'more useful or more appealing' rather than to identify its source, unlike product packaging which can signal source from the outset. Product design therefore receives the same treatment as color: distinctiveness must be proven through acquired consumer association. The children's seersucker outfits were product design and required secondary meaning, which had not been established, so the Court reversed."
   },
   {
     "mark": "PARK 'N FLY",
-    "citation": "Park 'N Fly Inc. v. Dollar Park & Fly Inc., 469 U.S. 189 (1985)",
+    "citation": "Park 'N Fly, Inc. v. Dollar Park and Fly, Inc., 469 U.S. 189 (1985)",
+    "source_url": "https://www.law.cornell.edu/supremecourt/text/469/189",
     "outcome": "reversed",
     "nice_class": "39",
-    "reasoning": "The Supreme Court held that incontestability under the Lanham Act is a defense against cancellation on descriptiveness grounds. A mark that has become incontestable cannot be challenged as merely descriptive even if it was originally descriptive. The Court rejected the argument that descriptiveness is always available as a defense to infringement or cancellation once incontestability attaches."
+    "tier": "descriptive",
+    "reasoning": "The Supreme Court held that the holder of an incontestable mark may enforce it against infringers and that the infringement action may not be defended on the ground that the mark is merely descriptive. Under Section 33(b), 'registration shall be conclusive evidence of the registrant's exclusive right to use the registered mark,' and Congress provided no exception allowing a descriptiveness challenge once incontestability has attached. A mark that may have been descriptive at registration thus cannot be attacked as lacking secondary meaning after becoming incontestable. The Court reversed the Ninth Circuit, which had permitted the descriptiveness defense."
   },
   {
-    "mark": "ZATARAIN'S",
-    "citation": "Zatarains Inc. v. Oak Grove Smokehouse Inc., 698 F.2d 786 (5th Cir. 1983)",
+    "mark": "FISH-FRI",
+    "citation": "Zatarain's, Inc. v. Oak Grove Smokehouse, Inc., 698 F.2d 786 (5th Cir. 1983)",
+    "source_url": "https://cyber.harvard.edu/metaschool/fisher/domain/tmcases/zatar.htm",
     "outcome": "affirmed",
     "nice_class": "30",
-    "reasoning": "The court applied the primary significance test to determine whether FISH-FRI and CHICK-FRI were merely descriptive. The test asks whether the primary significance of the term to consumers is descriptive of the product rather than indicative of source. Competitors have a fair use right to use descriptive terms in their descriptive sense even when the plaintiff holds rights. Secondary meaning was found for FISH-FRI based on extensive sales and advertising, but fair use was still available to describe a product category."
+    "tier": "descriptive",
+    "reasoning": "The court held that FISH-FRI is a descriptive mark because it directly conveys the function of the coating mix and requires no imagination to understand its purpose. Although Zatarain's proved secondary meaning for FISH-FRI in the New Orleans area through sustained advertising and sales, competitors retained a fair-use right to use 'fish fry' in its ordinary descriptive sense, because 'the holder of a protectable descriptive mark has no legal claim to an exclusive right in the primary, descriptive meaning of the term.' For the companion mark CHICK-FRI, Zatarain's failed to prove secondary meaning given minimal advertising and recent adoption, so cancellation of that registration was warranted. The Fifth Circuit affirmed."
   },
   {
-    "mark": "DIAL-A-MATTRESS",
+    "mark": "1-888-M-A-T-R-E-S-S",
     "citation": "In re Dial-A-Mattress Operating Corp., 240 F.3d 1341 (Fed. Cir. 2001)",
+    "source_url": "https://openjurist.org/240/f3d/1341",
     "outcome": "reversed",
-    "nice_class": "20",
-    "reasoning": "The Federal Circuit reversed the TTAB's refusal to register 1-888-M-A-T-R-E-S-S on the ground that the telephone number format rendered it inherently distinctive. The court emphasized that the combination of elements can create a distinctive composite even when individual components are descriptive. The mark as a whole must be evaluated, not just its parts in isolation."
+    "nice_class": "35",
+    "tier": "descriptive",
+    "reasoning": "The Federal Circuit held that the mnemonic telephone mark is not generic because the Director failed to show that the relevant public understands '1-888-M-A-T-R-E-S-S' as a whole to refer to the genus of telephone shop-at-home mattress retail services; the apt generic name would be 'telephone shop-at-home mattresses.' The mark is instead merely descriptive, as it 'immediately conveys the impression that a service relating to mattresses is available by calling the telephone number.' Because the mark was the legal equivalent of the applicant's previously registered (212) M-A-T-T-R-E-S mark, that prior registration served as prima facie evidence of acquired distinctiveness under Section 2(f), permitting registration. The genericness refusal was reversed."
   },
   {
-    "mark": "IN RE NETT DESIGNS",
-    "citation": "In re Nett Designs Inc., 236 F.3d 1339 (Fed. Cir. 2001)",
+    "mark": "SHREDDED WHEAT",
+    "citation": "Kellogg Co. v. National Biscuit Co., 305 U.S. 111 (1938)",
+    "source_url": "https://www.law.cornell.edu/supremecourt/text/305/111",
+    "outcome": "reversed",
+    "nice_class": "30",
+    "tier": "generic",
+    "reasoning": "The Supreme Court held that 'shredded wheat' is a generic name for the cereal product rather than a source identifier, so no exclusive trademark right could attach. The term had been 'the general designation of the patented product' during the life of the patent, and upon the patent's expiration the public acquired both the right to make the article and the right to use the generic designation by which it had become known. National Biscuit failed to show that the primary significance of the term to the public was to identify the producer rather than the product, despite its investment in advertising and goodwill. The Court reversed the decrees that had restrained Kellogg's use of the name."
+  },
+  {
+    "mark": "BOOKING.COM",
+    "citation": "United States Patent and Trademark Office v. Booking.com B.V., 591 U.S. 549 (2020)",
+    "source_url": "https://www.law.cornell.edu/supremecourt/text/19-46",
     "outcome": "affirmed",
-    "nice_class": "25",
-    "reasoning": "The Federal Circuit affirmed that a mark is generic when the primary significance of the claimed mark to the relevant public is the class or category of goods or services. The applicant bears the burden of showing acquired distinctiveness only after the examining attorney establishes a prima facie case of genericness through evidence of common usage in the trade."
+    "nice_class": "43",
+    "tier": "generic",
+    "reasoning": "The Supreme Court rejected the USPTO's proposed per se rule that combining a generic term with '.com' always yields a generic, unregistrable mark. Whether a 'generic.com' term is generic turns on its meaning to consumers as a whole: a term is generic only if consumers perceive it as naming a class of goods or services rather than identifying a source. Because consumers did not understand BOOKING.COM to signify the class of online hotel-reservation services, the term was not generic and was eligible for registration upon a showing of distinctiveness. The Court affirmed the judgment in favor of Booking.com."
   }
 ]
