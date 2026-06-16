@@ -1,11 +1,17 @@
 """
-Quick retrieval eval for the ChromaDB RAG index.
+Retrieval eval for the ChromaDB RAG index.
 
-Tests section reachability and spot-checks relevance without needing
-the HyDE LLM call (embeds query text directly).
+Two modes:
+  - Reachability (default, cheap): embeds doctrinal probe queries directly and
+    checks that each expected TMEP section surfaces in the top-k. No model, no API.
+  - Model → agent spot checks (--spot): reproduces the real pipeline — classify
+    the mark with the ML model, then run the agent conditioned on that label —
+    and prints what doctrine the agent retrieved for manual inspection. Needs the
+    trained model (torch) and DEEPSEEK_API_KEY.
 
 Usage:
-    python scripts/eval_rag_retrieval.py
+    python scripts/eval_rag_retrieval.py             # reachability only
+    python scripts/eval_rag_retrieval.py --spot      # model → agent inspection
     python scripts/eval_rag_retrieval.py --query "software for organizing files"
 """
 
@@ -13,7 +19,10 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(_ROOT))
+# agent.py uses Docker-style imports (`from rag.X`); add backend/ so they resolve.
+sys.path.insert(0, str(_ROOT / "backend"))
 
 from backend.rag.embedder import embed_query
 from backend.rag.store import get_tmep_collection, get_ttab_collection
@@ -108,34 +117,42 @@ REACHABILITY_PROBES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Spot-check marks with known expected outcomes
+# Model → agent spot checks.
+#
+# The expected doctrine is NOT hardcoded per mark — it is derived from the ML
+# classifier's binary label at runtime. The real pipeline is:
+#   mark → format_mark → explain_one (label + SHAP) → run_agent → doctrine.
+# This eval reproduces that path and prints the result for manual inspection.
 # ---------------------------------------------------------------------------
 SPOT_CHECKS = [
     {
         "mark": "CHARCOAL TOOTHPASTE",
         "description": "Toothpaste made with activated charcoal for whitening",
         "nice_class": "3",
-        "expected_section_prefix": "1209",  # merely descriptive refusal
     },
     {
         "mark": "KODAK",
         "description": "Coined word for cameras and photographic equipment",
         "nice_class": "9",
-        "expected_section_prefix": "1209.01",  # fanciful — inherently distinctive
     },
     {
         "mark": "APPLE",
         "description": "Computers and consumer electronics",
         "nice_class": "9",
-        "expected_section_prefix": "1209.01",  # arbitrary — inherently distinctive
     },
     {
         "mark": "SPEEDY MUFFLER",
         "description": "Automobile muffler repair services",
         "nice_class": "37",
-        "expected_section_prefix": "1209.01",  # suggestive
     },
 ]
+
+# Which doctrine family the agent *should* lean toward given the binary label.
+# Used only as an inspection hint — this eval does not pass/fail on it.
+_LABEL_EXPECTATION = {
+    "distinctive": "§1209.01 family — fanciful / arbitrary / suggestive (inherently distinctive)",
+    "not_distinctive": "§1209 / §1209.01(c) / §1212 — merely descriptive, generic, or acquired distinctiveness",
+}
 
 
 def _section_matches(section: str, prefix: str) -> bool:
@@ -159,21 +176,71 @@ def run_reachability() -> tuple[int, int]:
     return passed, len(REACHABILITY_PROBES)
 
 
+def _format_attributions(attributions: list[dict], top: int = 5) -> str:
+    """Condense leave-one-out field attributions into a compact agent-facing string."""
+    parts = []
+    for a in attributions[:top]:
+        val = (a.get("value") or "").strip()
+        if len(val) > 30:
+            val = val[:27] + "…"
+        parts.append(f"{a['field']}={val!r}({a['attribution']:+.3f})")
+    return ", ".join(parts)
+
+
 def run_spot_checks() -> None:
-    print("\n\n=== SPOT CHECKS (mark → expected section family in top-3) ===")
+    """Model → agent inspection: classify each mark, then retrieve via the agent.
+
+    Reproduces the real pipeline (the model decides, the agent justifies) and
+    prints, per mark: the classifier label/probability and the doctrine the
+    agent retrieved when conditioned on that label. Inspect-only — no pass/fail.
+
+    Needs the trained model (torch) loadable and DEEPSEEK_API_KEY set.
+    """
+    print("\n\n=== MODEL → AGENT SPOT CHECKS (inspect-only) ===")
+
+    # Heavy deps (torch, DeepSeek client) — imported lazily so the cheap
+    # reachability path never pays for them.
+    from app.services.text_formatter import format_mark
+    from app.services.model_service import explain_one
+    from rag.agent import run_agent
+
     for check in SPOT_CHECKS:
-        query = (
-            f"Trademark distinctiveness analysis for {check['mark']}: "
-            f"{check['description']} (NICE class {check['nice_class']})"
+        mark, desc, nice = check["mark"], check["description"], check["nice_class"]
+        fm = format_mark(mark, desc, int(nice))
+        pred = explain_one(list(fm.fields))
+        label = pred["label"]
+        attributions = _format_attributions(pred["attributions"])
+
+        result = run_agent(
+            mark=mark,
+            description=desc,
+            nice_class=nice,
+            label=label,
+            attributions=attributions,
         )
-        results = query_tmep(query, n=3)
-        prefix = check["expected_section_prefix"]
-        hit = any(_section_matches(r["section"], prefix) for r in results)
-        status = "PASS" if hit else "MISS"
-        print(f"\n[{status}] {check['mark']}  (expect §{prefix})")
-        for r in results:
-            marker = "  ✓" if _section_matches(r["section"], prefix) else "   "
-            print(f"{marker} §{r['section']} [{r['tier']}]  dist={r['distance']:.3f}")
+
+        print(f"\n{'─'*60}")
+        print(f"  {mark}  (NICE {nice})")
+        print(f"{'─'*60}")
+        print(f"  MODEL: {label}  (p_distinctive={pred['prob_distinctive']:.3f})")
+        print(f"    → expect doctrine: {_LABEL_EXPECTATION.get(label, '?')}")
+        print(f"    top fields: {attributions}")
+        print(f"  AGENT: {result['rounds']} round(s)")
+        if result["tmep"]:
+            print("    TMEP retrieved:")
+            for c in result["tmep"]:
+                m = c["metadata"]
+                print(f"      §{m.get('section_number','?')} [{m.get('abercrombie_tier','?')}]"
+                      f"  {m.get('section_title','')[:50]}")
+        else:
+            print("    TMEP retrieved: (none)")
+        if result["ttab"]:
+            print("    TTAB / landmark retrieved:")
+            for c in result["ttab"]:
+                m = c["metadata"]
+                print(f"      {m.get('mark','?')}  ({m.get('citation', m.get('source','?'))[:55]})")
+        else:
+            print("    TTAB retrieved: (none)")
 
 
 def run_custom_query(query: str) -> None:
@@ -212,11 +279,12 @@ def main() -> None:
         print(f"\nReachability: {passed}/{total} sections reachable in top-5")
         return
 
-    # Default: run everything
+    # Default: cheap retrieval-only reachability. The model→agent spot checks
+    # need torch + DEEPSEEK_API_KEY, so they run only under --spot.
     passed, total = run_reachability()
-    run_spot_checks()
     print(f"\n{'═'*60}")
     print(f"  Reachability: {passed}/{total} key sections surfaced in top-5")
+    print(f"  (run with --spot for the model→agent inspection)")
     print(f"{'═'*60}")
 
 
