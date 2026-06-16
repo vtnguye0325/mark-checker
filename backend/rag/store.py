@@ -27,9 +27,15 @@ def get_ttab_collection() -> chromadb.Collection:
     )
 
 
+def get_statute_collection() -> chromadb.Collection:
+    return _get_client().get_or_create_collection(
+        "statute", metadata={"hnsw:space": "cosine"}
+    )
+
+
 def reset_collections() -> None:
     client = _get_client()
-    for name in ("tmep", "ttab"):
+    for name in ("tmep", "ttab", "statute"):
         try:
             client.delete_collection(name)
         except Exception:

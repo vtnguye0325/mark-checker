@@ -23,21 +23,34 @@ from rag.chunker import split_text
 # header has no space after "1209.01" (it's "1209.01(c)") so the line failed to
 # match and the whole subsection got swallowed into the flat parent §1209.01.
 # TOC lines have 10+ spaces — excluded by the {1,6} bound.
-_SECTION_RE = re.compile(r"^(\d{4}(?:\.\d+)?(?:\([a-z]+\))*)\s{1,6}[A-Z\"]")
+_SECTION_RE = re.compile(r"^(\d{3,4}(?:\.\d+)?(?:\([a-z]+\))*)\s{1,6}[A-Z\"]")
 
 # Keys must be ordered longest-first so "1209.01(a)" matches before "1209.01" before "1209"
 ABERCROMBIE_MAP = {
     "1209.01(a)": "fanciful_arbitrary_suggestive",
     "1209.01(b)": "merely_descriptive",
     "1209.01(c)": "generic",
+    "1209.03": "merely_descriptive",
     "1209.01": "distinctiveness_continuum",
     "1209": "merely_descriptive",
+    "1202": "functional_ornamental_informational",
+    "1210": "geographic",
     "1211": "surname",
     "1212": "acquired_distinctiveness",
     "1213": "disclaimer",
+    "1215": "domain_name",
+    "815": "supplemental_register",
+    "816": "supplemental_register",
+    "817": "supplemental_register",
+    "1301": "service_mark",
+    "1302": "collective_mark",
+    "1303": "collective_mark",
+    "1304": "collective_mark",
+    "1305": "collective_mark",
+    "1306": "certification_mark",
 }
 
-_TARGET_PDFS = {"tmep-1200.pdf"}
+_TARGET_PDFS = {"tmep-1200.pdf", "tmep-0800.pdf", "tmep-1300.pdf"}
 
 
 def _abercrombie_tier(section_number: str) -> str:
@@ -50,7 +63,7 @@ def _abercrombie_tier(section_number: str) -> str:
 def _is_relevant_section(section_number: str) -> bool:
     try:
         top = int(section_number.split(".")[0])
-        return 1200 <= top <= 1213
+        return (1200 <= top <= 1215) or (815 <= top <= 817) or (1301 <= top <= 1306)
     except ValueError:
         return False
 

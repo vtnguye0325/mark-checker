@@ -6,6 +6,7 @@ Usage:
   python scripts/build_rag_index.py --tmep backend/rag/data/tmep_2026.zip \
                                      --ttab backend/rag/data/ttab_bulk.zip \
                                      --max-ttab 1000
+  python scripts/build_rag_index.py --lanham backend/rag/data/tmlaw.pdf
   python scripts/build_rag_index.py --reset   # wipe and rebuild from scratch
 """
 
@@ -15,10 +16,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from backend.rag.store import get_tmep_collection, get_ttab_collection, reset_collections
+from backend.rag.store import get_tmep_collection, get_ttab_collection, get_statute_collection, reset_collections
 from backend.rag.embedder import embed_documents
 from backend.rag.ingest.tmep_loader import load_tmep_chunks
 from backend.rag.ingest.ttab_loader import load_ttab_chunks, load_landmark_chunks
+from backend.rag.ingest.lanham_loader import load_lanham_chunks
 
 LANDMARK_JSON = Path(__file__).parent.parent / "backend/rag/ingest/landmark_cases.json"
 BATCH_SIZE = 64
@@ -44,6 +46,7 @@ def main() -> None:
     parser.add_argument("--tmep", type=Path, help="Path to TMEP zip archive")
     parser.add_argument("--ttab", type=Path, help="Path to TTAB bulk XML zip")
     parser.add_argument("--max-ttab", type=int, default=None, help="Cap TTAB decisions (dev)")
+    parser.add_argument("--lanham", type=Path, help="Path to tmlaw.pdf (37 CFR + Lanham Act)")
     parser.add_argument("--reset", action="store_true", help="Wipe collections before ingest")
     args = parser.parse_args()
 
@@ -74,8 +77,16 @@ def main() -> None:
         upsert_chunks(col, chunks)
         print(f"TTAB done — {col.count()} total docs in collection")
 
-    if not args.tmep and not args.ttab:
-        print("Nothing to ingest. Pass --tmep and/or --ttab.")
+    if args.lanham:
+        print(f"Loading Lanham Act / 37 CFR from {args.lanham} ...")
+        chunks = load_lanham_chunks(args.lanham)
+        print(f"  {len(chunks)} chunks extracted")
+        col = get_statute_collection()
+        upsert_chunks(col, chunks)
+        print(f"Statute done — {col.count()} total docs in collection")
+
+    if not args.tmep and not args.ttab and not args.lanham:
+        print("Nothing to ingest. Pass --tmep, --ttab, and/or --lanham.")
         parser.print_help()
 
 

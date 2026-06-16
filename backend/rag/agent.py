@@ -15,11 +15,12 @@ import time
 from openai import OpenAI
 
 from rag.embedder import embed_query
-from rag.store import get_tmep_collection, get_ttab_collection
+from rag.store import get_tmep_collection, get_ttab_collection, get_statute_collection
 
-MAX_ROUNDS = 3
+MAX_ROUNDS = 4
 _TMEP_N = int(os.environ.get("RAG_TMEP_N_RESULTS", "3"))
 _TTAB_N = int(os.environ.get("RAG_TTAB_N_RESULTS", "2"))
+_STATUTE_N = int(os.environ.get("RAG_STATUTE_N_RESULTS", "2"))
 
 _TOOLS = [
     {
@@ -71,22 +72,52 @@ _TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_statute",
+            "description": (
+                "Search the Lanham Act (15 U.S.C.) and 37 CFR Trademark Rules of Practice "
+                "for primary statutory authority. Use for the legal basis of a refusal — "
+                "e.g. §2(e)(1) descriptiveness, §2(f) acquired distinctiveness, "
+                "§23 Supplemental Register."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Statutory authority query. Examples: "
+                            "'section 2(e)(1) merely descriptive bar registration', "
+                            "'section 2(f) acquired distinctiveness secondary meaning', "
+                            "'supplemental register section 23'"
+                        ),
+                    }
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 _SYSTEM = """\
-You are a trademark doctrine retrieval agent. Find the most relevant TMEP sections and \
-TTAB decisions for a distinctiveness analysis under the Abercrombie spectrum.
+You are a trademark doctrine retrieval agent. Find the most relevant TMEP sections, \
+primary statutory authority, and TTAB decisions for a distinctiveness analysis under \
+the Abercrombie spectrum.
 
 Strategy:
 1. Call search_tmep with a query targeting the most likely doctrine section for this mark.
 2. If the results cover a different doctrine than expected, call search_tmep again with a \
 refined query.
-3. Call search_ttab once to find an illustrative case.
-4. Stop — do not call more than 3 tools total.
+3. Call search_statute once to retrieve the primary statutory authority (Lanham Act or \
+37 CFR) underlying the relevant refusal ground.
+4. Call search_ttab once to find an illustrative case.
+5. Stop — do not call more than 4 tools total.
 
 Use exact trademark vocabulary: fanciful, arbitrary, suggestive, merely descriptive, \
 generic, acquired distinctiveness, secondary meaning, primary significance test, \
-imagination test, Abercrombie spectrum."""
+imagination test, Abercrombie spectrum. Cite primary statute when relevant."""
 
 _USER_TMPL = """\
 Retrieve legal doctrine for this trademark distinctiveness analysis:
@@ -141,6 +172,20 @@ def _search_ttab(query: str) -> list[dict]:
     return chunks
 
 
+def _search_statute(query: str) -> list[dict]:
+    col = get_statute_collection()
+    emb = embed_query(query)
+    results = col.query(query_embeddings=[emb], n_results=_STATUTE_N)
+    chunks = []
+    for i, doc in enumerate(results["documents"][0]):
+        chunks.append({
+            "id": results["ids"][0][i],
+            "text": doc,
+            "metadata": results["metadatas"][0][i],
+        })
+    return chunks
+
+
 def run_agent(
     mark: str,
     description: str,
@@ -177,6 +222,7 @@ def run_agent(
     # Ordered dicts preserve insertion order; key = chunk id for dedup
     collected_tmep: dict[str, dict] = {}
     collected_ttab: dict[str, dict] = {}
+    collected_statute: dict[str, dict] = {}
     rounds = 0
 
     for _ in range(MAX_ROUNDS):
@@ -219,6 +265,13 @@ def run_agent(
                     collected_ttab.setdefault(c["id"], c)
                 tool_result = f"Found {len(chunks)} TTAB chunks"
 
+            elif fn_name == "search_statute":
+                chunks = _search_statute(query)
+                for c in chunks:
+                    collected_statute.setdefault(c["id"], c)
+                citations = ", ".join(c["metadata"]["citation"] for c in chunks)
+                tool_result = f"Found {len(chunks)} statute chunks: {citations}"
+
             else:
                 tool_result = "Unknown tool"
 
@@ -232,5 +285,6 @@ def run_agent(
     return {
         "tmep": list(collected_tmep.values()),
         "ttab": list(collected_ttab.values()),
+        "statute": list(collected_statute.values()),
         "rounds": rounds,
     }
