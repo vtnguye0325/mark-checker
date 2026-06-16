@@ -23,16 +23,8 @@ def format_context(retrieval_result: dict) -> str:
     for i, chunk in enumerate(retrieval_result["tmep"], 1):
         lines.append(f"[{i}] {chunk['text']}")
 
-    statute_chunks = retrieval_result.get("statute", [])
-    if statute_chunks:
-        lines.append("\nSTATUTORY AUTHORITY:")
-        offset = len(retrieval_result["tmep"])
-        for i, chunk in enumerate(statute_chunks, offset + 1):
-            meta = chunk["metadata"]
-            lines.append(f"[{i}] {meta.get('citation', '')} — {chunk['text']}")
-
     lines.append("\nILLUSTRATIVE CASES:")
-    offset = len(retrieval_result["tmep"]) + len(statute_chunks)
+    offset = len(retrieval_result["tmep"])
     for i, chunk in enumerate(retrieval_result["ttab"], offset + 1):
         meta = chunk["metadata"]
         prefix = (

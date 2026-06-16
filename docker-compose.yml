@@ -13,7 +13,7 @@ services:
       RAG_TTAB_N_RESULTS: ${RAG_TTAB_N_RESULTS:-2}
     volumes:
       - hf-cache:/hf-cache
-      - ./backend/rag/chroma_db:/app/rag/chroma_db
+      - chroma-db:/app/rag/chroma_db
     ports:
       - "8000:8000"
     healthcheck:
@@ -41,3 +41,4 @@ services:
 
 volumes:
   hf-cache:
+  chroma-db:

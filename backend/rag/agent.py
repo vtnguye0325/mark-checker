@@ -2,6 +2,7 @@
 Agentic RAG — DeepSeek tool-calling loop.
 
 Agent receives mark info and two tools (search_tmep, search_ttab).
+Statute search is reserved for the chatbot; not wired here.
 Runs up to MAX_ROUNDS, collecting and deduplicating chunks.
 Stops early when agent returns without a tool call.
 """
@@ -16,14 +17,13 @@ import time
 from openai import OpenAI
 
 from rag.embedder import embed_query
-from rag.store import get_statute_collection, get_tmep_collection, get_ttab_collection
+from rag.store import get_tmep_collection, get_ttab_collection
 
 log = logging.getLogger(__name__)
 
 MAX_ROUNDS = 2
 _TMEP_N = int(os.environ.get("RAG_TMEP_N_RESULTS", "3"))
 _TTAB_N = int(os.environ.get("RAG_TTAB_N_RESULTS", "2"))
-_STATUTE_N = int(os.environ.get("RAG_STATUTE_N_RESULTS", "2"))
 
 _TOOLS = [
     {
@@ -75,45 +75,17 @@ _TOOLS = [
             },
         },
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "search_statute",
-            "description": (
-                "Search the Lanham Act (15 U.S.C.) and 37 CFR Trademark Rules of Practice "
-                "for primary statutory authority. Use for the legal basis of a refusal — "
-                "e.g. §2(e)(1) descriptiveness, §2(f) acquired distinctiveness, "
-                "§23 Supplemental Register."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": (
-                            "Statutory authority query. Examples: "
-                            "'section 2(e)(1) merely descriptive bar registration', "
-                            "'section 2(f) acquired distinctiveness secondary meaning', "
-                            "'supplemental register section 23'"
-                        ),
-                    }
-                },
-                "required": ["query"],
-            },
-        },
-    },
 ]
 
 _SYSTEM = """\
-You are a trademark doctrine retrieval agent. Find the most relevant TMEP sections, \
-primary statutory authority, and TTAB decisions for a distinctiveness analysis under \
-the Abercrombie spectrum.
+You are a trademark doctrine retrieval agent. Find the most relevant TMEP sections \
+and TTAB decisions for a distinctiveness analysis under the Abercrombie spectrum.
 
 Strategy:
-- In your FIRST response, call all three tools in parallel: search_tmep (doctrine), \
-search_statute (primary law), search_ttab (illustrative case).
+- In your FIRST response, call both tools in parallel: search_tmep (doctrine) and \
+search_ttab (illustrative case).
 - If and only if the tmep results are clearly off-target, call search_tmep once more \
-with a refined query. Do NOT repeat search_statute or search_ttab.
+with a refined query. Do NOT repeat search_ttab.
 - After your first response (or one refinement at most), return your final answer \
 with NO further tool calls. Do not loop.
 
@@ -178,22 +150,6 @@ def _search_ttab(query: str) -> list[dict]:
     return chunks
 
 
-def _search_statute(query: str) -> list[dict]:
-    col = get_statute_collection()
-    emb = embed_query(query)
-    results = col.query(query_embeddings=[emb], n_results=_STATUTE_N)
-    chunks = []
-    for i, doc in enumerate(results["documents"][0]):
-        chunks.append(
-            {
-                "id": results["ids"][0][i],
-                "text": doc,
-                "metadata": results["metadatas"][0][i],
-            }
-        )
-    return chunks
-
-
 def run_agent(
     mark: str,
     description: str,
@@ -206,9 +162,9 @@ def run_agent(
 
     Returns:
         {
-            "tmep": list[chunk],   # deduped, ordered by first appearance
+            "tmep": list[chunk],  # deduped, ordered by first appearance
             "ttab": list[chunk],
-            "rounds": int,         # how many LLM calls were made
+            "rounds": int,        # how many LLM calls were made
         }
     """
     client = _get_client()
@@ -230,7 +186,6 @@ def run_agent(
     # Ordered dicts preserve insertion order; key = chunk id for dedup
     collected_tmep: dict[str, dict] = {}
     collected_ttab: dict[str, dict] = {}
-    collected_statute: dict[str, dict] = {}
     rounds = 0
 
     for _ in range(MAX_ROUNDS):
@@ -281,13 +236,6 @@ def run_agent(
                     collected_ttab.setdefault(c["id"], c)
                 tool_result = f"Found {len(chunks)} TTAB chunks"
 
-            elif fn_name == "search_statute":
-                chunks = _search_statute(query)
-                for c in chunks:
-                    collected_statute.setdefault(c["id"], c)
-                citations = ", ".join(c["metadata"]["citation"] for c in chunks)
-                tool_result = f"Found {len(chunks)} statute chunks: {citations}"
-
             else:
                 tool_result = "Unknown tool"
 
@@ -304,6 +252,5 @@ def run_agent(
     return {
         "tmep": list(collected_tmep.values()),
         "ttab": list(collected_ttab.values()),
-        "statute": list(collected_statute.values()),
         "rounds": rounds,
     }

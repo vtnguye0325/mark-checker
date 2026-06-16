@@ -158,7 +158,7 @@ def _retrieve_doctrine(
             if a.get("field") not in ("Translation", "WordNet Flag")
         )
         result = retrieve(mark, description, nice_class, label, attr_str)
-        if not result["tmep"] and not result["ttab"] and not result.get("statute"):
+        if not result["tmep"] and not result["ttab"]:
             return "", {}
         return _DOCTRINE_SECTION.format(context=format_context(result)), result
     except Exception:

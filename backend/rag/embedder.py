@@ -6,6 +6,9 @@ import numpy as np
 
 _QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 _MODEL_NAME = "BAAI/bge-base-en-v1.5"
+# BGE_DIR: absolute path baked into the image by Dockerfile. When set,
+# SentenceTransformer loads from disk with no HuggingFace network calls.
+_MODEL_PATH = os.environ.get("BGE_DIR", _MODEL_NAME)
 
 # Set EMBEDDER=hf_api in env to use HuggingFace Inference API instead of local model.
 # Requires HF_TOKEN env var. Defaults to local (CPU/GPU auto-selected).
@@ -23,7 +26,7 @@ def _get_local_model():
     if _local_model is None:
         from sentence_transformers import SentenceTransformer
 
-        _local_model = SentenceTransformer(_MODEL_NAME)
+        _local_model = SentenceTransformer(_MODEL_PATH)
     return _local_model
 
 
