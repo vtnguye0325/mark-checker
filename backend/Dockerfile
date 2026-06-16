@@ -38,26 +38,6 @@ snapshot_download('BAAI/bge-base-en-v1.5', local_dir='/opt/models/bge-base-en-v1
 print('BGE model baked to /opt/models/bge-base-en-v1.5')
 PYEOF
 
-# Seed the TTAB collection with landmark cases (bundled JSON; no external data
-# required). The chroma_db is baked into the image layer; Docker seeds the
-# named volume from it on first mount so a fresh deploy has a working baseline.
-RUN python3 <<'PYEOF'
-import sys; sys.path.insert(0, '/app')
-from rag.store import get_ttab_collection
-from rag.embedder import embed_documents
-from rag.ingest.ttab_loader import load_landmark_chunks
-chunks = load_landmark_chunks('/app/rag/ingest/landmark_cases.json')
-col = get_ttab_collection()
-texts = [c['text'] for c in chunks]
-col.upsert(
-    ids=[c['id'] for c in chunks],
-    documents=texts,
-    embeddings=embed_documents(texts),
-    metadatas=[c['metadata'] for c in chunks],
-)
-print(f'Seeded {len(chunks)} landmark chunks')
-PYEOF
-
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

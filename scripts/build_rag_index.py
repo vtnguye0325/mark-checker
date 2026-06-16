@@ -14,15 +14,17 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(_ROOT))
+sys.path.insert(0, str(_ROOT / "backend"))
 
-from backend.rag.store import get_tmep_collection, get_ttab_collection, get_statute_collection, reset_collections
-from backend.rag.embedder import embed_documents
-from backend.rag.ingest.tmep_loader import load_tmep_chunks
-from backend.rag.ingest.ttab_loader import load_ttab_chunks, load_landmark_chunks
-from backend.rag.ingest.lanham_loader import load_lanham_chunks
+from rag.store import get_tmep_collection, get_ttab_collection, get_statute_collection, reset_collections
+from rag.embedder import embed_documents
+from rag.ingest.tmep_loader import load_tmep_chunks
+from rag.ingest.ttab_loader import load_ttab_chunks, load_landmark_chunks
+from rag.ingest.lanham_loader import load_lanham_chunks
 
-LANDMARK_JSON = Path(__file__).parent.parent / "backend/rag/ingest/landmark_cases.json"
+LANDMARK_JSON = _ROOT / "backend/rag/ingest/landmark_cases.json"
 BATCH_SIZE = 64
 
 

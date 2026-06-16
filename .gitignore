@@ -51,5 +51,6 @@ logs/
 .claude
 skills-lock.json
 chroma_db/
+data/chroma/
 backend/rag/data/
 graphify-out
