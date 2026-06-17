@@ -11,7 +11,7 @@ export default function AppHeader() {
         </div>
       </div>
       <div className="header-right">
-        <span className="header-tagline">Automating Abercrombie</span>
+        <span className="header-tagline">AI-Powered</span>
       </div>
     </header>
   )

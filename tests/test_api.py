@@ -33,17 +33,17 @@ def test_health_body():
 
 
 # ---------------------------------------------------------------------------
-# POST /predict — happy path
+# POST /ml-predict — happy path
 # ---------------------------------------------------------------------------
 
 
 def test_predict_returns_200():
-    r = client.post("/predict", json=VALID_PAYLOAD)
+    r = client.post("/ml-predict", json=VALID_PAYLOAD)
     assert r.status_code == 200
 
 
 def test_predict_response_has_required_fields():
-    r = client.post("/predict", json=VALID_PAYLOAD)
+    r = client.post("/ml-predict", json=VALID_PAYLOAD)
     body = r.json()
     assert "label" in body
     assert "prob_distinctive" in body
@@ -52,25 +52,25 @@ def test_predict_response_has_required_fields():
 
 
 def test_predict_label_is_valid():
-    r = client.post("/predict", json=VALID_PAYLOAD)
+    r = client.post("/ml-predict", json=VALID_PAYLOAD)
     assert r.json()["label"] in {"distinctive", "not_distinctive"}
 
 
 def test_predict_probs_are_floats_in_range():
-    r = client.post("/predict", json=VALID_PAYLOAD)
+    r = client.post("/ml-predict", json=VALID_PAYLOAD)
     body = r.json()
     assert 0.0 <= body["prob_distinctive"] <= 1.0
     assert 0.0 <= body["prob_not_distinctive"] <= 1.0
 
 
 def test_predict_formatted_input_is_string():
-    r = client.post("/predict", json=VALID_PAYLOAD)
+    r = client.post("/ml-predict", json=VALID_PAYLOAD)
     assert isinstance(r.json()["formatted_input"], str)
 
 
 def test_predict_with_optional_fields():
     payload = {**VALID_PAYLOAD, "translation": "la pomme", "pseudo_mark": "apple"}
-    r = client.post("/predict", json=payload)
+    r = client.post("/ml-predict", json=payload)
     assert r.status_code == 200
     body = r.json()
     assert "la pomme" in body["formatted_input"]
@@ -78,42 +78,42 @@ def test_predict_with_optional_fields():
 
 
 # ---------------------------------------------------------------------------
-# POST /predict — validation errors
+# POST /ml-predict — validation errors
 # ---------------------------------------------------------------------------
 
 
 def test_predict_missing_mark_returns_422():
-    r = client.post("/predict", json={"description": "computers", "nice_class": 9})
+    r = client.post("/ml-predict", json={"description": "computers", "nice_class": 9})
     assert r.status_code == 422
 
 
 def test_predict_missing_description_returns_422():
-    r = client.post("/predict", json={"mark": "APPLE", "nice_class": 9})
+    r = client.post("/ml-predict", json={"mark": "APPLE", "nice_class": 9})
     assert r.status_code == 422
 
 
 def test_predict_missing_nice_class_returns_422():
-    r = client.post("/predict", json={"mark": "APPLE", "description": "computers"})
+    r = client.post("/ml-predict", json={"mark": "APPLE", "description": "computers"})
     assert r.status_code == 422
 
 
 def test_predict_nice_class_too_low_returns_422():
-    r = client.post("/predict", json={**VALID_PAYLOAD, "nice_class": 0})
+    r = client.post("/ml-predict", json={**VALID_PAYLOAD, "nice_class": 0})
     assert r.status_code == 422
 
 
 def test_predict_nice_class_too_high_returns_422():
-    r = client.post("/predict", json={**VALID_PAYLOAD, "nice_class": 46})
+    r = client.post("/ml-predict", json={**VALID_PAYLOAD, "nice_class": 46})
     assert r.status_code == 422
 
 
 def test_predict_empty_mark_returns_422():
-    r = client.post("/predict", json={**VALID_PAYLOAD, "mark": ""})
+    r = client.post("/ml-predict", json={**VALID_PAYLOAD, "mark": ""})
     assert r.status_code == 422
 
 
 # ---------------------------------------------------------------------------
-# POST /analyze — Turnstile verification
+# POST /llm-assess — Turnstile verification
 # ---------------------------------------------------------------------------
 
 _ANALYZE_PAYLOAD = {
@@ -158,21 +158,21 @@ def test_analyze_missing_token_returns_403(monkeypatch):
     monkeypatch.setenv("TURNSTILE_SECRET", "dummy-secret")
     payload = {k: v for k, v in _ANALYZE_PAYLOAD.items() if k != "turnstile_token"}
     with _mock_turnstile_client(success=False):
-        r = client.post("/analyze", json=payload)
+        r = client.post("/llm-assess", json=payload)
     assert r.status_code == 403
 
 
 def test_analyze_empty_token_returns_403(monkeypatch):
     monkeypatch.setenv("TURNSTILE_SECRET", "dummy-secret")
     with _mock_turnstile_client(success=False):
-        r = client.post("/analyze", json={**_ANALYZE_PAYLOAD, "turnstile_token": ""})
+        r = client.post("/llm-assess", json={**_ANALYZE_PAYLOAD, "turnstile_token": ""})
     assert r.status_code == 403
 
 
 def test_analyze_invalid_token_returns_403(monkeypatch):
     monkeypatch.setenv("TURNSTILE_SECRET", "dummy-secret")
     with _mock_turnstile_client(success=False):
-        r = client.post("/analyze", json=_ANALYZE_PAYLOAD)
+        r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
     assert r.status_code == 403
 
 
@@ -183,7 +183,7 @@ def test_analyze_no_secret_bypasses_turnstile(monkeypatch):
     monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
     with patch("app.routes.analyze.analyze_trademark") as mock_analyze:
         mock_analyze.return_value = {"analysis": "Bypassed.", "sources": None}
-        r = client.post("/analyze", json=_ANALYZE_PAYLOAD)
+        r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
     assert r.status_code == 200
 
 
@@ -192,6 +192,6 @@ def test_analyze_valid_token_returns_200(monkeypatch):
     with _mock_turnstile_client(success=True), \
          patch("app.routes.analyze.analyze_trademark") as mock_analyze:
         mock_analyze.return_value = {"analysis": "Test analysis.", "sources": None}
-        r = client.post("/analyze", json=_ANALYZE_PAYLOAD)
+        r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
     assert r.status_code == 200
     assert "analysis" in r.json()

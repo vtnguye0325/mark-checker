@@ -25,7 +25,7 @@ class PredictResponse(BaseModel):
     formatted_input: str
 
 
-@router.post("/predict", response_model=PredictResponse)
+@router.post("/ml-predict", response_model=PredictResponse)
 @limiter.limit(DEFAULT_LIMIT)
 def predict(request: Request, req: PredictRequest) -> PredictResponse:  # noqa: ARG001
     fmt = format_mark(

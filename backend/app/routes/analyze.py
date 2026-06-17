@@ -29,14 +29,14 @@ class AnalyzeResponse(BaseModel):
     sources: dict | None = None
 
 
-@router.post("/analyze", response_model=AnalyzeResponse)
+@router.post("/llm-assess", response_model=AnalyzeResponse)
 @limiter.limit(ANALYZE_LIMIT)
 async def analyze(
     request: Request,  # noqa: ARG001
     req: AnalyzeRequest,
     _: None = Depends(verify_turnstile),
 ) -> AnalyzeResponse:
-    log.info("analyze request  mark=%r class=%d label=%s", req.mark, req.nice_class, req.label)
+    log.info("llm-assess request  mark=%r class=%d label=%s", req.mark, req.nice_class, req.label)
     try:
         result = analyze_trademark(
             mark=req.mark,
