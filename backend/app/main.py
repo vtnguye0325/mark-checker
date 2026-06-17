@@ -3,6 +3,14 @@ from __future__ import annotations
 import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env from the repo root (two levels up from this file) so local dev
+# picks up TURNSTILE_SECRET, DISABLE_TURNSTILE, etc. without manual exports.
+# In Docker, env vars are injected by compose and load_dotenv is a no-op.
+load_dotenv(Path(__file__).parent.parent.parent / ".env", override=True)
 
 logging.basicConfig(
     level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO),

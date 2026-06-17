@@ -176,11 +176,16 @@ def test_analyze_invalid_token_returns_403(monkeypatch):
     assert r.status_code == 403
 
 
-def test_analyze_no_secret_bypasses_turnstile(monkeypatch):
-    # When TURNSTILE_SECRET is unset, Turnstile is disabled (dev mode) — the
-    # request passes through to the LLM layer. Mock analyze_trademark so we
-    # don't need DEEPSEEK_API_KEY in the test environment.
+def test_analyze_no_secret_returns_503(monkeypatch):
     monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
+    monkeypatch.delenv("DISABLE_TURNSTILE", raising=False)
+    r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
+    assert r.status_code == 503
+
+
+def test_analyze_no_secret_disable_turnstile_bypasses(monkeypatch):
+    monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
+    monkeypatch.setenv("DISABLE_TURNSTILE", "true")
     with patch("app.routes.analyze.analyze_trademark") as mock_analyze:
         mock_analyze.return_value = {"analysis": "Bypassed.", "sources": None}
         r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
