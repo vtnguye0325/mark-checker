@@ -14,6 +14,7 @@ export function useTrademarkPipeline() {
   const [explainData, setExplainData] = useState(null)
   const [llmLoading, setLlmLoading] = useState(false)
   const [llmData, setLlmData] = useState(null)
+  const [llmError, setLlmError] = useState(null)
   const abortRef = useRef(null)
 
   async function submit(payload, turnstileToken = '', onAnalyzeComplete = null) {
@@ -26,6 +27,7 @@ export function useTrademarkPipeline() {
     setResult(null)
     setExplainData(null)
     setLlmData(null)
+    setLlmError(null)
 
     try {
       const res = await fetch('/ml-predict', {
@@ -52,6 +54,7 @@ export function useTrademarkPipeline() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
+          signal: ctrl.signal,
         })
         if (!res2.ok) throw new Error('Explain request failed')
         explainResult = await safeJson(res2)
@@ -78,7 +81,15 @@ export function useTrademarkPipeline() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(analyzePayload),
+            signal: ctrl.signal,
           })
+          if (res3.status === 429) {
+            const retryAfter = res3.headers.get('Retry-After')
+            const wait = retryAfter ? `${retryAfter} seconds` : 'a moment'
+            setLlmError(`Too many analysis requests. Please wait ${wait} and try again.`)
+            onAnalyzeComplete?.()
+            return
+          }
           if (!res3.ok) throw new Error('LLM assess request failed')
           setLlmData(await safeJson(res3))
           onAnalyzeComplete?.()
@@ -100,12 +111,15 @@ export function useTrademarkPipeline() {
     setResult(null)
     setError(null)
     setExplainData(null)
+    setExplainLoading(false)
     setLlmData(null)
+    setLlmLoading(false)
+    setLlmError(null)
   }
 
   return {
     submit,
     reset,
-    state: { loading, result, error, explainLoading, explainData, llmLoading, llmData },
+    state: { loading, result, error, explainLoading, explainData, llmLoading, llmData, llmError },
   }
 }

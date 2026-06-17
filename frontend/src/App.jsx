@@ -81,6 +81,7 @@ export default function App() {
               explainData={state.explainData}
               llmLoading={state.llmLoading}
               llmData={state.llmData}
+              llmError={state.llmError}
             />
           </>
         )}

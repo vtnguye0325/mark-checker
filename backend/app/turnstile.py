@@ -27,8 +27,12 @@ async def verify_turnstile(request: Request) -> None:
     """
     secret = os.environ.get("TURNSTILE_SECRET")
     if not secret:
-        log.warning("TURNSTILE_SECRET unset — skipping Turnstile verification (dev mode)")
-        return
+        if os.environ.get("DISABLE_TURNSTILE", "").lower() == "true":
+            log.warning(
+                "TURNSTILE_SECRET unset — skipping Turnstile verification (DISABLE_TURNSTILE=true)"
+            )
+            return
+        raise HTTPException(status_code=503, detail="Turnstile not configured")
 
     try:
         body = await request.json()

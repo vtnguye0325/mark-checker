@@ -12,6 +12,7 @@ export default function ResultPanel({
   explainData,
   llmLoading,
   llmData,
+  llmError,
 }) {
   const [debugOpen, setDebugOpen] = useState(false)
 
@@ -62,6 +63,7 @@ export default function ResultPanel({
 
       {explainData && <AttributionChart attributions={explainData.attributions} />}
 
+      {llmError && <div className="error-message">{llmError}</div>}
       <LLMAnalysis loading={llmLoading} data={llmData} />
 
       <div className="debug-section">
