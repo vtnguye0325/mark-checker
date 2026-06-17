@@ -1,5 +1,11 @@
 import { useState, useRef } from 'react'
 
+async function safeJson(res) {
+  const text = await res.text()
+  if (!text) return {}
+  try { return JSON.parse(text) } catch { return { detail: text } }
+}
+
 export function useTrademarkPipeline() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -22,33 +28,33 @@ export function useTrademarkPipeline() {
     setLlmData(null)
 
     try {
-      const res = await fetch('/predict', {
+      const res = await fetch('/ml-predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         signal: ctrl.signal,
       })
       if (!res.ok) {
-        const err = await res.json()
+        const err = await safeJson(res)
         const msg = Array.isArray(err.detail)
           ? err.detail.map((d) => d.msg).join('; ')
           : (err.detail || 'Request failed')
         throw new Error(msg)
       }
-      const data = await res.json()
+      const data = await safeJson(res)
       const predictResult = { ...data, mark: payload.mark, nice_class: payload.nice_class }
       setResult(predictResult)
 
       setExplainLoading(true)
       let explainResult = null
       try {
-        const res2 = await fetch('/explain', {
+        const res2 = await fetch('/llm-explain', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         if (!res2.ok) throw new Error('Explain request failed')
-        explainResult = await res2.json()
+        explainResult = await safeJson(res2)
         setExplainData(explainResult)
       } catch (err) {
         console.error(err)
@@ -68,13 +74,13 @@ export function useTrademarkPipeline() {
             attributions: explainResult.attributions,
             turnstile_token: turnstileToken,
           }
-          const res3 = await fetch('/analyze', {
+          const res3 = await fetch('/llm-assess', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(analyzePayload),
           })
-          if (!res3.ok) throw new Error('Analyze request failed')
-          setLlmData(await res3.json())
+          if (!res3.ok) throw new Error('LLM assess request failed')
+          setLlmData(await safeJson(res3))
           onAnalyzeComplete?.()
         } catch (err) {
           console.error(err)

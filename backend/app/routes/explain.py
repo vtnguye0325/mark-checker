@@ -32,7 +32,7 @@ class ExplainResponse(BaseModel):
     attributions: list[Attribution]
 
 
-@router.post("/explain", response_model=ExplainResponse)
+@router.post("/llm-explain", response_model=ExplainResponse)
 @limiter.limit(DEFAULT_LIMIT)
 def explain(request: Request, req: ExplainRequest) -> ExplainResponse:  # noqa: ARG001
     fmt = format_mark(

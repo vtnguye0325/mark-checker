@@ -25,7 +25,7 @@ def _client_ip(request: Request) -> str:
     return client.host if client else "127.0.0.1"
 
 
-# Per-IP limits. /analyze spends money on a paid LLM, so it is throttled harder
+# Per-IP limits. /llm-assess spends money on a paid LLM, so it is throttled harder
 # than the local-inference endpoints. Both are env-overridable for deployment.
 DEFAULT_LIMIT = os.getenv("RATE_LIMIT_DEFAULT", "100/hour")
 ANALYZE_LIMIT = os.getenv("RATE_LIMIT_ANALYZE", "20/hour")

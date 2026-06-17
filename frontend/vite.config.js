@@ -11,9 +11,9 @@ export default defineConfig({
     // macOS + Docker volume mounts drop inotify events; poll so HMR actually fires.
     watch: { usePolling: true, interval: 300 },
     proxy: {
-      '/predict': apiTarget,
-      '/explain': apiTarget,
-      '/analyze': apiTarget,
+      '/ml-predict': apiTarget,
+      '/llm-explain': apiTarget,
+      '/llm-assess': apiTarget,
       '/health': apiTarget,
     },
   },
