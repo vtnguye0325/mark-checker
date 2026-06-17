@@ -72,6 +72,8 @@ jobs:
       HF_MODEL_ID: ${{ secrets.HF_MODEL_ID }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+      VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
