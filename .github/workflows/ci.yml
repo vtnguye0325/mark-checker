@@ -61,29 +61,34 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: frontend
-
   deploy:
     name: Deploy to Production
     runs-on: [self-hosted, local]
     needs: [backend-lint, backend-test, frontend-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     env:
-      DOCKER_HOST: unix:///home/vtnguye/.docker/desktop/docker.sock
       HF_MODEL_ID: ${{ secrets.HF_MODEL_ID }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
       VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Sync code to production directory
+        run: |
+          cd /opt/mark-checker
+          git fetch origin main
+          git reset --hard origin/main
 
       - name: Build images
+        working-directory: /opt/mark-checker
         run: docker compose build
 
       - name: Deploy
+        working-directory: /opt/mark-checker
         run: docker compose up -d --remove-orphans
 
       - name: Wait for healthy
+        working-directory: /opt/mark-checker
         run: |
           echo "Waiting for backend to be healthy..."
           for i in $(seq 1 24); do
@@ -95,3 +100,4 @@ jobs:
           echo "Backend did not become healthy in time"
           docker compose logs backend --tail 50
           exit 1
+  
