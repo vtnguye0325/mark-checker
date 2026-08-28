@@ -1,4 +1,4 @@
-import { extractVerdict } from '../lib/parseLegalAnalysis'
+import { extractConfidence } from '../lib/parseLegalAnalysis'
 
 // The confidence row fills late, from stage 3. See IMPLEMENTATION_PLAN_D.md 2.4.
 // Print `Pending` until stage 3 lands, then the scraped word. Print `Unavailable`
@@ -7,7 +7,7 @@ function deriveConfidence({ llmData, llmLoading, llmError, explainError }) {
   // A failed stage 2 skips stage 3 entirely, so the word never arrives.
   if (llmError || explainError) return 'Unavailable'
   if (llmLoading || !llmData) return 'Pending'
-  const { confidence } = extractVerdict(llmData.analysis || '')
+  const { confidence } = extractConfidence(llmData.analysis || '')
   if (!confidence) return 'Unavailable'
   return confidence.charAt(0).toUpperCase() + confidence.slice(1)
 }

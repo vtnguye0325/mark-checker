@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { EMPTY_FORM } from './constants/formDefaults'
 import { useTrademarkPipeline } from './hooks/useTrademarkPipeline'
+import { useScrollSpy } from './hooks/useScrollSpy'
 import RecordBar from './components/RecordBar'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
@@ -50,7 +51,6 @@ function buildParts(state) {
 
 export default function App() {
   const [form, setForm] = useState(EMPTY_FORM)
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef(null)
   const filedRef = useRef(null)
@@ -99,6 +99,7 @@ export default function App() {
   }
 
   const parts = buildParts(state)
+  const currentPart = useScrollSpy(result ? parts.filter((p) => p.present).length : 0)
   const sourceCount = state.llmData?.sources
     ? (state.llmData.sources.tmep?.length || 0) + (state.llmData.sources.ttab?.length || 0)
     : 0
@@ -127,7 +128,7 @@ export default function App() {
 
       <div className="doc">
         {hasActivity
-          ? <RecordRail meta={meta} parts={parts} />
+          ? <RecordRail meta={meta} parts={parts} current={currentPart} />
           : (
             <aside className="rail">
               <p className="t-small dim">The record opens after you submit a mark.</p>
@@ -139,13 +140,9 @@ export default function App() {
             <MarkForm
               form={form}
               onFieldChange={onFieldChange}
-              showAdvanced={showAdvanced}
-              onToggleAdvanced={() => setShowAdvanced((o) => !o)}
               error={state.error}
               loading={loading}
-              result={result}
               onSubmit={handleSubmit}
-              onReset={handleReset}
               canSubmit={canSubmit}
               turnstileRef={turnstileRef}
               onTurnstileToken={setTurnstileToken}

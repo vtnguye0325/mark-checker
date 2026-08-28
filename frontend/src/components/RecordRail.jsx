@@ -1,7 +1,7 @@
 // The metadata rows and the part index. `parts` is an array of
 // { id, name, no, status, present }. Render a link when the part is on the page
 // and a plain row when it is not.
-export default function RecordRail({ meta, parts }) {
+export default function RecordRail({ meta, parts, current }) {
   const metaRows = [
     ['Filed', meta.filed],
     ['Class', meta.nice_class],
@@ -28,7 +28,12 @@ export default function RecordRail({ meta, parts }) {
         <div className="rail-links">
           {parts.map((part) =>
             part.present ? (
-              <a className="rail-link" href={`#${part.id}`} key={part.id}>
+              <a
+                className={`rail-link${part.id === current ? ' rail-link--here' : ''}`}
+                href={`#${part.id}`}
+                key={part.id}
+                aria-current={part.id === current ? 'location' : undefined}
+              >
                 <span>{part.name}</span>
                 <span className="mono">{part.status}</span>
               </a>
