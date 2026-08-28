@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark Checker — C. The Filing Record</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<!--
+  THESIS: The result is a record, not a screen. One document, ruled in hairlines,
+  with a mono metadata rail down the left and numbered parts that cite each other
+  the way an office file does. It refuses the container this category always ships:
+  there is not one card on this page, and there is nothing to expand or collapse.
+  OWN-WORLD: Bauhaus / Swiss per docs/DESIGN_PRINCIPLES.md. Pure black and white,
+  true neutral grays, one accent per view. Archivo grotesk, 0px radius, no shadow,
+  8px scale, hairline rules. JetBrains Mono carries every identifier and figure.
+  STORY: The visitor reads a finished document top to bottom, can point at any line,
+  and can hand the whole thing to a lawyer without explaining the interface.
+  FIRST VIEWPORT: A 4px blue rule, a mono record header, then the verdict at 120px
+  against a 216px left rail of record metadata. Part 01 begins immediately below.
+  FORM: The Filing Record — index 5 of my ranked structures; dealt by seed 0ced1fd7.
+  RAISE (variable-font specimen): the mark is set once at specimen scale as the
+  record's subject line, so the letterforms are the object under examination.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+  review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+-->
+<style>
+  :root {
+    --ink:      #000000;
+    --paper:    #FFFFFF;
+    --gray-90:  #111111;
+    --gray-60:  #666666;
+    --gray-30:  #B3B3B3;
+    --gray-12:  #E0E0E0;
+    --gray-04:  #F5F5F5;
+
+    --blue:   #0B5FD9;
+    --red:    #E63329;
+    --yellow: #F5C518;
+
+    /* One accent per view. This view is DISTINCTIVE, so the accent is blue. */
+    --accent: var(--blue);
+
+    --sans: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    --margin: 24px;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+  }
+  @media (min-width: 1024px) { :root { --margin: 64px; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--paper); color-scheme: light; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.55;
+  }
+  ::selection { background: var(--ink); color: var(--paper); }
+  .quote ::selection, .recordbar ::selection { background: var(--paper); color: var(--ink); }
+  * { caret-color: var(--ink); scrollbar-color: var(--ink) var(--gray-12); scrollbar-width: thin; }
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: var(--gray-12); }
+  ::-webkit-scrollbar-thumb { background: var(--ink); }
+  a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .recordbar :focus-visible, .quote :focus-visible { outline-color: var(--paper); }
+
+  .t-display {
+    font-size: clamp(48px, 9vw, 120px); font-weight: 700; line-height: 0.95;
+    letter-spacing: -0.04em; font-variation-settings: 'wdth' 104; margin: 0;
+    overflow-wrap: anywhere;
+  }
+  /* Grid children must be allowed to shrink below their longest word. */
+  .doc > * { min-width: 0; }
+  .t-h1 { font-size: clamp(34px, 4vw, 56px); font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin: 0; }
+  .t-h2 { font-size: clamp(26px, 2.6vw, 32px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin: 0; }
+  .t-h3 { font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; margin: 0; }
+  .t-body { font-size: 16px; line-height: 1.55; margin: 0; max-width: 68ch; }
+  .t-small { font-size: 13px; line-height: 1.5; margin: 0; }
+  .t-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.4; margin: 0; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .dim { color: var(--gray-60); }
+  .dim-on-ink { color: var(--gray-30); }
+
+  .anno {
+    background: var(--ink); color: var(--gray-30);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 10px var(--margin);
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .anno b { color: var(--paper); font-weight: 500; }
+  .state-mark {
+    padding: 96px var(--margin) 24px; display: flex; align-items: baseline; gap: 16px;
+    border-top: 4px solid var(--ink); margin-top: 128px;
+  }
+
+  /* ── The record header ───────────────────────────────────────── */
+  .accent-rule { height: 4px; background: var(--accent); }
+  .recordbar {
+    background: var(--ink); color: var(--gray-30);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px var(--margin);
+    display: flex; gap: 32px; flex-wrap: wrap; justify-content: space-between;
+  }
+  .recordbar b { color: var(--paper); font-weight: 500; }
+
+  /* ── The document: mono rail + body ──────────────────────────── */
+  .doc {
+    display: grid; grid-template-columns: 1fr;
+    padding: 0 var(--margin); max-width: 1440px; margin: 0 auto;
+  }
+  @media (min-width: 1000px) {
+    .doc { grid-template-columns: 216px 1fr; column-gap: 48px; }
+  }
+  .rail { padding: 48px 0 0; }
+  @media (min-width: 1000px) {
+    .rail {
+      position: sticky; top: 0; align-self: start;
+      height: 100vh; overflow-y: auto;
+      padding: 64px 24px 64px 0;
+      border-right: 1px solid var(--gray-12);
+    }
+  }
+  .body { padding: 48px 0 96px; min-width: 0; }
+  @media (min-width: 1000px) { .body { padding: 64px 0 128px; } }
+
+  .rail-group + .rail-group { margin-top: 48px; }
+  .rail-row {
+    display: flex; justify-content: space-between; gap: 16px;
+    padding: 8px 0; border-bottom: 1px solid var(--gray-12);
+    font-family: var(--mono); font-size: 11px; line-height: 1.5;
+  }
+  .rail-row span:first-child { color: var(--gray-60); }
+  .rail-link {
+    display: flex; justify-content: space-between; gap: 16px;
+    padding: 8px 0; border-bottom: 1px solid var(--gray-12);
+    font-family: var(--mono); font-size: 11px; color: var(--ink);
+    text-decoration: none;
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .rail-link:hover { background: var(--ink); color: var(--paper); }
+  .rail-link--here { border-bottom: 2px solid var(--ink); font-weight: 500; }
+
+  /* ── Parts ───────────────────────────────────────────────────── */
+  .part { padding-top: 64px; }
+  .part-head {
+    display: flex; align-items: baseline; gap: 24px;
+    border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 32px;
+  }
+  .part-no { font-family: var(--mono); font-size: 13px; color: var(--gray-60); }
+
+  .index { border-top: 1px solid var(--gray-12); }
+  .row {
+    display: grid; grid-template-columns: 1fr auto; gap: 24px;
+    align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--gray-12);
+  }
+  .row-val { text-align: right; }
+  .row--tall { padding: 24px 0; }
+
+  /* The subject line: the mark set as a specimen. */
+  .subject {
+    border-bottom: 2px solid var(--ink); padding-bottom: 24px; margin-bottom: 32px;
+  }
+  /* h1 scale, not display: Part 02's finding is the page's one display element. */
+  .subject-mark {
+    font-size: clamp(32px, 4.4vw, 56px); font-weight: 700; line-height: 1.15;
+    letter-spacing: -0.03em; font-variation-settings: 'wdth' 96; margin: 8px 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Spectrum stated as a ruled table, because this page is a document. */
+  .tier {
+    display: grid; grid-template-columns: 24px 1fr auto auto; gap: 16px;
+    align-items: center; padding: 16px 0; border-bottom: 1px solid var(--gray-12);
+  }
+  .tier-glyph { width: 16px; height: 16px; border: 1px solid var(--ink); }
+  .tier--here .tier-glyph { background: var(--ink); }
+  .tier--here { font-weight: 700; }
+  .tier-range { font-family: var(--mono); font-size: 13px; color: var(--gray-60); text-align: right; min-width: 96px; }
+  .tier--here .tier-range { color: var(--ink); }
+  .tier-note { font-size: 13px; color: var(--gray-60); min-width: 168px; text-align: right; }
+  .tier--here .tier-note { color: var(--ink); }
+  @media (max-width: 700px) {
+    .tier { grid-template-columns: 24px 1fr auto; }
+    .tier-note { display: none; }
+  }
+
+  .attr { padding: 16px 0; border-bottom: 1px solid var(--gray-12); }
+  .attr-head { display: flex; justify-content: space-between; gap: 24px; align-items: baseline; flex-wrap: wrap; }
+  .attr-track {
+    margin-top: 8px; height: 24px; display: grid; grid-template-columns: 1fr 1fr;
+    border-left: 1px solid var(--gray-12); border-right: 1px solid var(--gray-12);
+  }
+  .attr-neg { display: flex; justify-content: flex-end; border-right: 2px solid var(--ink); }
+  .attr-pos { display: flex; }
+  .attr-fill { background: var(--ink); }
+  .attr-outline { border: 1px solid var(--ink); }
+
+  .quote {
+    background: var(--ink); color: var(--paper);
+    padding: 32px; font-size: 20px; line-height: 1.5; max-width: 60ch;
+    margin: 24px 0;
+  }
+  @media (min-width: 900px) { .quote { padding: 48px; } }
+  .quote cite { display: block; margin-top: 24px; font-style: normal; }
+
+  .btn {
+    font: inherit; font-weight: 600; font-size: 16px;
+    border: 1px solid var(--ink); border-radius: 0; padding: 16px 32px; cursor: pointer;
+    background: var(--ink); color: var(--paper);
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .btn:hover { background: var(--paper); color: var(--ink); }
+  .btn--secondary { background: transparent; color: var(--ink); }
+  .btn--secondary:hover { background: var(--ink); color: var(--paper); }
+
+  .field { display: block; margin-bottom: 48px; }
+  .field-input {
+    display: block; width: 100%; font: inherit; color: var(--ink); background: transparent;
+    border: 0; border-bottom: 1px solid var(--gray-30); border-radius: 0;
+    padding: 8px 0; margin-top: 8px; transition: border-color 150ms var(--ease);
+  }
+  .field-input::placeholder { color: var(--gray-60); }
+  .field-input:focus { border-bottom: 2px solid var(--ink); outline: 0; padding-bottom: 7px; }
+  .field-input:focus-visible { outline: 0; }
+  .field-input--mark {
+    font-size: clamp(34px, 5.5vw, 64px); font-weight: 700;
+    letter-spacing: -0.03em; line-height: 1.15; text-transform: uppercase;
+  }
+
+  .progress { height: 2px; background: var(--gray-12); }
+  .progress i { display: block; height: 100%; background: var(--ink); width: 38%; }
+  @media (prefers-reduced-motion: no-preference) {
+    .progress i { animation: grow 2.4s var(--ease) infinite; }
+    @keyframes grow { from { width: 4%; } to { width: 96%; } }
+  }
+
+  .stack > * + * { margin-top: 24px; }
+  pre { margin: 0; white-space: pre-wrap; }
+</style>
+
+<div class="anno">
+  <span><b>Mockup C</b> — The Filing Record</span>
+  <span>One document, hairline rules, no cards anywhere</span>
+  <span>States: 01 result · 02 empty · 03 loading</span>
+  <span>Sample data</span>
+</div>
+
+<!-- ═══ STATE 01 — RESULT ══════════════════════════════════════ -->
+<div class="accent-rule"></div>
+<div class="recordbar">
+  <span>Mark Checker · <b>Distinctiveness record</b></span>
+  <span>Ref <b>MC-2026-0827-0041</b></span>
+  <span>Not legal advice</span>
+</div>
+
+<div class="doc">
+  <!-- The metadata rail -->
+  <aside class="rail">
+    <div class="rail-group">
+      <p class="t-label" style="margin-bottom:16px">Record</p>
+      <div class="rail-row"><span>Ref</span><span>MC-2026-0827-0041</span></div>
+      <div class="rail-row"><span>Filed</span><span>27 Aug 2026</span></div>
+      <div class="rail-row"><span>Class</span><span>21</span></div>
+      <div class="rail-row"><span>Score</span><span>0.94</span></div>
+      <div class="rail-row"><span>Model</span><span>ModernBERT</span></div>
+      <div class="rail-row"><span>Sources</span><span>5</span></div>
+    </div>
+    <div class="rail-group">
+      <p class="t-label" style="margin-bottom:16px">Parts</p>
+      <a class="rail-link rail-link--here" href="#p1"><span>Subject</span><span>01</span></a>
+      <a class="rail-link" href="#p2"><span>Finding</span><span>02</span></a>
+      <a class="rail-link" href="#p3"><span>Spectrum</span><span>03</span></a>
+      <a class="rail-link" href="#p4"><span>Basis</span><span>04</span></a>
+      <a class="rail-link" href="#p5"><span>Authority</span><span>05</span></a>
+      <a class="rail-link" href="#p6"><span>Action</span><span>06</span></a>
+      <a class="rail-link" href="#p7"><span>Input</span><span>07</span></a>
+    </div>
+  </aside>
+
+  <!-- The record body -->
+  <main class="body">
+
+    <!-- PART 01 — SUBJECT -->
+    <section class="part" id="p1" style="padding-top:0">
+      <div class="subject">
+        <p class="t-label dim">Subject of this record</p>
+        <p class="subject-mark">ZEPHYRLINE</p>
+      </div>
+      <div class="index" style="border-top:0">
+        <div class="row"><span class="t-label">Goods &amp; services</span><span class="row-val t-small">Insulated water bottles</span></div>
+        <div class="row"><span class="t-label">NICE class</span><span class="row-val mono t-small">21 — Household utensils and containers</span></div>
+        <div class="row"><span class="t-label">Translation</span><span class="row-val t-small dim">Not supplied</span></div>
+        <div class="row"><span class="t-label">Pseudo mark</span><span class="row-val t-small dim">Not supplied</span></div>
+      </div>
+    </section>
+
+    <!-- PART 02 — FINDING -->
+    <section class="part" id="p2">
+      <div class="part-head">
+        <span class="part-no">Part 02</span>
+        <h2 class="t-h2">Finding</h2>
+      </div>
+      <h1 class="t-display">Distinctive</h1>
+      <div class="index" style="margin-top:32px">
+        <div class="row"><span class="t-label">Distinctiveness score</span><span class="row-val mono t-h3">0.94</span></div>
+        <div class="row"><span class="t-label">Confidence</span><span class="row-val t-h3">High</span></div>
+        <div class="row"><span class="t-label">Tier</span><span class="row-val t-h3">Fanciful</span></div>
+      </div>
+      <p class="t-body" style="margin-top:32px">
+        This is a first read from a classifier, not a registration decision and not
+        legal advice. Distinctiveness is one of several grounds for refusal; a conflict
+        with an existing registered mark is a separate question this record does not
+        answer.
+      </p>
+    </section>
+
+    <!-- PART 03 — SPECTRUM -->
+    <section class="part" id="p3">
+      <div class="part-head">
+        <span class="part-no">Part 03</span>
+        <h2 class="t-h2">Position on the spectrum</h2>
+      </div>
+      <div class="index">
+        <div class="tier">
+          <span class="tier-glyph" aria-hidden="true"></span>
+          <span class="t-h3">Generic</span>
+          <span class="tier-note">Never registrable</span>
+          <span class="tier-range">0.00–0.28</span>
+        </div>
+        <div class="tier">
+          <span class="tier-glyph" aria-hidden="true"></span>
+          <span class="t-h3">Descriptive</span>
+          <span class="tier-note">Needs acquired meaning</span>
+          <span class="tier-range">0.28–0.50</span>
+        </div>
+        <div class="tier">
+          <span class="tier-glyph" aria-hidden="true"></span>
+          <span class="t-h3">Suggestive</span>
+          <span class="tier-note">Inherently distinctive</span>
+          <span class="tier-range">0.50–0.70</span>
+        </div>
+        <div class="tier">
+          <span class="tier-glyph" aria-hidden="true"></span>
+          <span class="t-h3">Arbitrary</span>
+          <span class="tier-note">Inherently distinctive</span>
+          <span class="tier-range">0.70–0.88</span>
+        </div>
+        <div class="tier tier--here">
+          <span class="tier-glyph" aria-hidden="true"></span>
+          <span class="t-h3">Fanciful — this mark</span>
+          <span class="tier-note">Strongest protection</span>
+          <span class="tier-range">0.88–1.00</span>
+        </div>
+      </div>
+      <p class="t-small dim" style="margin-top:16px">
+        The filled square marks the tier. The score in Part 02 falls inside the range
+        printed on that row.
+      </p>
+    </section>
+
+    <!-- PART 04 — BASIS -->
+    <section class="part" id="p4">
+      <div class="part-head">
+        <span class="part-no">Part 04</span>
+        <h2 class="t-h2">Basis for the finding</h2>
+      </div>
+      <p class="t-body" style="margin-bottom:32px">
+        Each input field was blanked in turn and the score re-measured. The swing is
+        that field's contribution to the finding in Part 02.
+      </p>
+      <div class="index">
+        <div class="attr">
+          <div class="attr-head">
+            <span><span class="t-h3">Mark text</span> <span class="t-small dim mono">ZEPHYRLINE</span></span>
+            <span class="mono t-small">+0.41 toward</span>
+          </div>
+          <div class="attr-track"><span class="attr-neg"></span><span class="attr-pos"><i class="attr-fill" style="width:100%"></i></span></div>
+        </div>
+        <div class="attr">
+          <div class="attr-head">
+            <span><span class="t-h3">Dictionary word</span> <span class="t-small dim mono">false</span></span>
+            <span class="mono t-small">+0.16 toward</span>
+          </div>
+          <div class="attr-track"><span class="attr-neg"></span><span class="attr-pos"><i class="attr-fill" style="width:39%"></i></span></div>
+        </div>
+        <div class="attr">
+          <div class="attr-head">
+            <span><span class="t-h3">Goods &amp; services</span> <span class="t-small dim mono">insulated water bottles</span></span>
+            <span class="mono t-small">−0.05 against</span>
+          </div>
+          <div class="attr-track"><span class="attr-neg"><i class="attr-outline" style="width:12%"></i></span><span class="attr-pos"></span></div>
+        </div>
+        <div class="attr">
+          <div class="attr-head">
+            <span><span class="t-h3">Pseudo mark</span> <span class="t-small dim mono">not supplied</span></span>
+            <span class="mono t-small">0.00 neutral</span>
+          </div>
+          <div class="attr-track"><span class="attr-neg"></span><span class="attr-pos"></span></div>
+        </div>
+      </div>
+      <p class="t-small dim" style="margin-top:16px;max-width:68ch">
+        <span style="display:inline-block;width:20px;height:10px;background:currentColor;margin-right:8px"></span>
+        Filled, right of the axis: the field pushes toward distinctive. &nbsp;
+        <span style="display:inline-block;width:20px;height:10px;border:1px solid currentColor;margin-right:8px"></span>
+        Outlined, left of the axis: it pushes against. Fill and side carry the sign,
+        so the chart reads without color.
+      </p>
+      <p class="t-body" style="margin-top:32px">
+        The mark text carried the finding almost alone. <b>ZEPHYRLINE</b> is a coined
+        term with no dictionary entry and no recognized association with drinkware, so
+        nothing in it describes the goods. The goods description pulled back very
+        slightly, because plain functional phrasing scores a little lower on average.
+      </p>
+    </section>
+
+    <!-- PART 05 — AUTHORITY -->
+    <section class="part" id="p5">
+      <div class="part-head">
+        <span class="part-no">Part 05</span>
+        <h2 class="t-h2">Authority relied on</h2>
+      </div>
+      <p class="t-body" style="margin-bottom:24px">
+        The retrieval agent pulled these passages before the analysis was written, and
+        the analysis may cite nothing else.
+      </p>
+      <blockquote class="quote">
+        Fanciful marks comprise terms that have been invented for the sole purpose of
+        functioning as a trademark. Such marks are the strongest and are afforded the
+        widest latitude of protection.
+        <cite class="t-label dim-on-ink">TMEP § 1209.01(a) — Fanciful, Arbitrary, and Suggestive Marks</cite>
+      </blockquote>
+      <p class="t-label" style="margin-top:48px">Also retrieved, not cited</p>
+      <div class="index">
+        <div class="row">
+          <span><span class="mono t-small">§ 1209.01(b)</span> &nbsp; <span class="t-h3">Merely Descriptive Marks</span></span>
+          <span class="row-val t-small dim">TMEP</span>
+        </div>
+        <div class="row">
+          <span><span class="mono t-small">§ 1209.03(a)</span> &nbsp; <span class="t-h3">Combined Terms</span></span>
+          <span class="row-val t-small dim">TMEP</span>
+        </div>
+        <div class="row">
+          <span><span class="t-h3">ZEPHYR</span> &nbsp; <span class="mono t-small dim">NC 21</span></span>
+          <span class="row-val t-small">TTAB — registered</span>
+        </div>
+        <div class="row">
+          <span><span class="t-h3">AQUAPURE</span> &nbsp; <span class="mono t-small dim">NC 21</span></span>
+          <span class="row-val t-small">TTAB — refused, descriptive</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PART 06 — ACTION -->
+    <section class="part" id="p6">
+      <div class="part-head">
+        <span class="part-no">Part 06</span>
+        <h2 class="t-h2">Recommended action</h2>
+      </div>
+      <div class="stack">
+        <p class="t-body">
+          Keep the coined spelling. Adding a descriptive element such as "hydro" or
+          "thermo" would move the mark down the table in Part 03 and weaken the
+          protection described in Part 05.
+        </p>
+        <p class="t-body">
+          Next, run a conflict search against registered marks in class 21. This record
+          covers distinctiveness only.
+        </p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;padding-top:8px">
+          <button class="btn">Check another name</button>
+          <button class="btn btn--secondary">Export record</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PART 07 — INPUT -->
+    <section class="part" id="p7">
+      <div class="part-head">
+        <span class="part-no">Part 07</span>
+        <h2 class="t-h2">Classifier input</h2>
+      </div>
+      <p class="t-body" style="margin-bottom:24px">
+        The exact eight-field string the model read. Everything above derives from it.
+      </p>
+      <div class="index">
+        <div class="row"><span class="mono t-small dim">mark</span><span class="row-val mono t-small">ZEPHYRLINE</span></div>
+        <div class="row"><span class="mono t-small dim">translation</span><span class="row-val mono t-small dim">—</span></div>
+        <div class="row"><span class="mono t-small dim">dictionary_word</span><span class="row-val mono t-small">false</span></div>
+        <div class="row"><span class="mono t-small dim">mark_length</span><span class="row-val mono t-small">10</span></div>
+        <div class="row"><span class="mono t-small dim">nice_class</span><span class="row-val mono t-small">21</span></div>
+        <div class="row"><span class="mono t-small dim">nice_category</span><span class="row-val mono t-small">Household utensils</span></div>
+        <div class="row"><span class="mono t-small dim">description</span><span class="row-val mono t-small">insulated water bottles</span></div>
+        <div class="row"><span class="mono t-small dim">pseudo_mark</span><span class="row-val mono t-small dim">—</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ═══ STATE 02 — EMPTY ═══════════════════════════════════════ -->
+<div class="state-mark">
+  <p class="t-label mono">State 02</p>
+  <p class="t-label">Empty — the blank record</p>
+</div>
+
+<div class="recordbar">
+  <span>Mark Checker · <b>Distinctiveness record</b></span>
+  <span>Ref <b>—</b></span>
+  <span>Not legal advice</span>
+</div>
+
+<div class="doc">
+  <aside class="rail">
+    <div class="rail-group">
+      <p class="t-label" style="margin-bottom:16px">Record</p>
+      <div class="rail-row"><span>Ref</span><span>—</span></div>
+      <div class="rail-row"><span>Filed</span><span>—</span></div>
+      <div class="rail-row"><span>Class</span><span>—</span></div>
+      <div class="rail-row"><span>Score</span><span>—</span></div>
+    </div>
+    <div class="rail-group">
+      <p class="t-label" style="margin-bottom:16px">Parts</p>
+      <div class="rail-row"><span>Subject</span><span>01</span></div>
+      <div class="rail-row"><span>Finding</span><span>02</span></div>
+      <div class="rail-row"><span>Spectrum</span><span>03</span></div>
+      <div class="rail-row"><span>Basis</span><span>04</span></div>
+      <div class="rail-row"><span>Authority</span><span>05</span></div>
+      <div class="rail-row"><span>Action</span><span>06</span></div>
+      <div class="rail-row"><span>Input</span><span>07</span></div>
+    </div>
+  </aside>
+
+  <main class="body">
+    <div class="subject">
+      <p class="t-label dim">Subject of this record</p>
+      <form onsubmit="return false">
+        <input class="field-input field-input--mark" style="margin:8px 0 0;border-bottom:0"
+               type="text" placeholder="ENTER A MARK" autocomplete="off" spellcheck="false">
+      </form>
+    </div>
+    <form onsubmit="return false" style="max-width:720px">
+      <label class="field">
+        <span class="t-label">Goods &amp; services</span>
+        <input class="field-input" type="text" placeholder="insulated water bottles">
+      </label>
+      <label class="field">
+        <span class="t-label">NICE class</span>
+        <input class="field-input mono" type="text" placeholder="21" inputmode="numeric">
+      </label>
+      <label class="field">
+        <span class="t-label">Translation <span class="dim" style="text-transform:none;letter-spacing:0;font-weight:400">— English meaning of a foreign-language mark</span></span>
+        <input class="field-input" type="text" placeholder="optional">
+      </label>
+      <label class="field">
+        <span class="t-label">Pseudo mark <span class="dim" style="text-transform:none;letter-spacing:0;font-weight:400">— constituent words of a compound mark</span></span>
+        <input class="field-input" type="text" placeholder="optional">
+      </label>
+      <button class="btn" type="submit">Open record</button>
+    </form>
+    <p class="t-small dim" style="margin-top:48px;max-width:60ch">
+      Parts 02 to 07 fill in when the record opens. Nothing is hidden behind a
+      disclosure: the two optional fields sit on the form because the office asks for
+      them too.
+    </p>
+  </main>
+</div>
+
+<!-- ═══ STATE 03 — LOADING ═════════════════════════════════════ -->
+<div class="state-mark">
+  <p class="t-label mono">State 03</p>
+  <p class="t-label">Loading — parts arrive in order</p>
+</div>
+
+<div class="recordbar">
+  <span>Mark Checker · <b>Distinctiveness record</b></span>
+  <span>Ref <b>MC-2026-0827-0041</b></span>
+  <span>Opening</span>
+</div>
+<div class="progress"><i></i></div>
+
+<div class="doc">
+  <aside class="rail">
+    <div class="rail-group">
+      <p class="t-label" style="margin-bottom:16px">Record</p>
+      <div class="rail-row"><span>Ref</span><span>MC-2026-0827-0041</span></div>
+      <div class="rail-row"><span>Class</span><span>21</span></div>
+      <div class="rail-row"><span>Score</span><span>0.94</span></div>
+      <div class="rail-row"><span>Sources</span><span>—</span></div>
+    </div>
+    <div class="rail-group">
+      <p class="t-label" style="margin-bottom:16px">Parts</p>
+      <div class="rail-row"><span>Subject</span><span>Ready</span></div>
+      <div class="rail-row"><span>Finding</span><span>Ready</span></div>
+      <div class="rail-row"><span>Spectrum</span><span>Ready</span></div>
+      <div class="rail-row"><span>Basis</span><span>Running</span></div>
+      <div class="rail-row"><span>Authority</span><span>Queued</span></div>
+      <div class="rail-row"><span>Action</span><span>Queued</span></div>
+      <div class="rail-row"><span>Input</span><span>Ready</span></div>
+    </div>
+  </aside>
+
+  <main class="body">
+    <div class="subject">
+      <p class="t-label dim">Subject of this record</p>
+      <p class="subject-mark">ZEPHYRLINE</p>
+    </div>
+    <div class="part-head" style="padding-top:0">
+      <span class="part-no">Part 02</span>
+      <h2 class="t-h2">Finding</h2>
+    </div>
+    <h1 class="t-display">Distinctive</h1>
+    <div class="part">
+      <div class="part-head">
+        <span class="part-no">Part 04</span>
+        <h2 class="t-h2 dim">Basis for the finding</h2>
+      </div>
+      <div class="index">
+        <div class="row row--tall"><span class="t-small dim">Measuring each field in turn…</span><span class="row-val t-label dim">Running</span></div>
+        <div class="row row--tall"><span class="t-small dim">Retrieving TMEP and TTAB doctrine</span><span class="row-val t-label dim">Queued</span></div>
+      </div>
+      <p class="t-small dim" style="margin-top:24px">
+        Each stage is slower than the last. Parts fill in where they belong, in order,
+        so the record is readable while it is still being written.
+      </p>
+    </div>
+  </main>
+</div>
+
+<div style="height:128px"></div>
+</body>
+</html>

@@ -12,6 +12,7 @@ export function useTrademarkPipeline() {
   const [error, setError] = useState(null)
   const [explainLoading, setExplainLoading] = useState(false)
   const [explainData, setExplainData] = useState(null)
+  const [explainError, setExplainError] = useState(null)
   const [llmLoading, setLlmLoading] = useState(false)
   const [llmData, setLlmData] = useState(null)
   const [llmError, setLlmError] = useState(null)
@@ -26,6 +27,7 @@ export function useTrademarkPipeline() {
     setError(null)
     setResult(null)
     setExplainData(null)
+    setExplainError(null)
     setLlmData(null)
     setLlmError(null)
 
@@ -61,8 +63,11 @@ export function useTrademarkPipeline() {
         setExplainData(explainResult)
       } catch (err) {
         console.error(err)
+        if (err.name !== 'AbortError' && abortRef.current === ctrl) {
+          setExplainError('The basis step did not complete. Try again.')
+        }
       } finally {
-        setExplainLoading(false)
+        if (abortRef.current === ctrl) setExplainLoading(false)
       }
 
       if (explainResult) {
@@ -83,6 +88,7 @@ export function useTrademarkPipeline() {
             body: JSON.stringify(analyzePayload),
             signal: ctrl.signal,
           })
+          if (abortRef.current !== ctrl) return
           if (res3.status === 429) {
             const retryAfter = res3.headers.get('Retry-After')
             const wait = retryAfter ? `${retryAfter} seconds` : 'a moment'
@@ -95,15 +101,18 @@ export function useTrademarkPipeline() {
           onAnalyzeComplete?.()
         } catch (err) {
           console.error(err)
+          if (err.name !== 'AbortError' && abortRef.current === ctrl) {
+            setLlmError('The analysis did not complete. Try again.')
+          }
           onAnalyzeComplete?.()
         } finally {
-          setLlmLoading(false)
+          if (abortRef.current === ctrl) setLlmLoading(false)
         }
       }
     } catch (err) {
-      if (err.name !== 'AbortError') setError(err.message)
+      if (err.name !== 'AbortError' && abortRef.current === ctrl) setError(err.message)
     } finally {
-      setLoading(false)
+      if (abortRef.current === ctrl) setLoading(false)
     }
   }
 
@@ -111,6 +120,7 @@ export function useTrademarkPipeline() {
     setResult(null)
     setError(null)
     setExplainData(null)
+    setExplainError(null)
     setExplainLoading(false)
     setLlmData(null)
     setLlmLoading(false)
@@ -120,6 +130,6 @@ export function useTrademarkPipeline() {
   return {
     submit,
     reset,
-    state: { loading, result, error, explainLoading, explainData, llmLoading, llmData, llmError },
+    state: { loading, result, error, explainLoading, explainData, explainError, llmLoading, llmData, llmError },
   }
 }

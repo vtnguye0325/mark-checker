@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark Checker — A. The Block Split</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<!--
+  THESIS: The verdict is a wall, not a badge. Every region of this page is one
+  block split — a dark panel set against a light one at 1:2 or 2:1, never 1:1 —
+  so the page reads as masonry, not as a feed of cards. It refuses the dashboard
+  arrangement this category always ships: a grid of same-size metric cards.
+  OWN-WORLD: Bauhaus / Swiss per docs/DESIGN_PRINCIPLES.md. Pure black and white,
+  true neutral grays, one accent per view. Archivo grotesk, 0px radius, no shadow,
+  8px scale, hairline rules. JetBrains Mono for class codes and probabilities only.
+  STORY: The visitor sees the answer at wall scale before reading a word of it,
+  then descends through evidence that alternates dark and light so each claim is
+  physically separated from the next.
+  FIRST VIEWPORT: A full-bleed ink plate fills 72vh under a 4px blue rule. Its left
+  two-thirds carries the verdict word at 120px. Its right third carries the mark,
+  the goods, the class and the probability as ink-panel index rows. The plate
+  compresses into a sticky 56px rail on scroll.
+  FORM: The Block Split — index 7 of my ranked structures; dealt lead by seed 0ced1fd7.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+  review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+-->
+<style>
+  /* ── Tokens ─────────────────────────────────────────────────── */
+  :root {
+    --ink:      #000000;
+    --paper:    #FFFFFF;
+    --gray-90:  #111111;
+    --gray-60:  #666666;
+    --gray-30:  #B3B3B3;
+    --gray-12:  #E0E0E0;
+    --gray-04:  #F5F5F5;
+
+    --blue:   #0B5FD9;
+    --red:    #E63329;
+    --yellow: #F5C518;
+
+    /* One accent per view. This view is DISTINCTIVE, so the accent is blue. */
+    --accent: var(--blue);
+
+    --sans: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    --margin: 24px;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+  }
+  @media (min-width: 1024px) { :root { --margin: 64px; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html {
+    background: var(--paper);
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    font-variation-settings: 'wdth' 100;
+  }
+
+  /* Browser surfaces belong to the design too. */
+  ::selection { background: var(--ink); color: var(--paper); }
+  .plate ::selection, .band--ink ::selection { background: var(--paper); color: var(--ink); }
+  * { caret-color: var(--ink); }
+  * { scrollbar-color: var(--ink) var(--gray-12); scrollbar-width: thin; }
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: var(--gray-12); }
+  ::-webkit-scrollbar-thumb { background: var(--ink); }
+
+  a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .band--ink :focus-visible, .plate :focus-visible { outline-color: var(--paper); }
+
+  /* ── Type ───────────────────────────────────────────────────── */
+  .t-display {
+    font-size: clamp(56px, 11.5vw, 152px);
+    font-weight: 700; line-height: 0.95; letter-spacing: -0.04em;
+    font-variation-settings: 'wdth' 108;
+    margin: 0; text-wrap: balance; overflow-wrap: anywhere;
+  }
+  /* Grid children must be allowed to shrink below their longest word. */
+  .split > *, .plate > * { min-width: 0; }
+  .t-h1 { font-size: clamp(38px, 4.4vw, 56px); font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin: 0; }
+  .t-h2 { font-size: clamp(26px, 2.6vw, 32px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin: 0; }
+  .t-h3 { font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; margin: 0; }
+  .t-body { font-size: 16px; line-height: 1.55; margin: 0; max-width: 68ch; }
+  .t-small { font-size: 13px; line-height: 1.5; margin: 0; }
+  .t-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; line-height: 1.4; margin: 0;
+  }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+  .dim { color: var(--gray-60); }
+  .dim-on-ink { color: var(--gray-30); }
+
+  /* ── Mockup annotation. Not part of the interface. ──────────── */
+  .anno {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--ink); color: var(--gray-30);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px var(--margin);
+    display: flex; gap: 24px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--gray-60);
+  }
+  .anno b { color: var(--paper); font-weight: 500; }
+  .state-mark {
+    padding: 96px var(--margin) 24px;
+    display: flex; align-items: baseline; gap: 16px;
+    border-top: 4px solid var(--ink);
+    margin-top: 128px;
+  }
+  .state-mark--first { margin-top: 0; border-top: 0; padding-top: 32px; }
+
+  /* ── Layout ─────────────────────────────────────────────────── */
+  .split { display: grid; grid-template-columns: 1fr; }
+  @media (min-width: 900px) {
+    .split--2-1 { grid-template-columns: 2fr 1fr; }
+    .split--1-2 { grid-template-columns: 1fr 2fr; }
+  }
+  .pane { padding: 48px var(--margin); }
+  @media (min-width: 900px) { .pane { padding: 96px var(--margin); } }
+  .pane--ink { background: var(--ink); color: var(--paper); }
+  .pane--gray { background: var(--gray-04); }
+  .band--ink { background: var(--ink); color: var(--paper); }
+
+  /* ── The plate: first viewport ──────────────────────────────── */
+  .accent-rule { height: 4px; background: var(--accent); }
+  .plate {
+    background: var(--ink); color: var(--paper);
+    display: grid; grid-template-columns: 1fr;
+  }
+  @media (min-width: 900px) {
+    .plate { grid-template-columns: 2fr 1fr; min-height: 60vh; }
+  }
+  .plate-verdict {
+    padding: 48px var(--margin);
+    display: flex; flex-direction: column; justify-content: flex-end; gap: 24px;
+  }
+  @media (min-width: 900px) { .plate-verdict { padding: 64px; } }
+  /* Sized to the plate's two-thirds column, so a one-word verdict never breaks. */
+  .plate-verdict .t-display { color: var(--paper); font-size: clamp(44px, 7vw, 108px); }
+  .plate-side {
+    padding: 32px var(--margin) 48px;
+    border-top: 1px solid var(--gray-60);
+  }
+  @media (min-width: 900px) {
+    .plate-side { border-top: 0; border-left: 1px solid var(--gray-60); padding: 64px 64px 64px 48px; }
+  }
+
+  /* ── The index pattern ──────────────────────────────────────── */
+  .index { border-top: 1px solid var(--gray-12); }
+  .index--on-ink { border-top-color: var(--gray-60); }
+  .row {
+    display: grid; grid-template-columns: 1fr auto; gap: 24px;
+    align-items: baseline;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--gray-12);
+  }
+  .index--on-ink .row { border-bottom-color: var(--gray-60); }
+  .row-val { text-align: right; }
+
+  /* ── Spectrum as index rows (A keeps it modest; B owns the rail) ─ */
+  .tier {
+    display: grid; grid-template-columns: 24px 1fr auto; gap: 16px;
+    align-items: center; padding: 16px 0;
+    border-bottom: 1px solid var(--gray-12);
+  }
+  .tier-glyph { width: 16px; height: 16px; border: 1px solid var(--ink); }
+  .tier--here .tier-glyph { background: var(--ink); }
+  .tier--here { font-weight: 700; }
+  .tier-note { font-size: 13px; color: var(--gray-60); }
+  .tier--here .tier-note { color: var(--ink); }
+
+  /* ── Attribution: fill = toward, outline = against ──────────── */
+  .attr { padding: 16px 0; border-bottom: 1px solid var(--gray-12); }
+  .attr-head { display: flex; justify-content: space-between; gap: 24px; align-items: baseline; }
+  .attr-track {
+    margin-top: 8px; height: 24px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    border-left: 1px solid var(--gray-12); border-right: 1px solid var(--gray-12);
+  }
+  .attr-neg, .attr-pos { display: flex; align-items: stretch; }
+  .attr-neg { justify-content: flex-end; border-right: 2px solid var(--ink); }
+  .attr-fill { background: var(--ink); }
+  .attr-outline { border: 1px solid var(--ink); background: transparent; }
+
+  /* ── The citation panel ─────────────────────────────────────── */
+  .quote {
+    background: var(--ink); color: var(--paper);
+    padding: 32px; font-size: 20px; line-height: 1.5;
+    max-width: 60ch;
+  }
+  @media (min-width: 900px) { .quote { padding: 48px; } }
+  .quote cite { display: block; margin-top: 24px; font-style: normal; }
+
+  /* ── Buttons and inputs ─────────────────────────────────────── */
+  .btn {
+    font: inherit; font-weight: 600; font-size: 16px;
+    border: 1px solid var(--ink); border-radius: 0;
+    padding: 16px 32px; cursor: pointer;
+    background: var(--ink); color: var(--paper);
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .btn:hover { background: var(--paper); color: var(--ink); }
+  .btn--secondary { background: transparent; color: var(--ink); }
+  .btn--secondary:hover { background: var(--ink); color: var(--paper); }
+
+  .field { display: block; margin-bottom: 48px; }
+  .field-input {
+    display: block; width: 100%;
+    font: inherit; color: var(--ink); background: transparent;
+    border: 0; border-bottom: 1px solid var(--gray-30); border-radius: 0;
+    padding: 8px 0; margin-top: 8px;
+    transition: border-color 150ms var(--ease);
+  }
+  .field-input::placeholder { color: var(--gray-60); }
+  .field-input:focus { border-bottom: 2px solid var(--ink); outline: 0; padding-bottom: 7px; }
+  .field-input:focus-visible { outline: 0; }
+  .field-input--mark {
+    font-size: clamp(38px, 6vw, 72px); font-weight: 700;
+    letter-spacing: -0.03em; line-height: 1.15; text-transform: uppercase;
+  }
+
+  /* ── Loading: a 2px rule that grows from the left ───────────── */
+  .progress { height: 2px; background: var(--gray-12); }
+  .progress i { display: block; height: 100%; background: var(--ink); width: 38%; }
+  @media (prefers-reduced-motion: no-preference) {
+    .progress i { animation: grow 2.4s var(--ease) infinite; }
+    @keyframes grow { from { width: 4%; } to { width: 96%; } }
+  }
+
+  .stack > * + * { margin-top: 24px; }
+  .stack-lg > * + * { margin-top: 48px; }
+  .rule-2 { height: 2px; background: var(--ink); border: 0; margin: 0; }
+  .caps-note { color: var(--gray-60); font-size: 13px; }
+</style>
+
+<div class="anno">
+  <span><b>Mockup A</b> — The Block Split</span>
+  <span>Every region is a dark/light split at 2:1 or 1:2</span>
+  <span>States: 01 result · 02 empty · 03 loading</span>
+  <span>Sample data</span>
+</div>
+
+<!-- ═══ STATE 01 — RESULT ══════════════════════════════════════ -->
+<div class="state-mark state-mark--first">
+  <p class="t-label mono">State 01</p>
+  <p class="t-label">Result</p>
+</div>
+
+<div class="accent-rule"></div>
+<section class="plate">
+  <div class="plate-verdict">
+    <p class="t-label dim-on-ink">Verdict</p>
+    <h1 class="t-display">Distinctive</h1>
+    <p class="t-body dim-on-ink" style="max-width:52ch">
+      The classifier reads this mark as inherently distinctive. That is a first read,
+      not a registration decision.
+    </p>
+  </div>
+  <div class="plate-side">
+    <p class="t-label dim-on-ink" style="margin-bottom:16px">The mark</p>
+    <p class="t-h2" style="margin-bottom:32px">ZEPHYRLINE</p>
+    <div class="index index--on-ink">
+      <div class="row">
+        <span class="t-label dim-on-ink">Goods &amp; services</span>
+        <span class="row-val t-small">Insulated water bottles</span>
+      </div>
+      <div class="row">
+        <span class="t-label dim-on-ink">NICE class</span>
+        <span class="row-val mono t-small">21</span>
+      </div>
+      <div class="row">
+        <span class="t-label dim-on-ink">Distinctiveness</span>
+        <span class="row-val mono t-h3">0.94</span>
+      </div>
+      <div class="row">
+        <span class="t-label dim-on-ink">Confidence</span>
+        <span class="row-val t-small">High</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Spectrum — 1:2 -->
+<section class="split split--1-2">
+  <div class="pane pane--ink">
+    <h2 class="t-h2" style="margin-bottom:24px">Abercrombie<br>spectrum</h2>
+    <p class="t-small dim-on-ink" style="max-width:34ch">
+      Trademark law grades every name on five tiers. The first two cannot be
+      registered without proof of acquired meaning.
+    </p>
+  </div>
+  <div class="pane">
+    <div class="index">
+      <div class="tier">
+        <span class="tier-glyph" aria-hidden="true"></span>
+        <span class="t-h3">Generic</span>
+        <span class="tier-note">Not distinctive</span>
+      </div>
+      <div class="tier">
+        <span class="tier-glyph" aria-hidden="true"></span>
+        <span class="t-h3">Descriptive</span>
+        <span class="tier-note">Not distinctive</span>
+      </div>
+      <div class="tier">
+        <span class="tier-glyph" aria-hidden="true"></span>
+        <span class="t-h3">Suggestive</span>
+        <span class="tier-note">Inherently distinctive</span>
+      </div>
+      <div class="tier">
+        <span class="tier-glyph" aria-hidden="true"></span>
+        <span class="t-h3">Arbitrary</span>
+        <span class="tier-note">Inherently distinctive</span>
+      </div>
+      <div class="tier tier--here">
+        <span class="tier-glyph" aria-hidden="true"></span>
+        <span class="t-h3">Fanciful</span>
+        <span class="tier-note">This mark · inherently distinctive</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Attributions — 2:1 -->
+<section class="split split--2-1">
+  <div class="pane">
+    <h2 class="t-h2" style="margin-bottom:8px">Feature attributions</h2>
+    <p class="t-body dim" style="margin-bottom:48px">
+      Each field was blanked in turn and the score re-measured. The swing is the
+      field's contribution.
+    </p>
+    <div class="index">
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Mark text</span> <span class="t-small dim mono">ZEPHYRLINE</span></span>
+          <span class="mono t-small">+0.41 toward</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"></span>
+          <span class="attr-pos"><i class="attr-fill" style="width:100%"></i></span>
+        </div>
+      </div>
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Dictionary word</span> <span class="t-small dim mono">false</span></span>
+          <span class="mono t-small">+0.16 toward</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"></span>
+          <span class="attr-pos"><i class="attr-fill" style="width:39%"></i></span>
+        </div>
+      </div>
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Goods &amp; services</span> <span class="t-small dim mono">insulated water bottles</span></span>
+          <span class="mono t-small">−0.05 against</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"><i class="attr-outline" style="width:12%"></i></span>
+          <span class="attr-pos"></span>
+        </div>
+      </div>
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Pseudo mark</span> <span class="t-small dim mono">not supplied</span></span>
+          <span class="mono t-small">0.00 neutral</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"></span>
+          <span class="attr-pos"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pane pane--ink">
+    <p class="t-label dim-on-ink" style="margin-bottom:32px">Reading the bars</p>
+    <div class="stack">
+      <p class="t-small">
+        <span style="display:inline-block;width:24px;height:12px;background:#fff;vertical-align:-1px;margin-right:8px"></span>
+        &nbsp; <b>Filled, right of the axis:</b> the field pushes the mark toward distinctive.
+      </p>
+      <p class="t-small">
+        <span style="display:inline-block;width:24px;height:12px;border:1px solid #fff;vertical-align:-1px;margin-right:8px"></span>
+        &nbsp; <b>Outlined, left of the axis:</b> the field pushes against it.
+      </p>
+      <p class="t-small dim-on-ink">
+        Fill and position carry the sign, so the chart reads without color.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Analysis -->
+<section class="pane">
+  <h2 class="t-h2" style="margin-bottom:48px">Analysis</h2>
+  <div class="split split--1-2" style="gap:48px">
+    <div>
+      <p class="t-label" style="margin-bottom:16px">What the model found</p>
+    </div>
+    <div class="stack">
+      <p class="t-body">
+        <b>ZEPHYRLINE</b> is a coined term. It carries no dictionary meaning and no
+        recognized association with drinkware, so nothing in the mark describes the
+        goods. The classifier returns 0.94 with high confidence.
+      </p>
+    </div>
+  </div>
+  <hr class="rule-2" style="margin:48px 0">
+  <div class="split split--1-2" style="gap:48px">
+    <div><p class="t-label" style="margin-bottom:16px">What the model leaned on</p></div>
+    <div class="stack">
+      <p class="t-body">
+        The mark text carried the verdict almost alone. Blanking it drops the score by
+        0.41, more than every other field combined.
+      </p>
+      <p class="t-body">
+        The goods description pulled back very slightly. "Insulated water bottles" is a
+        plain functional phrase, and marks paired with plain goods descriptions score a
+        little lower on average.
+      </p>
+    </div>
+  </div>
+  <hr class="rule-2" style="margin:48px 0">
+  <div class="split split--1-2" style="gap:48px">
+    <div><p class="t-label" style="margin-bottom:16px">The doctrine</p></div>
+    <div>
+      <blockquote class="quote">
+        Fanciful marks comprise terms that have been invented for the sole purpose of
+        functioning as a trademark. Such marks are the strongest and are afforded the
+        widest latitude of protection.
+        <cite class="t-label dim-on-ink">TMEP § 1209.01(a) — Fanciful, Arbitrary, and Suggestive Marks</cite>
+      </blockquote>
+    </div>
+  </div>
+  <hr class="rule-2" style="margin:48px 0">
+  <div class="split split--1-2" style="gap:48px">
+    <div><p class="t-label" style="margin-bottom:16px">What to do next</p></div>
+    <div class="stack">
+      <p class="t-body">
+        Distinctiveness is only the first gate. Run a conflict search against registered
+        marks in class 21 before you file, and keep the coined spelling — adding a
+        descriptive word such as "hydro" or "thermo" would move the mark down the
+        spectrum.
+      </p>
+      <button class="btn btn--secondary">Export report</button>
+    </div>
+  </div>
+</section>
+
+<!-- Sources — 2:1 -->
+<section class="split split--2-1">
+  <div class="pane pane--gray">
+    <h2 class="t-h2" style="margin-bottom:8px">Retrieved sources</h2>
+    <p class="t-body dim" style="margin-bottom:48px">
+      The explanation above may cite only what the retrieval agent actually pulled.
+      These are those passages.
+    </p>
+    <p class="t-label" style="margin-bottom:0">TMEP doctrine</p>
+    <div class="index">
+      <div class="row">
+        <span><span class="mono t-small">§ 1209.01(a)</span> &nbsp; <span class="t-h3">Fanciful, Arbitrary, and Suggestive Marks</span></span>
+        <span class="row-val t-label dim">Cited</span>
+      </div>
+      <div class="row">
+        <span><span class="mono t-small">§ 1209.01(b)</span> &nbsp; <span class="t-h3">Merely Descriptive Marks</span></span>
+        <span class="row-val t-label dim">Retrieved</span>
+      </div>
+      <div class="row">
+        <span><span class="mono t-small">§ 1209.03(a)</span> &nbsp; <span class="t-h3">Combined Terms</span></span>
+        <span class="row-val t-label dim">Retrieved</span>
+      </div>
+    </div>
+    <p class="t-label" style="margin:48px 0 0">TTAB records</p>
+    <div class="index">
+      <div class="row">
+        <span><span class="t-h3">ZEPHYR</span> &nbsp; <span class="mono t-small dim">NC 21</span></span>
+        <span class="row-val t-small">Registered</span>
+      </div>
+      <div class="row">
+        <span><span class="t-h3">AQUAPURE</span> &nbsp; <span class="mono t-small dim">NC 21</span></span>
+        <span class="row-val t-small">Refused — descriptive</span>
+      </div>
+    </div>
+  </div>
+  <div class="pane pane--ink">
+    <p class="t-label dim-on-ink" style="margin-bottom:32px">Model input</p>
+    <pre class="mono t-small" style="margin:0;white-space:pre-wrap;line-height:1.7">mark: ZEPHYRLINE
+translation: —
+dictionary_word: false
+mark_length: 10
+nice_class: 21
+nice_category: Household utensils
+description: insulated water bottles
+pseudo_mark: —</pre>
+    <p class="t-small dim-on-ink" style="margin-top:32px">
+      The exact 8-field string the classifier read.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ STATE 02 — EMPTY ═══════════════════════════════════════ -->
+<div class="state-mark">
+  <p class="t-label mono">State 02</p>
+  <p class="t-label">Empty — the search page</p>
+</div>
+
+<section class="split split--2-1">
+  <div class="pane" style="padding-top:64px">
+    <h1 class="t-display" style="margin-bottom:64px">Mark<br>Checker</h1>
+    <form onsubmit="return false">
+      <label class="field">
+        <span class="t-label">Trademark</span>
+        <input class="field-input field-input--mark" type="text" placeholder="ZEPHYRLINE" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="split split--1-2" style="gap:48px">
+        <label class="field">
+          <span class="t-label">NICE class</span>
+          <input class="field-input mono" type="text" placeholder="21" inputmode="numeric">
+        </label>
+        <label class="field">
+          <span class="t-label">Goods &amp; services</span>
+          <input class="field-input" type="text" placeholder="insulated water bottles">
+        </label>
+      </div>
+      <button class="btn" type="submit">Check mark</button>
+    </form>
+  </div>
+  <div class="pane pane--ink">
+    <p class="t-label dim-on-ink" style="margin-bottom:32px">What you get back</p>
+    <div class="index index--on-ink">
+      <div class="row"><span class="t-small">A verdict and a probability</span><span class="row-val mono t-small">01</span></div>
+      <div class="row"><span class="t-small">The field that drove it</span><span class="row-val mono t-small">02</span></div>
+      <div class="row"><span class="t-small">The doctrine behind it</span><span class="row-val mono t-small">03</span></div>
+    </div>
+    <p class="t-small dim-on-ink" style="margin-top:32px;max-width:34ch">
+      A first read, in about twenty seconds. It is not legal advice.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ STATE 03 — LOADING ═════════════════════════════════════ -->
+<div class="state-mark">
+  <p class="t-label mono">State 03</p>
+  <p class="t-label">Loading — three stages, three arrival times</p>
+</div>
+
+<section class="plate" style="min-height:0">
+  <div class="plate-verdict" style="padding-top:64px;padding-bottom:64px">
+    <p class="t-label dim-on-ink">Checking</p>
+    <h1 class="t-display dim-on-ink">ZEPHYRLINE</h1>
+  </div>
+  <div class="plate-side">
+    <div class="index index--on-ink">
+      <div class="row"><span class="t-small">Classifying mark</span><span class="row-val t-label">Done</span></div>
+      <div class="row"><span class="t-small">Measuring fields</span><span class="row-val t-label">Running</span></div>
+      <div class="row"><span class="t-small dim-on-ink">Retrieving doctrine</span><span class="row-val t-label dim-on-ink">Queued</span></div>
+    </div>
+    <div class="progress" style="margin-top:32px"><i></i></div>
+    <p class="t-small dim-on-ink" style="margin-top:16px">
+      Each stage is slower than the last. Results fill in as they land.
+    </p>
+  </div>
+</section>
+
+<div style="height:128px"></div>
+</body>
+</html>
