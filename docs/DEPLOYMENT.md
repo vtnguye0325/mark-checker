@@ -33,9 +33,31 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- UI: **http://localhost** (port 80) — static assets; `/ml-predict`, `/llm-explain`,
+- UI: **http://localhost:8080** — static assets; `/ml-predict`, `/llm-explain`,
   `/llm-assess`, `/health` are proxied to the backend.
 - API directly: **http://localhost:8000** (optional).
+
+### Published ports
+
+Both services bind to **loopback only**. Nothing in this stack listens on a public
+interface.
+
+| Service | Published port | Reachable from |
+|---------|----------------|----------------|
+| frontend (Nginx) | `127.0.0.1:8080` | The server itself, and `cloudflared` |
+| backend (API) | `127.0.0.1:8000` | The server itself |
+
+Two rules explain these bindings:
+
+- **The production host runs more than one app.** Another Compose project owns host
+  ports 80 and 443 for its own reverse proxy. This stack must not claim port 80, or
+  the deploy fails with `Bind for 0.0.0.0:80 failed: port is already allocated`.
+- **Docker bypasses the firewall.** Docker writes its own iptables rules, so a
+  `"8000:8000"` mapping is reachable from the internet even when `ufw` allows only
+  ports 22, 80, and 443. The `127.0.0.1:` prefix is what keeps the API private.
+
+To check the published ports on the server, run `sudo ss -lptn` and confirm that no
+`docker-proxy` process for this stack listens on `0.0.0.0`.
 
 ### Development (hot reload)
 
@@ -85,7 +107,7 @@ Expose the production stack to the public internet without router port forwardin
 flows:
 
 **Internet → Cloudflare (HTTPS) → `cloudflared` on your server → Docker frontend on
-`localhost:80`**
+`localhost:8080`**
 
 Cloudflare recommends **dashboard-managed (remotely-managed) tunnels** for production. The
 configuration lives in the Cloudflare dashboard; the server only runs `cloudflared` with a
@@ -101,7 +123,7 @@ Official docs: [Create a tunnel (dashboard)](https://developers.cloudflare.com/c
 |------|-----|
 | Cloudflare account | Free tier is enough |
 | Domain on Cloudflare | Nameservers pointed to Cloudflare; status **Active** |
-| App running on the server | `docker compose up -d` and `curl http://localhost` returns `200` |
+| App running on the server | `docker compose up -d` and `curl http://localhost:8080` returns `200` |
 | Outbound connectivity | Server can reach Cloudflare on ports **443** and **7844** (QUIC) |
 
 You do **not** need router port forwarding, a static public IP, or TLS certificates on the
@@ -116,7 +138,7 @@ server (Cloudflare terminates HTTPS for users).
 
    ```bash
    docker compose up -d
-   curl -s -o /dev/null -w '%{http_code}\n' http://localhost   # expect 200
+   curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080   # expect 200
    ```
 
 3. **Create the tunnel** — Cloudflare dashboard → **Zero Trust → Networks → Connectors →
@@ -157,9 +179,9 @@ server (Cloudflare terminates HTTPS for users).
    | Domain | your domain |
    | Path | *(empty — serve the whole site)* |
    | Service type | **HTTP** |
-   | URL | `localhost:80` |
+   | URL | `localhost:8080` |
 
-   **Important:** use **HTTP**, not HTTPS. Nginx in Docker serves plain HTTP on port 80;
+   **Important:** use **HTTP**, not HTTPS. Nginx in Docker serves plain HTTP on port 8080;
    Cloudflare handles HTTPS for visitors.
 
    Cloudflare creates a CNAME like `<tunnel-id>.cfargotunnel.com` (proxied). Wait ~1 minute,
@@ -185,7 +207,7 @@ credits.
   ```bash
   CORS_ORIGINS=https://yourdomain.com
   ```
-- **Do not expose port 8000** through the tunnel. Publish only `localhost:80`; the backend
+- **Do not expose port 8000** through the tunnel. Publish only `localhost:8080`; the backend
   stays internal behind Nginx.
 
 ### Day-to-day maintenance
@@ -194,7 +216,7 @@ credits.
 |------|-----|
 | Start / stop the app | `docker compose up -d` / `docker compose down` |
 | Rebuild after code changes | `docker compose up --build -d` |
-| Check app health | `curl http://localhost` and `docker ps` |
+| Check app health | `curl http://localhost:8080` and `docker ps` |
 | View tunnel status | Zero Trust → Networks → Connectors |
 | View tunnel logs | `sudo journalctl -u cloudflared -f` |
 | Restart tunnel | `sudo systemctl restart cloudflared` |
@@ -210,10 +232,10 @@ service is enabled.
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | **"An A, AAAA, or CNAME record already exists"** when publishing | Old DNS record for that hostname | Delete conflicting records in **DNS → Records**, then re-save the published application |
-| **502 Bad Gateway** | Published app uses **HTTPS** to `localhost:80` | Edit the route: type **HTTP**, URL `localhost:80`. Check logs: `sudo journalctl -u cloudflared -f` — look for `originService=https://localhost:80` or `tls: first record does not look like a TLS handshake` |
+| **502 Bad Gateway** | Published app uses **HTTPS** to `localhost:8080` | Edit the route: type **HTTP**, URL `localhost:8080`. Check logs: `sudo journalctl -u cloudflared -f` — look for `originService=https://localhost:8080` or `tls: first record does not look like a TLS handshake` |
 | **525 SSL handshake failed** | DNS points to the wrong origin (e.g. old Vercel A records) | Delete old A/CNAME records; make sure the tunnel CNAME exists; the published route saved |
 | **404 with `X-Vercel-Error`** | DNS still routes to Vercel, not the tunnel | Delete Vercel A records; add the tunnel published route |
-| **Site works on the server, not from the internet** | Tunnel not healthy or no published route | `systemctl status cloudflared`; confirm **Healthy** in the dashboard; confirm the published app targets `localhost:80` |
+| **Site works on the server, not from the internet** | Tunnel not healthy or no published route | `systemctl status cloudflared`; confirm **Healthy** in the dashboard; confirm the published app targets `localhost:8080` |
 | **Tunnel will not connect** | Outbound firewall blocks Cloudflare | Allow outbound TCP/UDP on ports **443** and **7844** |
 
 **Diagnostic commands on the server:**
@@ -239,7 +261,7 @@ For a temporary demo only — **not for production**. Run from the project root:
 ```bash
 docker compose up -d
 # Rename ~/.cloudflared/config.yml temporarily if present
-cloudflared tunnel --url http://localhost:80
+cloudflared tunnel --url http://localhost:8080
 ```
 
 This prints a random `https://<random>.trycloudflare.com` URL. Limitations: it dies when the
@@ -263,7 +285,7 @@ credentials-file: /home/<USER>/.cloudflared/<TUNNEL-UUID>.json
 
 ingress:
   - hostname: trademark.yourdomain.com
-    service: http://localhost:80
+    service: http://localhost:8080
   - service: http_status:404
 ```
 
