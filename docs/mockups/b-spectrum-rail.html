@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark Checker — B. The Spectrum Rail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<!--
+  THESIS: The Abercrombie spectrum is the page's architecture, not a legend at the
+  bottom of it. A vertical ruler holds the left edge of every screen, its five bands
+  sized by the classifier's actual probability thresholds, so the rail is a true
+  scale a reader can measure against. It refuses the equal-fifths color strip this
+  category always ships, which implies the five tiers are the same size and they
+  are not.
+  OWN-WORLD: Bauhaus / Swiss per docs/DESIGN_PRINCIPLES.md. Pure black and white,
+  true neutral grays, one accent per view. Archivo grotesk, 0px radius, no shadow,
+  8px scale, hairline rules. JetBrains Mono for scores and class codes only.
+  STORY: The visitor sees where the mark landed on a real ruler, and the ruler stays
+  beside them while they read why. Every claim can be checked against the same scale.
+  FIRST VIEWPORT: A sticky 176px rail runs the full viewport height at the left,
+  banded 12/18/20/22/28 for fanciful through generic, with a 4px red marker at 0.11.
+  The content column opens with the verdict at 132px under a 4px red rule.
+  FORM: The Spectrum Rail — index 3 of my ranked structures; dealt by seed 0ced1fd7.
+  RAISE (reference-manual tab board): band height encodes extent, from the real
+  thresholds in deriveCategory(), not five equal boxes.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+  review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+-->
+<style>
+  :root {
+    --ink:      #000000;
+    --paper:    #FFFFFF;
+    --gray-90:  #111111;
+    --gray-60:  #666666;
+    --gray-30:  #B3B3B3;
+    --gray-12:  #E0E0E0;
+    --gray-04:  #F5F5F5;
+
+    --blue:   #0B5FD9;
+    --red:    #E63329;
+    --yellow: #F5C518;
+
+    /* One accent per view. This view is NOT DISTINCTIVE, so the accent is red. */
+    --accent: var(--red);
+
+    --sans: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    --margin: 24px;
+    --rail: 56px;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+  }
+  @media (min-width: 900px) { :root { --margin: 64px; --rail: 176px; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--paper); color-scheme: light; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.55;
+  }
+  ::selection { background: var(--ink); color: var(--paper); }
+  .band--ink ::selection { background: var(--paper); color: var(--ink); }
+  * { caret-color: var(--ink); scrollbar-color: var(--ink) var(--gray-12); scrollbar-width: thin; }
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: var(--gray-12); }
+  ::-webkit-scrollbar-thumb { background: var(--ink); }
+  a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .band--ink :focus-visible { outline-color: var(--paper); }
+
+  .t-display {
+    font-size: clamp(48px, 9.5vw, 132px); font-weight: 700; line-height: 0.95;
+    letter-spacing: -0.04em; font-variation-settings: 'wdth' 106; margin: 0;
+    overflow-wrap: anywhere;
+  }
+  /* Grid children must be allowed to shrink below their longest word. */
+  .frame > *, .grid-2 > * { min-width: 0; }
+  .t-h1 { font-size: clamp(34px, 4vw, 56px); font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin: 0; }
+  .t-h2 { font-size: clamp(26px, 2.6vw, 32px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin: 0; }
+  .t-h3 { font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; margin: 0; }
+  .t-body { font-size: 16px; line-height: 1.55; margin: 0; max-width: 68ch; }
+  .t-small { font-size: 13px; line-height: 1.5; margin: 0; }
+  .t-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.4; margin: 0; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .dim { color: var(--gray-60); }
+  .dim-on-ink { color: var(--gray-30); }
+
+  .anno {
+    background: var(--ink); color: var(--gray-30);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 10px var(--margin);
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .anno b { color: var(--paper); font-weight: 500; }
+  .state-mark {
+    padding: 96px 0 24px; display: flex; align-items: baseline; gap: 16px;
+    border-top: 4px solid var(--ink); margin-top: 128px;
+  }
+
+  /* ── The frame: rail + content ───────────────────────────────── */
+  .frame { display: grid; grid-template-columns: var(--rail) 1fr; }
+  .col { padding: 48px var(--margin); min-width: 0; }
+  @media (min-width: 900px) { .col { padding: 96px 64px; } }
+
+  /* ── The rail ────────────────────────────────────────────────── */
+  .rail {
+    position: sticky; top: 0; align-self: start;
+    height: 100vh;
+    border-right: 1px solid var(--ink);
+    display: grid;
+    /* Widths are the real deriveCategory() thresholds, high score at the top. */
+    grid-template-rows: 12fr 18fr 20fr 22fr 28fr;
+  }
+  .rail-band {
+    position: relative; padding: 8px;
+    border-bottom: 1px solid var(--gray-12);
+    display: flex; align-items: flex-start;
+  }
+  .rail-band:last-child { border-bottom: 0; }
+  .rail-band--flat { background: var(--gray-04); }  /* the two unregistrable tiers */
+  .rail-name { max-width: calc(100% - 44px); }
+  /* The generic band closes the scale at zero. */
+  .rail-band--zero::after {
+    content: "0.00"; position: absolute; right: 8px; bottom: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--gray-60);
+  }
+  @media (max-width: 899px) { .rail-band--zero::after { display: none; } }
+  @media (max-width: 899px) { .rail-name span { display: none; } }
+  /* The number marks the band's UPPER boundary, so it sits on the band's top edge. */
+  .rail-range {
+    position: absolute; right: 8px; top: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--gray-60);
+  }
+  @media (max-width: 899px) { .rail-range { display: none; } }
+
+  .rail-marker {
+    position: absolute; left: 0; right: -1px;
+    height: 4px; background: var(--accent);
+  }
+  .rail-marker::after {
+    content: attr(data-score);
+    position: absolute; left: 8px; top: 8px;
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    color: var(--ink); background: var(--paper);
+    padding: 2px 4px;
+  }
+  .rail-wrap { position: relative; }
+
+  /* ── Content ─────────────────────────────────────────────────── */
+  .accent-rule { height: 4px; background: var(--accent); }
+  .index { border-top: 1px solid var(--gray-12); }
+  .index--on-ink { border-top-color: var(--gray-60); }
+  .row {
+    display: grid; grid-template-columns: 1fr auto; gap: 24px;
+    align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--gray-12);
+  }
+  .index--on-ink .row { border-bottom-color: var(--gray-60); }
+  .row-val { text-align: right; }
+
+  /* Section headings hang on a tick off the rail. */
+  .tick { position: relative; padding-left: 72px; }
+  .tick::before {
+    content: ""; position: absolute; left: 0; top: 0.55em;
+    width: 48px; height: 2px; background: var(--ink);
+  }
+  @media (max-width: 899px) {
+    .tick { padding-left: 40px; }
+    .tick::before { width: 24px; }
+  }
+
+  .attr { padding: 16px 0; border-bottom: 1px solid var(--gray-12); }
+  .attr-head { display: flex; justify-content: space-between; gap: 24px; align-items: baseline; flex-wrap: wrap; }
+  .attr-track {
+    margin-top: 8px; height: 24px; display: grid; grid-template-columns: 1fr 1fr;
+    border-left: 1px solid var(--gray-12); border-right: 1px solid var(--gray-12);
+  }
+  .attr-neg { display: flex; justify-content: flex-end; border-right: 2px solid var(--ink); }
+  .attr-pos { display: flex; }
+  .attr-fill { background: var(--ink); }
+  .attr-outline { border: 1px solid var(--ink); }
+
+  .quote {
+    background: var(--ink); color: var(--paper);
+    padding: 32px; font-size: 20px; line-height: 1.5; max-width: 60ch;
+  }
+  @media (min-width: 900px) { .quote { padding: 48px; } }
+  .quote cite { display: block; margin-top: 24px; font-style: normal; }
+
+  .btn {
+    font: inherit; font-weight: 600; font-size: 16px;
+    border: 1px solid var(--ink); border-radius: 0; padding: 16px 32px; cursor: pointer;
+    background: var(--ink); color: var(--paper);
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .btn:hover { background: var(--paper); color: var(--ink); }
+  .btn--secondary { background: transparent; color: var(--ink); }
+  .btn--secondary:hover { background: var(--ink); color: var(--paper); }
+  .btn--danger { background: var(--accent); border-color: var(--accent); }
+  .btn--danger:hover { background: var(--paper); color: var(--accent); }
+
+  .field { display: block; margin-bottom: 48px; }
+  .field-input {
+    display: block; width: 100%; font: inherit; color: var(--ink); background: transparent;
+    border: 0; border-bottom: 1px solid var(--gray-30); border-radius: 0;
+    padding: 8px 0; margin-top: 8px; transition: border-color 150ms var(--ease);
+  }
+  .field-input::placeholder { color: var(--gray-60); }
+  .field-input:focus { border-bottom: 2px solid var(--ink); outline: 0; padding-bottom: 7px; }
+  .field-input:focus-visible { outline: 0; }
+  .field-input--mark {
+    font-size: clamp(34px, 5.5vw, 64px); font-weight: 700;
+    letter-spacing: -0.03em; line-height: 1.15; text-transform: uppercase;
+  }
+
+  .progress { height: 2px; background: var(--gray-12); }
+  .progress i { display: block; height: 100%; background: var(--ink); width: 38%; }
+  @media (prefers-reduced-motion: no-preference) {
+    .progress i { animation: grow 2.4s var(--ease) infinite; }
+    @keyframes grow { from { width: 4%; } to { width: 96%; } }
+  }
+
+  .stack > * + * { margin-top: 24px; }
+  .rule-2 { height: 2px; background: var(--ink); border: 0; margin: 48px 0; }
+  .band--ink { background: var(--ink); color: var(--paper); }
+  .grid-2 { display: grid; gap: 48px; }
+  @media (min-width: 1100px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<div class="anno">
+  <span><b>Mockup B</b> — The Spectrum Rail</span>
+  <span>Band height = the classifier's real thresholds</span>
+  <span>States: 01 result · 02 empty · 03 loading</span>
+  <span>Sample data</span>
+</div>
+
+<!-- ═══ STATE 01 — RESULT ══════════════════════════════════════ -->
+<div class="accent-rule"></div>
+<div class="frame">
+
+  <!-- The rail -->
+  <div class="rail-wrap">
+    <div class="rail">
+      <div class="rail-band">
+        <p class="t-label rail-name">Fanciful<span> · invented</span></p>
+        <span class="rail-range">1.00</span>
+      </div>
+      <div class="rail-band">
+        <p class="t-label rail-name">Arbitrary<span> · unrelated</span></p>
+        <span class="rail-range">0.88</span>
+      </div>
+      <div class="rail-band">
+        <p class="t-label rail-name">Suggestive<span> · hints</span></p>
+        <span class="rail-range">0.70</span>
+      </div>
+      <div class="rail-band rail-band--flat">
+        <p class="t-label rail-name">Descriptive<span> · describes</span></p>
+        <span class="rail-range">0.50</span>
+      </div>
+      <div class="rail-band rail-band--flat">
+        <p class="t-label rail-name">Generic<span> · the plain word</span></p>
+        <span class="rail-range">0.28</span>
+      </div>
+      <div class="rail-marker" data-score="0.11" style="bottom: 11%"></div>
+    </div>
+  </div>
+
+  <!-- The content -->
+  <main class="col">
+    <p class="t-label dim" style="margin-bottom:24px">Verdict</p>
+    <h1 class="t-display">Not<br>distinctive</h1>
+
+    <div style="margin-top:48px;max-width:60ch">
+      <p class="t-body">
+        <b>CRISPCRUNCH</b> for granola bars sits deep in the generic band. The
+        classifier scores it 0.11 with high confidence. A mark this low is refused
+        without proof that buyers already read it as a brand.
+      </p>
+    </div>
+
+    <div class="index" style="margin-top:48px;max-width:640px">
+      <div class="row"><span class="t-label">The mark</span><span class="row-val t-h3">CRISPCRUNCH</span></div>
+      <div class="row"><span class="t-label">Goods &amp; services</span><span class="row-val t-small">Granola and cereal bars</span></div>
+      <div class="row"><span class="t-label">NICE class</span><span class="row-val mono t-small">30</span></div>
+      <div class="row"><span class="t-label">Distinctiveness</span><span class="row-val mono t-h3">0.11</span></div>
+      <div class="row"><span class="t-label">Confidence</span><span class="row-val t-small">High</span></div>
+    </div>
+
+    <hr class="rule-2">
+
+    <h2 class="t-h2 tick">What the model leaned on</h2>
+    <p class="t-body dim" style="margin:16px 0 48px 32px">
+      Each field was blanked in turn and the score re-measured.
+    </p>
+    <div class="index" style="margin-left:32px">
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Mark text</span> <span class="t-small dim mono">CRISPCRUNCH</span></span>
+          <span class="mono t-small">−0.44 against</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"><i class="attr-outline" style="width:100%"></i></span>
+          <span class="attr-pos"></span>
+        </div>
+      </div>
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Dictionary word</span> <span class="t-small dim mono">true — both halves</span></span>
+          <span class="mono t-small">−0.19 against</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"><i class="attr-outline" style="width:43%"></i></span>
+          <span class="attr-pos"></span>
+        </div>
+      </div>
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Goods &amp; services</span> <span class="t-small dim mono">granola and cereal bars</span></span>
+          <span class="mono t-small">−0.12 against</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"><i class="attr-outline" style="width:27%"></i></span>
+          <span class="attr-pos"></span>
+        </div>
+      </div>
+      <div class="attr">
+        <div class="attr-head">
+          <span><span class="t-h3">Pseudo mark</span> <span class="t-small dim mono">crisp crunch</span></span>
+          <span class="mono t-small">−0.07 against</span>
+        </div>
+        <div class="attr-track">
+          <span class="attr-neg"><i class="attr-outline" style="width:16%"></i></span>
+          <span class="attr-pos"></span>
+        </div>
+      </div>
+    </div>
+    <p class="t-small dim" style="margin:24px 0 0 32px;max-width:60ch">
+      <span style="display:inline-block;width:20px;height:10px;border:1px solid currentColor;margin-right:8px"></span>
+      Outlined and left of the axis means the field pushes against distinctiveness.
+      A filled bar to the right would push toward it. Fill and side carry the sign,
+      so the chart reads without color.
+    </p>
+
+    <hr class="rule-2">
+
+    <h2 class="t-h2 tick">Why it lands there</h2>
+    <div class="grid-2" style="margin:48px 0 0 32px">
+      <div class="stack">
+        <p class="t-body">
+          Both halves of the mark are ordinary English words that name a quality of the
+          goods. A granola bar that is crisp and crunchy is described, not branded, by
+          "CRISPCRUNCH". Joining the two words without a space does not create a new
+          meaning, so the compound is read as its parts.
+        </p>
+        <p class="t-body">
+          The goods description made this worse rather than better. Against a class 30
+          snack description the mark's words are directly on the nose, which is the
+          test the office applies.
+        </p>
+      </div>
+      <blockquote class="quote">
+        A mark is merely descriptive if it describes an ingredient, quality,
+        characteristic, function, feature, purpose, or use of the specified goods.
+        <cite class="t-label dim-on-ink">TMEP § 1209.01(b) — Merely Descriptive Marks</cite>
+      </blockquote>
+    </div>
+
+    <hr class="rule-2">
+
+    <h2 class="t-h2 tick">What to do next</h2>
+    <div style="margin:48px 0 0 32px" class="stack">
+      <p class="t-body">
+        Move up the rail. Replace one half of the compound with a word that has no
+        connection to snack food, and the mark crosses into the arbitrary band without
+        losing the sound you want. Keeping "CRISPCRUNCH" means filing under section 2(f)
+        and proving five years of use first.
+      </p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <button class="btn">Check another name</button>
+        <button class="btn btn--secondary">Export report</button>
+      </div>
+    </div>
+
+    <hr class="rule-2">
+
+    <h2 class="t-h2 tick">Retrieved sources</h2>
+    <p class="t-body dim" style="margin:16px 0 48px 32px">
+      The analysis above may cite only what the retrieval agent actually pulled.
+    </p>
+    <div style="margin-left:32px">
+      <p class="t-label">TMEP doctrine</p>
+      <div class="index">
+        <div class="row">
+          <span><span class="mono t-small">§ 1209.01(b)</span> &nbsp; <span class="t-h3">Merely Descriptive Marks</span></span>
+          <span class="row-val t-label dim">Cited</span>
+        </div>
+        <div class="row">
+          <span><span class="mono t-small">§ 1209.01(c)</span> &nbsp; <span class="t-h3">Generic Terms</span></span>
+          <span class="row-val t-label dim">Cited</span>
+        </div>
+        <div class="row">
+          <span><span class="mono t-small">§ 1209.03(d)</span> &nbsp; <span class="t-h3">Compound Words</span></span>
+          <span class="row-val t-label dim">Retrieved</span>
+        </div>
+      </div>
+      <p class="t-label" style="margin-top:48px">TTAB records</p>
+      <div class="index">
+        <div class="row">
+          <span><span class="t-h3">CRUNCHBITE</span> &nbsp; <span class="mono t-small dim">NC 30</span></span>
+          <span class="row-val t-small">Refused — descriptive</span>
+        </div>
+        <div class="row">
+          <span><span class="t-h3">OATLY</span> &nbsp; <span class="mono t-small dim">NC 29</span></span>
+          <span class="row-val t-small">Registered</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══ STATE 02 — EMPTY ═══════════════════════════════════════ -->
+<div class="col" style="padding-bottom:0">
+  <div class="state-mark">
+    <p class="t-label mono">State 02</p>
+    <p class="t-label">Empty — the rail is the whole page</p>
+  </div>
+</div>
+
+<div class="frame">
+  <div class="rail-wrap">
+    <div class="rail">
+      <div class="rail-band"><p class="t-label rail-name">Fanciful<span> · invented</span></p><span class="rail-range">1.00</span></div>
+      <div class="rail-band"><p class="t-label rail-name">Arbitrary<span> · unrelated</span></p><span class="rail-range">0.88</span></div>
+      <div class="rail-band"><p class="t-label rail-name">Suggestive<span> · hints</span></p><span class="rail-range">0.70</span></div>
+      <div class="rail-band rail-band--flat"><p class="t-label rail-name">Descriptive<span> · describes</span></p><span class="rail-range">0.50</span></div>
+      <div class="rail-band rail-band--flat rail-band--zero"><p class="t-label rail-name">Generic<span> · the plain word</span></p><span class="rail-range">0.28</span></div>
+    </div>
+  </div>
+  <main class="col">
+    <h1 class="t-display">Where does<br>your name<br>land?</h1>
+    <p class="t-body dim" style="margin:32px 0 64px">
+      The five bands on the left are the tiers of trademark law, sized by the scores
+      that separate them. Enter a name and we place it on the rail.
+    </p>
+    <form onsubmit="return false" style="max-width:720px">
+      <label class="field">
+        <span class="t-label">Trademark</span>
+        <input class="field-input field-input--mark" type="text" placeholder="CRISPCRUNCH" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="field">
+        <span class="t-label">Goods &amp; services</span>
+        <input class="field-input" type="text" placeholder="granola and cereal bars">
+      </label>
+      <label class="field">
+        <span class="t-label">NICE class</span>
+        <input class="field-input mono" type="text" placeholder="30" inputmode="numeric">
+      </label>
+      <button class="btn" type="submit">Check mark</button>
+    </form>
+  </main>
+</div>
+
+<!-- ═══ STATE 03 — LOADING ═════════════════════════════════════ -->
+<div class="col" style="padding-bottom:0">
+  <div class="state-mark">
+    <p class="t-label mono">State 03</p>
+    <p class="t-label">Loading — the marker has not landed yet</p>
+  </div>
+</div>
+
+<div class="frame">
+  <div class="rail-wrap">
+    <div class="rail" style="height:60vh">
+      <div class="rail-band"><p class="t-label rail-name dim">Fanciful</p></div>
+      <div class="rail-band"><p class="t-label rail-name dim">Arbitrary</p></div>
+      <div class="rail-band"><p class="t-label rail-name dim">Suggestive</p></div>
+      <div class="rail-band rail-band--flat"><p class="t-label rail-name dim">Descriptive</p></div>
+      <div class="rail-band rail-band--flat"><p class="t-label rail-name dim">Generic</p></div>
+    </div>
+  </div>
+  <main class="col">
+    <p class="t-label dim" style="margin-bottom:24px">Checking</p>
+    <h1 class="t-display dim">CRISPCRUNCH</h1>
+    <div style="max-width:520px;margin-top:48px">
+      <div class="index">
+        <div class="row"><span class="t-small">Classifying mark</span><span class="row-val t-label">Done</span></div>
+        <div class="row"><span class="t-small">Measuring fields</span><span class="row-val t-label">Running</span></div>
+        <div class="row"><span class="t-small dim">Retrieving doctrine</span><span class="row-val t-label dim">Queued</span></div>
+      </div>
+      <div class="progress" style="margin-top:32px"><i></i></div>
+      <p class="t-small dim" style="margin-top:16px">
+        Each stage is slower than the last. The marker drops onto the rail when the
+        first stage returns.
+      </p>
+    </div>
+  </main>
+</div>
+
+<div style="height:128px"></div>
+</body>
+</html>
