@@ -10,7 +10,7 @@ services:
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?Set DEEPSEEK_API_KEY in .env}
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       DISABLE_TURNSTILE: ${DISABLE_TURNSTILE:-false}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1,http://localhost:80,http://127.0.0.1:80,http://localhost:5173,http://127.0.0.1:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173}
       EMBEDDER: ${EMBEDDER:-local}
       RAG_TMEP_N_RESULTS: ${RAG_TMEP_N_RESULTS:-3}
       RAG_TTAB_N_RESULTS: ${RAG_TTAB_N_RESULTS:-2}
@@ -18,8 +18,11 @@ services:
     volumes:
       - hf-cache:/hf-cache
       - ./data/chroma:/data/chroma
+    # Bind to loopback only. Docker writes its own iptables rules that bypass
+    # ufw, so a "8000:8000" mapping is reachable from the internet even when
+    # the firewall allows only 22, 80, and 443.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     restart: unless-stopped
     healthcheck:
       test:
@@ -40,8 +43,11 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
+    # Do not claim host port 80. Another app on the production host runs a
+    # Caddy proxy that owns 80 and 443. The Cloudflare Tunnel reaches this
+    # app on loopback port 8080 instead.
     ports:
-      - "80:80"
+      - "127.0.0.1:8080:80"
     restart: unless-stopped
     depends_on:
       backend:

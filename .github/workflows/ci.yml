@@ -83,16 +83,32 @@ jobs:
         working-directory: /opt/mark-checker
         run: docker compose build
 
+      # Release the published ports before the new stack claims them. Without
+      # this step a container left over from an earlier deploy keeps the port
+      # and "up" fails with "port is already allocated".
+      - name: Stop the running stack
+        working-directory: /opt/mark-checker
+        run: docker compose down --remove-orphans
+
       - name: Deploy
         working-directory: /opt/mark-checker
         run: docker compose up -d --remove-orphans
 
+      # Read the health state from "docker inspect", not from
+      # "docker compose ps --format json". Compose emits either one JSON object
+      # per line or a single JSON array, and the format depends on the version.
       - name: Wait for healthy
         working-directory: /opt/mark-checker
         run: |
           echo "Waiting for backend to be healthy..."
+          CID=$(docker compose ps -q backend)
+          if [ -z "$CID" ]; then
+            echo "The backend container does not exist"
+            docker compose ps
+            exit 1
+          fi
           for i in $(seq 1 24); do
-            STATUS=$(docker compose ps --format json | python3 -c "import sys,json; [print(s['Health']) for line in sys.stdin for s in [json.loads(line)] if s.get('Service') == 'backend']" 2>/dev/null || echo "starting")
+            STATUS=$(docker inspect --format '{{.State.Health.Status}}' "$CID" 2>/dev/null || echo "unknown")
             echo "  attempt $i: $STATUS"
             [ "$STATUS" = "healthy" ] && exit 0
             sleep 5
