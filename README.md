@@ -1,123 +1,129 @@
-# Mark Checker — is your brand name registrable?
+# Mark Checker
 
-Type in a brand name and what you sell. The app predicts whether the name is distinctive
-enough to register as a trademark, shows which words drove that call, and explains it in
-plain English backed by real trademark law.
+**Is your brand name strong enough to register as a trademark?**
 
-**[Live demo](https://TODO-demo-url)** · <!-- screenshot: docs/assets/result.png (TODO) -->
+Type the name, say what you sell, and pick a class. Mark Checker gives you an instant read
+on how the name scores, shows which part of what you typed drove that score, and explains
+it in plain English.
 
-![Result screen](docs/assets/result.png)
-
-## The problem
-
-Trademark law grades every brand name on a scale that runs from *generic* (the plain word
-for the product, never protectable) through *descriptive* and *suggestive* to *fanciful* (an
-invented word like "Kodak"). Where a name lands on that scale — the Abercrombie spectrum —
-decides whether the trademark office will register it.
-
-That grade is a judgment call. A trademark lawyer reads the name, the goods, and decades of
-past decisions, then forms an opinion. For a small business owner the opinion costs hundreds
-of dollars and takes days, and two lawyers can disagree. This app gives an instant first
-read so an applicant knows where they stand before they pay for advice.
-
-## What the app does
-
-One example. You enter the mark **ZEPHYRLINE**, goods *"insulated water bottles"*, NICE
-class 21.
-
-- **Verdict:** distinctive · **confidence:** high
-- **Words that drove it:** the mark text `ZEPHYRLINE` pushed hardest toward distinctive; the
-  goods description barely moved the needle.
-- **Why:** the coined word has no meaning tied to drinkware, so it reads as fanciful or
-  arbitrary. The analysis cites the TMEP section on coined marks and a TTAB decision on a
-  comparable invented mark.
-
-## How it works
-
-1. The app formats your input into the same 8-field string the model was trained on
-   (mark, goods, translation, dictionary flag, length, NICE class and description, pseudo
-   mark).
-2. A fine-tuned ModernBERT classifier returns a probability that the mark is distinctive.
-3. Leave-one-out attribution blanks each field in turn and measures the swing, so you see
-   which fields carried the verdict.
-4. A retrieval agent writes targeted queries against a doctrine store (TMEP sections and
-   TTAB decisions) and collects the passages that fit this mark.
-5. DeepSeek writes the four-section explanation, grounded in the retrieved doctrine and told
-   to cite only sections that were actually retrieved.
-
-```mermaid
-flowchart LR
-    A[Mark + goods + NICE class] --> B[8-field formatter]
-    B --> C[ModernBERT classifier]
-    C --> D[Leave-one-out attribution]
-    D --> E[Retrieval agent<br/>TMEP + TTAB]
-    E --> F[DeepSeek explanation<br/>grounded in doctrine]
-    F --> G[Verdict + drivers + plain-English analysis]
-```
-
-## Engineering highlights
-
-- **Fine-tuned ModernBERT instead of a prompt to a general LLM.** The task is a narrow
-  binary judgment over a fixed input shape. A fine-tuned encoder is cheaper, faster, and
-  more consistent than a prompted general model, and it runs on CPU with no per-call cost.
-- **A RAG layer grounds the analysis in doctrine.** Left alone, an LLM invents plausible
-  TMEP citations. The retrieval step forces the explanation to cite sections that were
-  actually pulled from the store, so the output is checkable against the source.
-- **A tool-calling agent writes the doctrine queries.** Instead of one flat similarity
-  search, the agent reasons about the mark, queries TMEP and TTAB in parallel with precise
-  Abercrombie vocabulary, and refines once if the first hits miss. It routes a surname mark
-  to surname doctrine without being hard-coded to.
-- **Feature attribution makes the verdict auditable.** Every result shows the per-field
-  contribution, so a user sees whether the mark text or the goods description drove the
-  call — not just a number.
-- **A 50-case regression suite guards against model drift.** `tests/test_model_predictions.py`
-  pins 50 known-good predictions; a checkpoint swap that breaks them fails CI.
-- **Safe public deployment.** Per-IP rate limits, a Cloudflare Turnstile check on the paid
-  LLM endpoint, and a Cloudflare Tunnel that keeps the backend off the public internet.
-
-## Tech stack
-
-| Layer | Choice | Reason |
-|---|---|---|
-| Classifier | Fine-tuned ModernBERT-base (Transformers) | Narrow task, fixed input shape, CPU-friendly, no per-call cost |
-| Attribution | Leave-one-out over the 8 input fields | Field-aligned, model-agnostic, cheap (one batched forward pass) |
-| Retrieval | DeepSeek tool-calling agent + ChromaDB (embedded) | Self-correcting queries; no vector-DB server to run |
-| Embeddings | bge-base-en-v1.5 | Strong open retrieval model, runs locally |
-| Analysis LLM | DeepSeek (`deepseek-chat`, OpenAI-compatible SDK) | Low cost, adequate for grounded summarization |
-| Backend | FastAPI + Uvicorn | Async, typed request models, small surface |
-| Frontend | React + Vite | Simple three-call pipeline UI |
-| Deploy | Docker Compose + Nginx + Cloudflare Tunnel | One-command stack, no inbound ports |
-
-## Documentation
-
-| Doc | Contents |
-|---|---|
-| [docs/API.md](docs/API.md) | The four endpoints, request and response shapes, rate limits, input format |
-| [docs/RAG.md](docs/RAG.md) | Doctrine store, the retrieval agent, index builds, retrieval eval |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Cloudflare Tunnel, the security checklist, CI/CD, troubleshooting |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local run, tests, smoke test, project structure |
-| [docs/PLAN.md](docs/PLAN.md) | Design decisions behind the RAG layer |
-
-## Quick start
-
-```bash
-cp .env.example .env                                   # set HF_MODEL_ID
-CHROMA_PATH=./data/chroma python scripts/build_rag_index.py   # baseline doctrine index
-docker compose up --build                               # UI at http://localhost
-```
-
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full setup and a public deployment.
-
-## Status and limits
-
-This is a decision-support tool, not legal advice. It returns a binary distinctive /
-not-distinctive call, not a full Abercrombie tier, and it does not check for conflicting
-existing marks, assess acquired distinctiveness, or predict what a specific examiner will
-do. The classifier learned from past USPTO decisions, so it reflects how examiners have
-ruled, not only what the doctrine requires — the RAG layer exists to narrow that gap. Treat
-the output as a starting point for a conversation with a trademark attorney.
+This is a first read, not legal advice. Read [What this is not](#what-this-is-not) before
+you act on a result.
 
 ---
 
-Built by [Vy Nguyen](https://TODO-portfolio-url). The classifier extends an MS thesis on
-automating the Abercrombie classification.
+## Try it
+
+1. **Enter a mark.** The name you want to register.
+2. **Describe the goods or services.** What you actually sell under that name.
+3. **Pick a NICE class.** The international category the trademark office files you under.
+   The list gives you all 45 in plain words, such as *Class 21 — Kitchenware & Glassware*.
+
+Two fields are optional. Fill **Translation** if the name is a foreign word, and **Pseudo
+mark** if the name runs words together, such as *zephyr line* inside ZEPHYRLINE.
+
+![The entry form, with the mark ZEPHYRLINE, the goods "insulated water bottles", and Class
+21 selected](docs/assets/01-enter-a-mark.jpg)
+
+---
+
+## What you get back
+
+### The finding
+
+The record opens with the call and the score. A score near 1.00 means the name looks
+inherently distinctive. A score near 0.00 means it reads as the plain word for the product.
+
+The example below scores **0.98** and lands on **Fanciful** — the strongest tier, because
+ZEPHYRLINE is an invented word with no meaning tied to drinkware.
+
+![The finding "Distinctive" with a score of 0.98, and the Abercrombie spectrum with Fanciful
+marked](docs/assets/02-the-verdict.jpg)
+
+### Where the name sits on the spectrum
+
+Trademark law grades every name on one scale, called the Abercrombie spectrum. The record
+prints all five tiers and marks yours:
+
+| Tier | What it means for you |
+|---|---|
+| **Generic** | The plain word for the product. Never registrable. |
+| **Descriptive** | Describes a quality of the product. Needs proof that buyers already link the name to you. |
+| **Suggestive** | Hints at the product without naming it. Registrable. |
+| **Arbitrary** | A real word with no tie to the product, such as APPLE for computers. Registrable. |
+| **Fanciful** | An invented word, such as KODAK. Strongest protection. |
+
+### Why it decided that
+
+The app blanks each field you typed, one at a time, and measures how much the score moves.
+The swing is that field's contribution. You see whether the name itself carried the result
+or whether the goods description did.
+
+In the example, the mark text pushed **+0.07 toward** distinctive and the goods description
+barely moved the needle — which is what you want. A name that only scores well because of
+the goods you paired it with is a weaker name.
+
+![The "Basis for the finding" chart, showing the per-field contribution to the
+score](docs/assets/03-basis-for-the-finding.jpg)
+
+### The written analysis
+
+Below the chart, the record adds two more parts:
+
+- **Authority relied on** — the actual TMEP sections and TTAB decisions that apply to a name
+  like yours. The app retrieves them first and is allowed to cite only what it retrieved, so
+  every citation points at a real document you can look up.
+- **What to do next** — plain-English suggestions, such as which word to change if the name
+  reads as descriptive.
+
+---
+
+## The legal part
+
+**Mark Checker is not a lawyer and does not give legal advice.** It is a first read that
+tells you where you stand before you pay for an opinion. Use it to shorten the list of names
+you take to an attorney, not to replace one.
+
+### What the score is
+
+The score is a prediction of *inherent distinctiveness* — one question out of the several
+the trademark office asks. It comes from a model trained on past USPTO decisions. That means
+it reflects how examiners have actually ruled, which is not always the same as what the
+doctrine says in principle.
+
+### What this is not
+
+The app does **not**:
+
+- **Search for conflicting marks.** A perfectly distinctive name is still refused if someone
+  else already registered a similar one for similar goods. You must run a clearance search.
+- **Assess acquired distinctiveness.** A descriptive name can still register if you prove
+  buyers already connect it to you. The app cannot measure that.
+- **Predict your examiner.** Two examiners can disagree on the same name.
+- **Cover anything but the word.** Logos, colors, shapes, and sounds are outside its scope.
+- **Advise on any country but the United States.** The TMEP and the TTAB are US authorities.
+
+### Your data
+
+The name and description you type go to the app's own model, and to a language model that
+writes the explanation. Do not type anything you must keep confidential. The app stores no
+account and keeps no history — close the page and the record is gone.
+
+### Words you will meet
+
+| Term | Meaning |
+|---|---|
+| **Mark** | The name you want to protect. |
+| **Goods and services** | What you sell under that name. |
+| **NICE class** | One of 45 international categories. You file in the class that matches what you sell. |
+| **Distinctive** | The name can identify you as the source, so it can be registered. |
+| **Descriptive** | The name describes the product, so it needs extra proof to register. |
+| **TMEP** | The trademark office's own examination manual. |
+| **TTAB** | The board that decides appeals. Its decisions are public. |
+| **Pseudo mark** | The separate words inside a run-together name. |
+
+You will meet these same words on the trademark office's own forms, so the app uses them
+instead of friendlier substitutes.
+
+---
+
+Built by Vy Nguyen.
