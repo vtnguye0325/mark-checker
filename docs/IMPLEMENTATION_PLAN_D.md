@@ -154,7 +154,7 @@ Verify: the app builds and renders unstyled-but-correct content.
    array from the four loading and error flags in one place, so the rail and the
    body never disagree.
 
-### Phase 4 — The parts
+### Phase 4 — The parts — DONE
 
 Create `frontend/src/components/parts/`:
 

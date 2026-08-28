@@ -46,7 +46,12 @@ export function useTrademarkPipeline() {
         throw new Error(msg)
       }
       const data = await safeJson(res)
-      const predictResult = { ...data, mark: payload.mark, nice_class: payload.nice_class }
+      const predictResult = {
+        ...data,
+        mark: payload.mark,
+        nice_class: payload.nice_class,
+        description: payload.description,
+      }
       setResult(predictResult)
 
       setExplainLoading(true)
