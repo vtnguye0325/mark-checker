@@ -1,8 +1,8 @@
 /* Mark Checker — Mockup D, The Record Plate.
    Ported from docs/mockups/d-record-plate.html. Bauhaus / Swiss per
    docs/DESIGN_PRINCIPLES.md: pure black and white, true neutral grays,
-   one accent per view, Archivo grotesk, 0px radius, no shadow, 8px scale,
-   hairline rules, JetBrains Mono for every identifier and figure. */
+   one accent per view, Jost geometric sans, 0px radius, no shadow, 8px scale,
+   hairline rules, one alphabet throughout with tabular figures. */
 
 :root {
   --ink:      #000000;
@@ -20,8 +20,15 @@
   /* One accent per view. App.jsx sets --accent from result.label. */
   --accent: var(--blue);
 
-  --sans: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* One universal alphabet, per Bayer. Identifiers and figures separate from
+     prose by weight, tracking and tabular figures, not by a second typeface. */
+  --sans: 'Jost', 'Futura', 'Century Gothic', 'Helvetica Neue', Arial, sans-serif;
+  /* Display face. Poiret One carries the large words only: the verdict, the
+     headings and the mark itself. It ships one thin weight (400), so it goes
+     faint below about 26px and never takes a bold. Small words and labels stay
+     in Jost, which holds its weight down there. Tracking stays at or above
+     zero, because the thin deco strokes close up when you pull them together. */
+  --display: 'Poiret One', 'Jost', 'Century Gothic', sans-serif;
 
   --margin: 24px;
   --ease: cubic-bezier(0.2, 0, 0, 1);
@@ -49,18 +56,19 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
 
 /* ── Type scale ─────────────────────────────────────────────── */
 .t-display {
-  font-size: clamp(48px, 9vw, 120px); font-weight: 700; line-height: 0.95;
-  letter-spacing: -0.04em; font-variation-settings: 'wdth' 104; margin: 0;
+  font-family: var(--display);
+  font-size: clamp(48px, 9vw, 120px); font-weight: 400; line-height: 1;
+  letter-spacing: 0.005em; margin: 0;
   overflow-wrap: anywhere;
 }
 .doc > *, .plate > * { min-width: 0; }
-.t-h1 { font-size: clamp(34px, 4vw, 56px); font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; margin: 0; }
-.t-h2 { font-size: clamp(26px, 2.6vw, 32px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin: 0; }
-.t-h3 { font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; margin: 0; }
+.t-h1 { font-family: var(--display); font-size: clamp(34px, 4vw, 56px); font-weight: 400; line-height: 1.1; letter-spacing: 0.01em; margin: 0; }
+.t-h2 { font-family: var(--display); font-size: clamp(26px, 2.6vw, 32px); font-weight: 400; line-height: 1.15; letter-spacing: 0.015em; margin: 0; }
+.t-h3 { font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: 0; margin: 0; }
 .t-body { font-size: 16px; line-height: 1.55; margin: 0; max-width: 68ch; }
 .t-small { font-size: 13px; line-height: 1.5; margin: 0; }
-.t-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1.4; margin: 0; }
-.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.t-label { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.4; margin: 0; }
+.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
 .dim { color: var(--gray-60); }
 .dim-on-ink { color: var(--gray-30); }
 
@@ -74,8 +82,8 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
 .accent-rule { height: 4px; background: var(--accent); }
 .recordbar {
   background: var(--ink); color: var(--gray-30);
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums; text-transform: uppercase;
   padding: 12px var(--margin);
   display: flex; gap: 32px; flex-wrap: wrap; justify-content: space-between;
 }
@@ -95,7 +103,9 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
   display: flex; flex-direction: column; justify-content: flex-end; gap: 24px;
 }
 @media (min-width: 900px) { .plate-verdict { padding: 64px; } }
-.plate-verdict .t-display { color: var(--paper); font-size: clamp(44px, 7vw, 108px); }
+.plate-verdict .t-display {
+  color: var(--paper); font-size: clamp(48px, 7.5vw, 116px);
+}
 .plate-side {
   padding: 32px var(--margin) 48px;
   border-top: 1px solid var(--gray-60);
@@ -104,12 +114,13 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
   .plate-side { border-top: 0; border-left: 1px solid var(--gray-60); padding: 64px 64px 64px 48px; }
 }
 .plate-mark {
-  font-size: clamp(26px, 2.6vw, 32px); font-weight: 700; line-height: 1.15;
-  letter-spacing: -0.02em; font-variation-settings: 'wdth' 96;
+  font-family: var(--display);
+  font-size: clamp(28px, 2.8vw, 34px); font-weight: 400; line-height: 1.15;
+  letter-spacing: 0.015em;
   margin: 0 0 32px; overflow-wrap: anywhere;
 }
 
-/* ── The document: mono rail + body ────────────────────────── */
+/* ── The document: data rail + body ────────────────────────── */
 .doc {
   display: grid; grid-template-columns: 1fr;
   padding: 0 var(--margin); max-width: 1440px; margin: 0 auto;
@@ -135,7 +146,8 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
 .rail-row, .rail-link {
   display: flex; justify-content: space-between; gap: 16px;
   padding: 8px 0; border-bottom: 1px solid var(--gray-12);
-  font-family: var(--mono); font-size: 11px; line-height: 1.5;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.06em; line-height: 1.5;
+  font-variant-numeric: tabular-nums; text-transform: uppercase;
 }
 .rail-row span:first-child { color: var(--gray-60); }
 .rail-link {
@@ -175,7 +187,8 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
   display: flex; align-items: baseline; gap: 24px;
   border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 32px;
 }
-.part-no { font-family: var(--mono); font-size: 13px; color: var(--gray-60); white-space: nowrap; }
+.part-no { font-size: 13px; font-weight: 500; letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums; color: var(--gray-60); white-space: nowrap; }
 
 .index { border-top: 1px solid var(--gray-12); }
 .index--on-ink { border-top-color: var(--gray-60); }
@@ -194,7 +207,8 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
 .tier-glyph { width: 16px; height: 16px; border: 1px solid var(--ink); }
 .tier--here .tier-glyph { background: var(--ink); }
 .tier--here { font-weight: 700; }
-.tier-range { font-family: var(--mono); font-size: 13px; color: var(--gray-60); text-align: right; min-width: 96px; }
+.tier-range { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums;
+  color: var(--gray-60); text-align: right; min-width: 96px; }
 .tier--here .tier-range { color: var(--ink); }
 .tier-note { font-size: 13px; color: var(--gray-60); min-width: 168px; text-align: right; }
 .tier--here .tier-note { color: var(--ink); }
@@ -243,8 +257,9 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
 .field-input:focus { border-bottom: 2px solid var(--ink); outline: 0; padding-bottom: 7px; }
 .field-input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .field-input--mark {
-  font-size: clamp(34px, 5.5vw, 64px); font-weight: 700;
-  letter-spacing: -0.03em; line-height: 1.15; text-transform: uppercase;
+  font-family: var(--display);
+  font-size: clamp(34px, 5.5vw, 64px); font-weight: 400;
+  letter-spacing: 0.01em; line-height: 1.15; text-transform: uppercase;
 }
 /* The subject block carries its own bottom rule, so the mark field drops its own. */
 .subject .field-input--mark { border-bottom: 0; }

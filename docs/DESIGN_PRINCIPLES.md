@@ -79,16 +79,32 @@ Typography carries the whole design. Treat it as the primary material.
 
 ### 3.1 Typeface
 
-Use one grotesk sans-serif family for the whole product. Approved choices, in order:
+Use one geometric sans-serif family for the whole product. The Bauhaus built its
+letterforms from the circle, the triangle, and the square, so a geometric face carries the
+style and a grotesk does not. Approved choices, in order:
 
 | Rank | Family | Reason |
 |---|---|---|
-| 1 | Helvetica Now / Inter | Neutral, wide weight range, good on screen |
-| 2 | Archivo / Archivo Expanded | Strong Swiss character, good for display |
-| 3 | Space Grotesk | More character, good for a headline only |
+| 1 | Jost | Futura revival, full weight axis, tall x-height holds up at small sizes |
+| 2 | Poppins | Pure geometric, perfect circles, reads more contemporary |
+| 3 | Josefin Sans | The most period-correct, but too weak below 16px |
 
-Do not mix two sans families. Do not add a serif family for "elegance". Use a monospace
-family only for a mark number, a serial number, a class code, or raw JSON.
+One display face is permitted, and only on the verdict word in the record plate. Set it
+in Poiret One, an OFL art-deco geometric that carries the Bauhaus gesture at 48px and
+above. Poiret One ships one weight, so never set it bold: the browser synthesises the
+weight and thickens the deco strokes. Do not use it below 48px, and do not use it for
+prose, labels, or figures.
+
+Do not mix two sans families. Do not add a serif family for "elegance". Do not add a
+monospace family. Bayer built the Universal alphabet to remove a second voice from the
+page, and this product obeys that. Set a mark number, a serial number, a class code, or
+raw JSON in the same family at weight 500, with `font-variant-numeric: tabular-nums` and
+0.06em to 0.1em of tracking. The tabular figures give you the column alignment that a
+monospace family gives you, and the tracking marks the text as machine data.
+
+A geometric face needs more air than a grotesk. Track display sizes at -0.02em, not
+-0.04em, and set uppercase labels at 12px and 0.14em, because circular letterforms lose
+legibility faster than grotesk ones as the size drops.
 
 ### 3.2 Type scale
 
@@ -236,8 +252,8 @@ a shadow. Do not nest a card inside a card.
 ### 6.4 Tables
 
 Tables suit this product, because a trademark check produces rows of evidence. Use a hairline
-rule under each row, an uppercase `label` header, and a monospace font for the serial number
-and the class code. Align numbers right and text left.
+rule under each row, an uppercase `label` header, and the `.mono` class for the serial
+number and the class code. Align numbers right and text left.
 
 ### 6.5 Images
 
@@ -288,7 +304,7 @@ must read as a document, not as a dashboard.
   "CONFLICT". Set the verdict word in `--ink` and put the matching accent color on a 4px
   rule above it.
 - **The evidence list.** Use the index pattern. One row per cited mark. Show the serial
-  number in monospace on the left, the mark name in `h3` in the middle, and the similarity
+  number in the `.mono` class on the left, the mark name in `h3` in the middle, and the similarity
   score on the right.
 - **The citation.** Set a quoted TTAB or TMEP passage inside a `--ink` panel with `--paper`
   text, at 20px, with generous padding. This is the black quote panel from the reference
