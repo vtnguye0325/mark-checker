@@ -3,7 +3,7 @@ import { EMPTY_FORM } from './constants/formDefaults'
 import { useTrademarkPipeline } from './hooks/useTrademarkPipeline'
 import { useScrollSpy } from './hooks/useScrollSpy'
 import { useAuth } from './hooks/useAuth'
-import SignInGate from './components/SignInGate'
+import SignInModal from './components/SignInModal'
 import RecordBar from './components/RecordBar'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
@@ -53,6 +53,7 @@ function buildParts(state) {
 
 export default function App() {
   const { user, status, signIn, signOut } = useAuth()
+  const [signInOpen, setSignInOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef(null)
@@ -114,15 +115,27 @@ export default function App() {
     sources: sourceCount || null,
   }
 
-  // Render nothing decisive while the session status is still loading, or every
-  // reload flashes the sign-in screen.
-  if (status === 'loading') return null
-  if (status !== 'signed-in') return <SignInGate onCredential={signIn} />
+  // The form renders at every status. Open no modal while the status is still
+  // loading, or a reload flashes one at a user who is already signed in.
+  const canOpenSignIn = status === 'signed-out'
 
   return (
     <div className={`record ${accent}`}>
       <div className="accent-rule" />
-      <RecordBar email={user?.email} onSignOut={signOut} />
+      <RecordBar
+        status={status}
+        email={user?.email}
+        onSignIn={() => setSignInOpen(true)}
+        onSignOut={signOut}
+      />
+
+      {signInOpen && canOpenSignIn && (
+        <SignInModal
+          onCredential={signIn}
+          onSignedIn={() => setSignInOpen(false)}
+          onClose={() => setSignInOpen(false)}
+        />
+      )}
 
       {result && (
         <RecordPlate

@@ -301,23 +301,44 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* --- Sign-in gate and account strip (Phase 8, Batch B) --- */
-.signin-gate {
-  max-width: 46ch;
-  margin: 96px auto;
-  padding: 0 24px;
+/* --- Sign-in modal and account strip (Phase 8, Batch B) --- */
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
 }
-.signin-title {
-  font-size: 28px;
-  line-height: 1.2;
-  margin: 0 0 16px;
+.modal-card {
+  position: relative;
+  background: var(--paper, #fff);
+  border: 1px solid var(--ink);
+  max-width: 42ch;
+  width: 100%;
+  padding: 40px 32px 32px;
 }
-.signin-copy { margin: 0 0 32px; max-width: 40ch; }
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink);
+}
+.modal-title { font-size: 22px; line-height: 1.2; margin: 0 0 12px; }
+.modal-copy { margin: 0 0 24px; }
 .signin-button { min-height: 40px; }
 
 .recordbar-account { display: flex; align-items: center; gap: 16px; }
 .recordbar-email { color: var(--gray-60); }
-.recordbar-signout {
+.recordbar-link {
   font: inherit;
   color: var(--ink);
   background: none;
@@ -326,4 +347,4 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
   padding: 0 0 1px;
   cursor: pointer;
 }
-.recordbar-signout:hover { border-bottom-color: var(--ink); }
+.recordbar-link:hover { border-bottom-color: var(--ink); }

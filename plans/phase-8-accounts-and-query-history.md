@@ -13,8 +13,11 @@ Three decisions set the shape of this phase:
    refresh token, because the app calls no Google API on the user's behalf.
 2. **Database.** Postgres, in a new compose service, reached through async
    SQLAlchemy and `asyncpg`.
-3. **Access.** A session is required for all three check endpoints. Anonymous
-   visitors see a sign-in screen and nothing else.
+3. **Access.** A session is required for all three check endpoints, but not for
+   the form. An anonymous visitor sees the full form and fills it in. The app
+   asks for a sign-in when the visitor clicks the check button, and it runs the
+   check as soon as the sign-in returns. The form keeps its values across the
+   sign-in, because the sign-in happens in a modal and never reloads the page.
 
 ## Batches — what to land together
 
@@ -40,12 +43,15 @@ is unchanged.
 ### Batch B — Sign-in, before anything depends on it (Steps 4, 5, 9, `/auth` proxy)
 
 The Google round trip works end to end, and the check routes still accept
-anonymous callers. The gate blocks the UI, so you exercise the real sign-in flow,
-but no backend route can break from a missing cookie yet.
+anonymous callers. A sign-in button in `RecordBar` opens the modal, so you
+exercise the real sign-in flow, but no backend route can break from a missing
+cookie yet.
 
-- Verify: sign in, `GET /auth/me` returns your email, the `users` row appears with
-  a `last_login_at`, sign out clears the cookie, and a reload shows the gate.
-- Risk: low. A failure here blocks the UI but corrupts nothing.
+- Verify: click sign in, complete the Google round trip, `GET /auth/me` returns
+  your email, the `users` row appears with a `last_login_at`, sign out clears the
+  cookie, and a reload shows the form with your email in `RecordBar`.
+- Risk: low. A failure here blocks the sign-in but corrupts nothing, and the
+  check flow still works anonymously until Batch C.
 - Do the sign-in round trip before Batch C. Google client ids, redirect origins,
   and cookie flags are where this phase actually goes wrong, and this batch
   isolates all three.
@@ -58,8 +64,8 @@ check routes, and the pipeline change in Step 10 — `credentials: 'include'` pl
 same `request.state.user` that Step 6 introduces.
 
 - Verify: a full check writes one `queries` row with all three stages filled in;
-  a check run in a private window returns 401; the sixth `/llm-assess` in an hour
-  returns 429.
+  a check started in a private window opens the sign-in modal and then runs; the
+  sixth `/llm-assess` in an hour returns 429.
 - Risk: highest in the phase. This is also where the `def` to `async def`
   conversion lands, so watch that a prediction still returns in about the same
   time. A slower response means the CPU work escaped the threadpool.
@@ -121,15 +127,20 @@ Batch A is written. Only the verify step is open.
       `VITE_GOOGLE_CLIENT_ID` as a build arg in `frontend/Dockerfile` and in the
       compose build section.
 - [x] Write `frontend/src/hooks/useAuth.js` with the three-value `status`.
-- [x] Write `frontend/src/components/SignInGate.jsx`, using the poll-until-ready
-      pattern from `TurnstileWidget.jsx`.
-- [x] Gate the app in `App.jsx`. Add the email and the sign-out button to
-      `RecordBar.jsx`.
+- [x] Write `frontend/src/components/SignInModal.jsx`, using the poll-until-ready
+      pattern from `TurnstileWidget.jsx`. **Rework.** This file was written as
+      `SignInGate.jsx`. Rename it, and make it a modal over the form instead of a
+      screen that replaces the form.
+- [x] Add the email and the sign-out button to `RecordBar.jsx`, and a sign-in
+      button when the status is `signed-out`. **Rework.** Remove the gate from
+      `App.jsx`. `App.jsx` renders the form at every status, and renders the modal
+      only when `signInPrompt` is open.
 - [ ] **Do not touch the three check routes in this batch.** They must still
       accept an anonymous caller, so a sign-in mistake cannot break them.
-- [ ] **Verify.** Sign in. `GET /auth/me` returns your email. A `users` row
-      appears with `last_login_at` set. Sign out clears the cookie. A reload
-      shows the gate, not a flash of the form.
+- [ ] **Verify.** The form renders while signed out. Click sign in. `GET
+      /auth/me` returns your email. A `users` row appears with `last_login_at`
+      set. Sign out clears the cookie. A reload shows the form with no modal and
+      no flash of one.
 
 ### Batch C — The lock and the write
 
@@ -148,10 +159,15 @@ change sends it; separately, the app is broken in between.
       the IP limit on `/llm-assess`.
 - [ ] Add `credentials: 'include'` to all three fetches in
       `useTrademarkPipeline.js`, and thread `query_id` through them.
-- [ ] Treat a 401 from any stage as an expired session: clear the user, show the
-      gate, do not retry.
+- [ ] Open the sign-in modal instead of calling `/ml-predict` when the status is
+      `signed-out`. Run the check on the sign-in callback, with the form values
+      the user already typed.
+- [ ] Treat a 401 from any stage as an expired session: clear the user, open the
+      modal, and re-run that stage once after the sign-in returns. Keep
+      `query_id` across the retry.
 - [ ] **Verify.** One full check writes one row with all three stages filled in.
-      A check in a private window returns 401. The sixth `/llm-assess` in an hour
+      A check started in a private window opens the modal, and finishes after the
+      sign-in with the typed values intact. The sixth `/llm-assess` in an hour
       returns 429. A prediction still returns in about the same time as before —
       a slower one means the CPU work escaped the threadpool.
 
@@ -239,8 +255,8 @@ phase; add it when the schema first needs to change under live data.
 **Frontend**
 
 - `frontend/src/hooks/useAuth.js` — session state, sign-in, sign-out.
-- `frontend/src/components/SignInGate.jsx` — the Google button and the blocked
-  state.
+- `frontend/src/components/SignInModal.jsx` — the Google button, over the form,
+  with a close control.
 - `frontend/src/components/HistoryPanel.jsx` — the list of past checks.
 
 ## Files to change
@@ -257,11 +273,11 @@ phase; add it when the schema first needs to change under live data.
   `/llm-assess` limits.
 - `frontend/src/hooks/useTrademarkPipeline.js` — send the cookie, thread
   `query_id` through the three calls.
-- `frontend/src/App.jsx` — wrap the app in the sign-in gate, add the account
-  strip and the history view.
+- `frontend/src/App.jsx` — add the account strip, the sign-in modal, and the
+  history view. Do not gate the form.
 - `frontend/src/components/RecordBar.jsx` — show the signed-in email, the history
-  link, and the sign-out button.
-- `frontend/src/App.css` — styles for the gate, the account strip, and the
+  link, and the sign-out button, or a sign-in button when signed out.
+- `frontend/src/App.css` — styles for the modal, the account strip, and the
   history list.
 - `frontend/index.html` — load `https://accounts.google.com/gsi/client`.
 - `frontend/vite.config.js` — proxy `/auth` and `/history`.
@@ -442,12 +458,21 @@ longer shares one bucket, and a user cannot reset their cap by changing network.
      `google.accounts.id.disableAutoSelect()` so the next visit does not sign the
      user straight back in.
    - Return `{ user, status, signIn, signOut }` where `status` is `loading`,
-     `signed-in`, or `signed-out`. The app must render nothing decisive while the
-     status is `loading`, or every reload flashes the sign-in screen.
-3. Write `SignInGate`: render `google.accounts.id.renderButton` into a ref, in the
-   same poll-until-ready pattern that `TurnstileWidget.jsx` already uses for
+     `signed-in`, or `signed-out`. Open no modal while the status is `loading`,
+     or a reload flashes one at a user who is already signed in.
+3. Write `SignInModal`: render `google.accounts.id.renderButton` into a ref, in
+   the same poll-until-ready pattern that `TurnstileWidget.jsx` already uses for
    `window.turnstile`. Set the callback to `signIn(response.credential)`.
-4. `App.jsx` returns the gate while `status !== 'signed-in'`.
+   - Render it over the form, and mount the form at every status. Unmounting the
+     form loses the values the user typed, which is the whole point of this flow.
+   - Give it a close control. A visitor who cancels returns to the form with the
+     values intact and runs no check.
+   - Take an `onSignedIn` callback, and call it after `signIn` resolves. That
+     callback is what runs the pending check in Step 10.
+4. `App.jsx` renders the form at every status, and renders `SignInModal` only
+   while a sign-in prompt is open. It gates nothing.
+5. Put a sign-in button in `RecordBar` for the `signed-out` status, so a visitor
+   can sign in before they fill the form as well as after.
 
 ### Step 10 — Frontend pipeline and history
 
@@ -456,12 +481,22 @@ longer shares one bucket, and a user cannot reset their cap by changing network.
    call returns 401.
 2. Keep `query_id` from the `/ml-predict` response in the hook, and send it in
    the `/llm-explain` and `/llm-assess` bodies.
-3. Treat a 401 from any stage as "the session expired": clear the user in
-   `useAuth` and show the gate. Do not retry.
-4. `HistoryPanel` lists `GET /history`. Selecting a row loads the full record
+3. Prompt for the sign-in at the check button, not at page load. When the status
+   is `signed-out`, `runCheck` opens the modal, keeps the submitted form values in
+   a ref, and starts the pipeline from the modal's `onSignedIn` callback. Start no
+   fetch before the sign-in returns.
+   - Read `status` from the ref inside the callback, never from a captured
+     closure variable, or the callback runs against a stale `signed-out`.
+   - A closed modal clears the pending values and runs nothing.
+4. Treat a 401 from any stage as "the session expired": clear the user in
+   `useAuth`, open the same modal, and re-run that one stage after the sign-in
+   returns. Keep `query_id` across the retry, so the check still writes one row.
+   Retry each stage once only, or a backend that answers 401 forever loops.
+5. `HistoryPanel` lists `GET /history`. Selecting a row loads the full record
    from `GET /history/{id}` and renders it through the existing part components,
    because a stored row carries the same fields the live pipeline produces.
-5. Put the email, a history toggle, and a sign-out button in `RecordBar`.
+6. Put the email, a history toggle, and a sign-out button in `RecordBar` for a
+   signed-in user, and the sign-in button for a signed-out one.
 
 ### Step 11 — Proxies and docs
 
@@ -481,8 +516,11 @@ longer shares one bucket, and a user cannot reset their cap by changing network.
 | Postgres unreachable during `/ml-predict` | Return 503, "Cannot save your check right now." The row is the point of the feature, so a dropped row must be visible. Log at ERROR. |
 | Postgres unreachable during `/llm-explain` or `/llm-assess` | Log at ERROR and still return the result. The DeepSeek call already cost money and the user must see the answer. The row keeps a null column, which the history view reads as an incomplete check. |
 | Postgres unreachable during `GET /history` | Return 503. The history view shows "History is unavailable right now." The check flow stays usable, because `current_user` reads no database. |
-| Google certificate endpoint unreachable | `POST /auth/google` returns 503, and the gate shows "Cannot reach Google right now. Try again." Existing sessions keep working, because they are verified against `SESSION_SECRET`, not against Google. |
-| Expired session JWT | Every protected route returns 401. The pipeline clears the user and shows the gate. |
+| Google certificate endpoint unreachable | `POST /auth/google` returns 503, and the modal shows "Cannot reach Google right now. Try again." The form keeps its values. Existing sessions keep working, because they are verified against `SESSION_SECRET`, not against Google. |
+| Expired session JWT | Every protected route returns 401. The pipeline clears the user, opens the modal, and re-runs that stage once after the sign-in. |
+| Anonymous visitor clicks the check button | The modal opens and no fetch starts. The check runs on the sign-in callback with the typed values. |
+| Visitor closes the modal | The form keeps its values. No check runs and no row is written. |
+| Google blocked in the browser, so the modal never renders a button | The visitor cannot check. The modal must show a plain error line after the poll times out, not an empty box. |
 | A user sends another user's `query_id` | The `UPDATE` matches zero rows, because the `WHERE` clause carries `user_id`. Log at WARNING. Return the result. |
 | A user sends a `query_id` that does not exist | The same zero-row path. No error to the caller. |
 | Account hits the `/llm-assess` cap | 429 with `Retry-After`. The pipeline already handles this case and shows the wait time. |

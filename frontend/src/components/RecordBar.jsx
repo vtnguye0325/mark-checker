@@ -1,12 +1,18 @@
-export default function RecordBar({ email, onSignOut }) {
+export default function RecordBar({ status, email, onSignIn, onSignOut }) {
   return (
     <div className="recordbar">
       <span>Mark Checker · <b>Distinctiveness record</b></span>
       <span className="recordbar-account">
-        {email && <span className="recordbar-email">{email}</span>}
-        {onSignOut ? (
-          <button type="button" className="recordbar-signout" onClick={onSignOut}>
-            Sign out
+        {status === 'signed-in' ? (
+          <>
+            {email && <span className="recordbar-email">{email}</span>}
+            <button type="button" className="recordbar-link" onClick={onSignOut}>
+              Sign out
+            </button>
+          </>
+        ) : status === 'signed-out' ? (
+          <button type="button" className="recordbar-link" onClick={onSignIn}>
+            Sign in
           </button>
         ) : (
           <span>Not legal advice</span>
