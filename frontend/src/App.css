@@ -300,3 +300,30 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* --- Sign-in gate and account strip (Phase 8, Batch B) --- */
+.signin-gate {
+  max-width: 46ch;
+  margin: 96px auto;
+  padding: 0 24px;
+}
+.signin-title {
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 0 0 16px;
+}
+.signin-copy { margin: 0 0 32px; max-width: 40ch; }
+.signin-button { min-height: 40px; }
+
+.recordbar-account { display: flex; align-items: center; gap: 16px; }
+.recordbar-email { color: var(--gray-60); }
+.recordbar-signout {
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--gray-12);
+  padding: 0 0 1px;
+  cursor: pointer;
+}
+.recordbar-signout:hover { border-bottom-color: var(--ink); }

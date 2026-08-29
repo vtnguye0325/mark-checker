@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { EMPTY_FORM } from './constants/formDefaults'
 import { useTrademarkPipeline } from './hooks/useTrademarkPipeline'
 import { useScrollSpy } from './hooks/useScrollSpy'
+import { useAuth } from './hooks/useAuth'
+import SignInGate from './components/SignInGate'
 import RecordBar from './components/RecordBar'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
@@ -50,6 +52,7 @@ function buildParts(state) {
 }
 
 export default function App() {
+  const { user, status, signIn, signOut } = useAuth()
   const [form, setForm] = useState(EMPTY_FORM)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef(null)
@@ -111,10 +114,15 @@ export default function App() {
     sources: sourceCount || null,
   }
 
+  // Render nothing decisive while the session status is still loading, or every
+  // reload flashes the sign-in screen.
+  if (status === 'loading') return null
+  if (status !== 'signed-in') return <SignInGate onCredential={signIn} />
+
   return (
     <div className={`record ${accent}`}>
       <div className="accent-rule" />
-      <RecordBar />
+      <RecordBar email={user?.email} onSignOut={signOut} />
 
       {result && (
         <RecordPlate

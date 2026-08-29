@@ -16,10 +16,8 @@ services:
       RAG_TTAB_N_RESULTS: ${RAG_TTAB_N_RESULTS:-2}
       CHROMA_PATH: /data/chroma
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://markchecker:${POSTGRES_PASSWORD}@postgres:5432/markchecker}
-      # Batch B tightens these to ${VAR:?...} once app code reads them. Batch A
-      # must deploy with the app unchanged, so keep them optional for now.
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      SESSION_SECRET: ${SESSION_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env (openssl rand -hex 32)}
       SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       RATE_LIMIT_ANALYZE_USER: ${RATE_LIMIT_ANALYZE_USER:-5/hour}
@@ -55,6 +53,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     # Do not claim host port 80. Another app on the production host runs a
     # Caddy proxy that owns 80 and 443. The Cloudflare Tunnel reaches this
     # app on loopback port 8080 instead.

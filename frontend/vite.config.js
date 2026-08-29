@@ -15,6 +15,8 @@ export default defineConfig({
       '/llm-explain': apiTarget,
       '/llm-assess': apiTarget,
       '/health': apiTarget,
+      '/auth': apiTarget,
+      '/history': apiTarget,
     },
   },
 })

@@ -11,7 +11,7 @@ services:
       DISABLE_TURNSTILE: ${DISABLE_TURNSTILE:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://markchecker:${POSTGRES_PASSWORD:-markchecker}@postgres-dev:5432/markchecker}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
       SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
       SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
@@ -61,6 +61,7 @@ services:
       - frontend_dev_node_modules:/app/node_modules
     environment:
       VITE_API_PROXY_TARGET: http://backend-dev:8000
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-}}
     command:
       ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
     ports:

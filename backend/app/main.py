@@ -26,6 +26,7 @@ from slowapi.errors import RateLimitExceeded  # noqa: E402
 from app.db import init_models  # noqa: E402
 from app.limiter import limiter  # noqa: E402
 from app.routes.analyze import router as analyze_router  # noqa: E402
+from app.routes.auth import router as auth_router  # noqa: E402
 from app.routes.explain import router as explain_router  # noqa: E402
 from app.routes.predict import router as predict_router  # noqa: E402
 from app.services.model_service import is_loaded, warm_up  # noqa: E402
@@ -54,10 +55,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(predict_router)
 app.include_router(explain_router)
 app.include_router(analyze_router)

@@ -107,23 +107,23 @@ Batch A is written. Only the verify step is open.
 
 ### Batch B — Sign-in, before anything depends on it
 
-- [ ] Write `backend/app/auth.py` — `verify_google_id_token`,
+- [x] Write `backend/app/auth.py` — `verify_google_id_token`,
       `create_session_token`, `current_user`. Stash the user on
       `request.state.user`. Raise at import when `SESSION_SECRET` or
       `GOOGLE_CLIENT_ID` is unset.
-- [ ] Write `backend/app/routes/auth.py` — `POST /auth/google`,
+- [x] Write `backend/app/routes/auth.py` — `POST /auth/google`,
       `POST /auth/logout`, `GET /auth/me`. Upsert on `google_sub`.
-- [ ] Mount the auth router and set `allow_credentials=True` on the CORS
+- [x] Mount the auth router and set `allow_credentials=True` on the CORS
       middleware in `backend/app/main.py`.
-- [ ] Add `location /auth` to `frontend/nginx.conf` and `/auth` to the vite dev
+- [x] Add `location /auth` to `frontend/nginx.conf` and `/auth` to the vite dev
       proxy.
-- [ ] Add the GIS script tag to `frontend/index.html`. Add
+- [x] Add the GIS script tag to `frontend/index.html`. Add
       `VITE_GOOGLE_CLIENT_ID` as a build arg in `frontend/Dockerfile` and in the
       compose build section.
-- [ ] Write `frontend/src/hooks/useAuth.js` with the three-value `status`.
-- [ ] Write `frontend/src/components/SignInGate.jsx`, using the poll-until-ready
+- [x] Write `frontend/src/hooks/useAuth.js` with the three-value `status`.
+- [x] Write `frontend/src/components/SignInGate.jsx`, using the poll-until-ready
       pattern from `TurnstileWidget.jsx`.
-- [ ] Gate the app in `App.jsx`. Add the email and the sign-out button to
+- [x] Gate the app in `App.jsx`. Add the email and the sign-out button to
       `RecordBar.jsx`.
 - [ ] **Do not touch the three check routes in this batch.** They must still
       accept an anonymous caller, so a sign-in mistake cannot break them.
