@@ -41,6 +41,9 @@ jobs:
         run: backend/.venv/bin/pytest tests/ -v
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          # create_async_engine opens no connection at import, so a dummy URL is
+          # enough to get past the fail-closed check in app.db.
+          DATABASE_URL: postgresql+asyncpg://u:p@localhost/test
 
   frontend-build:
     name: Frontend – Build

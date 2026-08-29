@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from slowapi import _rate_limit_exceeded_handler  # noqa: E402
 from slowapi.errors import RateLimitExceeded  # noqa: E402
 
+from app.db import init_models  # noqa: E402
 from app.limiter import limiter  # noqa: E402
 from app.routes.analyze import router as analyze_router  # noqa: E402
 from app.routes.explain import router as explain_router  # noqa: E402
@@ -41,6 +42,7 @@ allow_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    await init_models()
     warm_up()
     yield
 

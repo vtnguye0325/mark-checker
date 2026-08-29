@@ -10,6 +10,13 @@ services:
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       DISABLE_TURNSTILE: ${DISABLE_TURNSTILE:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://markchecker:${POSTGRES_PASSWORD:-markchecker}@postgres-dev:5432/markchecker}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      RATE_LIMIT_ANALYZE_USER: ${RATE_LIMIT_ANALYZE_USER:-5/hour}
+      RATE_LIMIT_ANALYZE_IP: ${RATE_LIMIT_ANALYZE_IP:-20/hour}
     volumes:
       - ./backend:/app
       - hf-cache:/hf-cache
@@ -25,6 +32,26 @@ services:
       ]
     ports:
       - "8000:8000"
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+
+  postgres-dev:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: markchecker
+      POSTGRES_DB: markchecker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-markchecker}
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    # Publish on loopback only so psql on the host can reach the dev database.
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "markchecker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend-dev:
     image: node:20-bookworm
@@ -44,3 +71,4 @@ services:
 volumes:
   frontend_dev_node_modules:
   hf-cache:
+  pgdata_dev:
