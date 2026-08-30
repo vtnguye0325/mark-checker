@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.limiter import limiter
 
 from app.auth import (
     COOKIE_NAME,
@@ -34,7 +36,9 @@ class PublicUser(BaseModel):
 
 
 @router.post("/google", response_model=PublicUser)
+@limiter.limit("20/hour")
 async def google_login(
+    request: Request,  # noqa: ARG001  (slowapi reads the client IP off this)
     body: GoogleLoginRequest,
     response: Response,
     session: AsyncSession = Depends(get_session),

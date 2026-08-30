@@ -17,14 +17,28 @@ const POLL_TIMEOUT_MS = 8000
  */
 export default function SignInModal({ onCredential, onSignedIn, onClose }) {
   const buttonRef = useRef(null)
+  const cardRef = useRef(null)
   const onCredentialRef = useRef(onCredential)
   const onSignedInRef = useRef(onSignedIn)
+  const onCloseRef = useRef(onClose)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     onCredentialRef.current = onCredential
     onSignedInRef.current = onSignedIn
+    onCloseRef.current = onClose
   })
+
+  // Escape closes the modal, and focus moves into the card on open and is not
+  // trapped there — a keyboard user must be able to leave.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onCloseRef.current?.()
+    }
+    document.addEventListener('keydown', onKey)
+    cardRef.current?.focus()
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
@@ -37,6 +51,16 @@ export default function SignInModal({ onCredential, onSignedIn, onClose }) {
     let timeoutId = null
 
     function render() {
+      try {
+        renderButton()
+      } catch (err) {
+        // GIS reports a wrong client id or an unlisted origin only to the
+        // console. Surface a line here so the modal is never a blank box.
+        setError(err?.message || 'Google sign-in failed to load.')
+      }
+    }
+
+    function renderButton() {
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: (response) => {
@@ -80,10 +104,12 @@ export default function SignInModal({ onCredential, onSignedIn, onClose }) {
   return (
     <div className="modal-scrim" onClick={onClose}>
       <div
+        ref={cardRef}
         className="modal-card"
         role="dialog"
         aria-modal="true"
         aria-label="Sign in"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <button type="button" className="modal-close" onClick={onClose} aria-label="Close">

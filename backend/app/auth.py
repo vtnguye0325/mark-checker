@@ -27,9 +27,9 @@ COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
 COOKIE_NAME = "session"
 _ALGORITHM = "HS256"
 
-# One transport, reused. verify_oauth2_token fetches Google's signing certificates
-# on the first call and caches them in process after that.
-_google_request = google_requests.Request()
+# A browser clock a few seconds fast makes google-auth raise "Token used too
+# early". Allow a small skew so a valid token is not rejected.
+_CLOCK_SKEW_SECONDS = 10
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,16 @@ async def verify_google_id_token(token: str) -> dict:
     """
 
     def _verify() -> dict:
-        return google_id_token.verify_oauth2_token(token, _google_request, GOOGLE_CLIENT_ID)
+        # Build the transport inside the worker thread. requests.Session is not
+        # documented as thread-safe, and run_in_threadpool can run two of these
+        # at once. Each call re-fetches Google's certs over HTTPS, which is fine
+        # for a route that runs once per sign-in.
+        return google_id_token.verify_oauth2_token(
+            token,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=_CLOCK_SKEW_SECONDS,
+        )
 
     try:
         claims = await run_in_threadpool(_verify)
@@ -87,7 +96,11 @@ def current_user(request: Request) -> SessionUser:
     except jwt.PyJWTError as exc:
         raise HTTPException(status_code=401, detail="Session is invalid or expired") from exc
 
-    user = SessionUser(id=payload["sub"], email=payload["email"])
+    sub = payload.get("sub")
+    email = payload.get("email")
+    if not sub or not email:
+        raise HTTPException(status_code=401, detail="Session is invalid or expired")
+    user = SessionUser(id=sub, email=email)
     # Step 7's rate-limit key function reads this, which saves a second decode.
     request.state.user = user
     return user
