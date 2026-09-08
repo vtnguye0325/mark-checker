@@ -42,8 +42,8 @@ class 21.
    which fields carried the verdict.
 4. A retrieval agent writes targeted queries against a doctrine store (TMEP sections and
    TTAB decisions) and collects the passages that fit this mark.
-5. DeepSeek writes the four-section explanation, grounded in the retrieved doctrine and told
-   to cite only sections that were actually retrieved.
+5. The analysis LLM (Gemini by default) writes the four-section explanation, grounded in the
+   retrieved doctrine and told to cite only sections that were actually retrieved.
 
 ```mermaid
 flowchart LR
@@ -51,7 +51,7 @@ flowchart LR
     B --> C[ModernBERT classifier]
     C --> D[Leave-one-out attribution]
     D --> E[Retrieval agent<br/>TMEP + TTAB]
-    E --> F[DeepSeek explanation<br/>grounded in doctrine]
+    E --> F[LLM explanation<br/>grounded in doctrine]
     F --> G[Verdict + drivers + plain-English analysis]
 ```
 
@@ -81,12 +81,21 @@ flowchart LR
 |---|---|---|
 | Classifier | Fine-tuned ModernBERT-base (Transformers) | Narrow task, fixed input shape, CPU-friendly, no per-call cost |
 | Attribution | Leave-one-out over the 8 input fields | Field-aligned, model-agnostic, cheap (one batched forward pass) |
-| Retrieval | DeepSeek tool-calling agent + ChromaDB (embedded) | Self-correcting queries; no vector-DB server to run |
+| Retrieval | LLM tool-calling agent + ChromaDB (embedded) | Self-correcting queries; no vector-DB server to run |
 | Embeddings | bge-base-en-v1.5 | Strong open retrieval model, runs locally |
-| Analysis LLM | DeepSeek (`deepseek-chat`, OpenAI-compatible SDK) | Low cost, adequate for grounded summarization |
+| Analysis LLM | Gemini free tier by default (`gemini-2.0-flash`), DeepSeek via `LLM_PROVIDER=deepseek` | Both OpenAI-compatible; free tier removes the per-call cost |
 | Backend | FastAPI + Uvicorn | Async, typed request models, small surface |
 | Frontend | React + Vite | Simple three-call pipeline UI |
 | Deploy | Docker Compose + Nginx + Cloudflare Tunnel | One-command stack, no inbound ports |
+
+## Free-tier data use
+
+`/llm-assess` runs on the Google AI (Gemini) free tier by default. Google may use free-tier
+API content to improve its products. The prompt carries the user's mark and goods
+description, which is the user's business information, and Phase 8 stores it against a named
+account. The app tells the user this in the check form before they run a check. This is
+acceptable while the app has no paying users. Revisit it before the app takes paying users,
+or switch to `LLM_PROVIDER=deepseek` for a paid API that does not train on request content.
 
 ## Documentation
 

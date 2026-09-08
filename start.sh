@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_PYTHON="$ROOT/backend/.venv/bin/python"
 
 # --- Environment -------------------------------------------------------------
-# Load .env (HF_MODEL_ID, HF_TOKEN, DEEPSEEK_API_KEY, …) into the environment so
+# Load .env (HF_MODEL_ID, HF_TOKEN, GEMINI_API_KEY, …) into the environment so
 # the backend picks them up at runtime.
 if [[ -f "$ROOT/.env" ]]; then
   set -a

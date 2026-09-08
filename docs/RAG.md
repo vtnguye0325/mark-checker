@@ -1,6 +1,6 @@
 # RAG layer
 
-The `/llm-assess` endpoint grounds DeepSeek responses in real legal doctrine with a ChromaDB
+The `/llm-assess` endpoint grounds the LLM response in real legal doctrine with a ChromaDB
 vector store (embedded mode — no separate server or exposed port). The store holds three
 collections: `tmep` (Trademark Manual of Examining Procedure sections), `ttab` (TTAB ex parte
 decisions and landmark court opinions), and `statute` (Lanham Act / 37 CFR, reserved for a
@@ -15,7 +15,7 @@ filing outcomes, the training dataset, or examiner-behavior statistics.
 
 ## Retrieval strategy
 
-`backend/rag/agent.py` runs a DeepSeek tool-calling loop (up to 2 rounds, each capped at
+`backend/rag/agent.py` runs an LLM tool-calling loop (up to 2 rounds, each capped at
 `max_tokens=200`). The agent gets the mark, the description, the NICE class, the classifier
 label, and the top attribution tokens, plus two tools: `search_tmep(query)` and
 `search_ttab(query)`. It writes targeted doctrine queries with exact Abercrombie vocabulary,
@@ -84,6 +84,7 @@ CHROMA_PATH=./data/chroma python scripts/eval_rag_retrieval.py
 - Embedded mode (`chromadb.PersistentClient`) — no HTTP server, no port to expose.
 - `chromadb` is pinned in `requirements.txt`; major versions have breaking on-disk format
   changes — upgrade intentionally and rebuild the index after.
-- `/llm-assess` returns `503` (not `500`) when `DEEPSEEK_API_KEY` is missing.
+- `/llm-assess` returns `503` (not `500`) when the LLM provider key is missing
+  (`GEMINI_API_KEY`, or `DEEPSEEK_API_KEY` when `LLM_PROVIDER=deepseek`).
 - If RAG retrieval fails, the endpoint proceeds without doctrine context rather than erroring.
 - `CHROMA_PATH` defaults to `backend/rag/chroma_db/` for local (non-Docker) runs.

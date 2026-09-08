@@ -101,12 +101,14 @@ toward distinctiveness; a negative value pushes against it. The results are sort
 
 ## `POST /llm-assess`
 
-Sends the prediction and the attributions to DeepSeek and returns a plain-English legal
-analysis in four sections: *What the model found*, *Where this mark sits on the trademark
-spectrum*, *Why the classifier leaned this way — key signals*, and *What to do next*. The RAG
-layer grounds the analysis in retrieved TMEP and TTAB doctrine (see [RAG.md](RAG.md)).
+Sends the prediction and the attributions to the analysis LLM and returns a plain-English
+legal analysis in four sections: *What the model found*, *Where this mark sits on the
+trademark spectrum*, *Why the classifier leaned this way — key signals*, and *What to do
+next*. The RAG layer grounds the analysis in retrieved TMEP and TTAB doctrine (see
+[RAG.md](RAG.md)).
 
-Requires `DEEPSEEK_API_KEY` in the environment. Requires a valid Cloudflare Turnstile token
+Runs on the Gemini free tier by default. Requires `GEMINI_API_KEY` in the environment, or
+`DEEPSEEK_API_KEY` when `LLM_PROVIDER=deepseek`. Requires a valid Cloudflare Turnstile token
 in `turnstile_token` unless `DISABLE_TURNSTILE=true`.
 
 **Request body:**
@@ -132,8 +134,10 @@ in `turnstile_token` unless `DISABLE_TURNSTILE=true`.
 
 `sources` is `null` when RAG retrieval returns nothing.
 
-**Errors:** `503` if `DEEPSEEK_API_KEY` is not configured or Turnstile is not configured;
-`429` when the analyze rate limit is hit.
+**Errors:** `503` if the LLM provider key is not configured, the provider is unreachable, or
+Turnstile is not configured. `429` when the analyze rate limit is hit, or the provider's
+free-tier quota is reached — a per-minute cap carries a `Retry-After` header, a daily cap
+carries a message that names the reset instead.
 
 ## Validation errors (422)
 

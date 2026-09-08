@@ -8,7 +8,8 @@ security steps to take before you share the app.
 - Docker and Docker Compose.
 - A Hugging Face repo id in `HF_MODEL_ID` that holds a Transformers-compatible checkpoint.
 - `HF_TOKEN` if the model repo is private or gated.
-- `DEEPSEEK_API_KEY` for the `/llm-assess` endpoint.
+- `GEMINI_API_KEY` for the `/llm-assess` endpoint (or `DEEPSEEK_API_KEY` with
+  `LLM_PROVIDER=deepseek`).
 - `TURNSTILE_SECRET` and `VITE_TURNSTILE_SITE_KEY` for the bot check on `/llm-assess`.
 
 ## Docker
@@ -24,7 +25,8 @@ From the project root:
 ```bash
 cp .env.example .env
 # Edit .env: set HF_MODEL_ID (required). Set HF_TOKEN if the repo is private/gated.
-# Optional: DEEPSEEK_API_KEY for POST /llm-assess; CORS_ORIGINS for extra browser origins.
+# Set GEMINI_API_KEY for POST /llm-assess (or DEEPSEEK_API_KEY with LLM_PROVIDER=deepseek).
+# Optional: CORS_ORIGINS for extra browser origins.
 ```
 
 ### Production (Nginx + API)
@@ -189,8 +191,7 @@ server (Cloudflare terminates HTTPS for users).
 
 ### Security before you share publicly
 
-The app has **no built-in login**. Anyone with the URL can use server CPU and DeepSeek API
-credits.
+Anyone with the URL can use server CPU and the LLM provider's quota.
 
 - **Cloudflare Access** (recommended) — Zero Trust → Access → Applications → add a
   self-hosted app for your hostname. Use email OTP or Google login.
@@ -322,6 +323,7 @@ Configure these in the repo **Settings → Secrets and variables → Actions**:
 |--------|---------|
 | `HF_MODEL_ID` | Hugging Face model repo id |
 | `HF_TOKEN` | Token for private/gated Hugging Face models |
-| `DEEPSEEK_API_KEY` | API key for the `/llm-assess` DeepSeek LLM endpoint |
+| `GEMINI_API_KEY` | API key for the `/llm-assess` LLM endpoint (Gemini free tier, the default provider) |
+| `DEEPSEEK_API_KEY` | API key for `/llm-assess` when `LLM_PROVIDER=deepseek` |
 | `TURNSTILE_SECRET` | Cloudflare Turnstile secret for the bot check |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key baked into the frontend build |

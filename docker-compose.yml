@@ -7,7 +7,10 @@ services:
       MODEL_DIR: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
       # HF_TOKEN is only required when EMBEDDER=hf_api; safe to leave unset for local BGE embeddings.
       HF_TOKEN: ${HF_TOKEN:-}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?Set DEEPSEEK_API_KEY in .env}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_MODEL: ${LLM_MODEL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       DISABLE_TURNSTILE: ${DISABLE_TURNSTILE:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173}

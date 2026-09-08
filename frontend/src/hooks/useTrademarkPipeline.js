@@ -105,8 +105,16 @@ export function useTrademarkPipeline() {
           if (abortRef.current !== ctrl) return
           if (res3.status === 429) {
             const retryAfter = res3.headers.get('Retry-After')
-            const wait = retryAfter ? `${retryAfter} seconds` : 'a moment'
-            setLlmError(`Too many analysis requests. Please wait ${wait} and try again.`)
+            const body = await safeJson(res3)
+            // A per-minute cap carries Retry-After and fits the wait-time line.
+            // A daily cap carries no Retry-After and a message that names the
+            // reset — show that verbatim so the user stops retrying.
+            if (!retryAfter && body.detail) {
+              setLlmError(body.detail)
+            } else {
+              const wait = retryAfter ? `${retryAfter} seconds` : 'a moment'
+              setLlmError(`Too many analysis requests. Please wait ${wait} and try again.`)
+            }
             onAnalyzeComplete?.()
             return
           }

@@ -6,6 +6,9 @@ services:
     environment:
       MODEL_DIR: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
       HF_TOKEN: ${HF_TOKEN:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_MODEL: ${LLM_MODEL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       DISABLE_TURNSTILE: ${DISABLE_TURNSTILE:-false}
