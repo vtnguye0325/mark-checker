@@ -16,10 +16,10 @@ _PROVIDERS = {
     "gemini": {
         "key_var": "GEMINI_API_KEY",
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
-        # gemini-2.0-flash does not think before it answers, so max_tokens is
-        # spent on content only. A 2.5-series model would spend the agent's
-        # 200-token budget on thinking and return empty content. See the plan.
-        "default_model": "gemini-2.0-flash",
+        # gemini-flash-lite-latest tracks Google's current Flash-Lite model —
+        # fast, cheap, minimal thinking, so it does not spend the agent's
+        # 200-token budget before it emits a tool call.
+        "default_model": "gemini-flash-lite-latest",
     },
     "deepseek": {
         "key_var": "DEEPSEEK_API_KEY",

@@ -83,7 +83,7 @@ flowchart LR
 | Attribution | Leave-one-out over the 8 input fields | Field-aligned, model-agnostic, cheap (one batched forward pass) |
 | Retrieval | LLM tool-calling agent + ChromaDB (embedded) | Self-correcting queries; no vector-DB server to run |
 | Embeddings | bge-base-en-v1.5 | Strong open retrieval model, runs locally |
-| Analysis LLM | Gemini free tier by default (`gemini-2.0-flash`), DeepSeek via `LLM_PROVIDER=deepseek` | Both OpenAI-compatible; free tier removes the per-call cost |
+| Analysis LLM | Gemini free tier by default (`gemini-flash-lite-latest`), DeepSeek via `LLM_PROVIDER=deepseek` | Both OpenAI-compatible; free tier removes the per-call cost |
 | Backend | FastAPI + Uvicorn | Async, typed request models, small surface |
 | Frontend | React + Vite | Simple three-call pipeline UI |
 | Deploy | Docker Compose + Nginx + Cloudflare Tunnel | One-command stack, no inbound ports |

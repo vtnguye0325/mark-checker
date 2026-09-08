@@ -24,6 +24,11 @@ router = APIRouter()
 # must see a different message and stop retrying.
 _DAILY_QUOTA_MARKERS = ("per day", "perday", "requests per day", "daily limit")
 
+# Words a 429 carries when the account has no billing balance, not when it is
+# rate-limited. This never clears on its own, so it is an operator problem: a
+# 503, not a "try again".
+_BILLING_MARKERS = ("prepayment credits", "billing", "depleted", "check your plan")
+
 
 def _retry_after_seconds(exc: openai.APIStatusError) -> str | None:
     response = getattr(exc, "response", None)
@@ -32,9 +37,9 @@ def _retry_after_seconds(exc: openai.APIStatusError) -> str | None:
     return response.headers.get("retry-after")
 
 
-def _is_daily_quota(exc: openai.RateLimitError) -> bool:
+def _matches(exc: Exception, markers: tuple[str, ...]) -> bool:
     text = str(getattr(exc, "message", "") or exc).lower()
-    return any(marker in text for marker in _DAILY_QUOTA_MARKERS)
+    return any(marker in text for marker in markers)
 
 
 class AnalyzeRequest(BaseModel):
@@ -81,7 +86,14 @@ async def analyze(
             attributions=[a.model_dump() for a in req.attributions],
         )
     except openai.RateLimitError as exc:
-        if _is_daily_quota(exc):
+        if _matches(exc, _BILLING_MARKERS):
+            # No balance on the account. This does not clear on a retry, so it
+            # is a 503 and an operator alert, not a "try again".
+            log.error("analyze: provider billing exhausted — check the API account")
+            raise HTTPException(
+                status_code=503, detail="The analysis service is unavailable right now."
+            ) from exc
+        if _matches(exc, _DAILY_QUOTA_MARKERS):
             log.warning("analyze: provider daily quota reached")
             raise HTTPException(
                 status_code=429,

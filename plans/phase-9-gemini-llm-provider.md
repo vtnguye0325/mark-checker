@@ -150,6 +150,26 @@ bullets in a fixed format, and TMEP citations drawn only from the retrieved text
 | Gemini unreachable | `APITimeoutError` after 30 seconds, with one retry. The route returns 503. The user waits up to 60 seconds first, so consider lowering the timeout for a free tier. |
 | The model drifts from the four-section format | `RecordPlate` renders a partial or empty panel. Step 5 is what catches this, before users do. |
 
+## Verification results
+
+Run on 2026-09-08 with `LLM_PROVIDER=gemini`, `LLM_MODEL` unset
+(`gemini-flash-lite-latest`), against the committed ChromaDB index.
+
+- **Step 4 — tool calling survives the port.** All five marks logged
+  `agent round 1 LLM: … tool_calls=2` and a round-2 refinement call. Every run
+  set `sources.tmep` and `sources.ttab`, and `RAG retrieval: … tmep=True
+  ttab=True`. The assistant tool-call message with `content=""` is accepted.
+- **Step 5 — output quality.** Five marks (XEROX, APPLE, NETFLIX, CREAMY,
+  EMAIL). Every response carried the four exact section headers and exactly two
+  spectrum bullets in `- **Tier** — sentence.` form. Length 300–375 words.
+  **No invented TMEP citations** — every cited section appeared in the retrieved
+  set.
+- **Model note.** `gemini-2.0-flash` is retired (404). `gemini-flash-lite-latest`
+  answers tool calls in ~20 tokens, so the agent's `max_tokens=200` is never
+  spent on thinking.
+- **Billing 429.** A "prepayment credits are depleted" 429 does not clear on a
+  retry, so `analyze()` maps it to a 503, not a "try again" 429.
+
 ## Not in this phase
 
 - No provider abstraction beyond one module and one environment variable. Two
