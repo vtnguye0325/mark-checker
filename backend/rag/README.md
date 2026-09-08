@@ -9,10 +9,10 @@ Retrieval-Augmented Generation layer that grounds LLM trademark analysis in actu
 ```
 Mark + description + NICE class + label + SHAP
         ↓
-[HyDE — cheap DeepSeek call, max_tokens=150]
-Generate hypothetical legal reasoning paragraph
+[Agent — LLM tool-calling loop, up to 2 rounds]
+Model issues search_tmep / search_ttab queries
         ↓
-Embed with bge-base-en-v1.5 (local, MPS-accelerated)
+Embed each query with bge-base-en-v1.5 (local, MPS-accelerated)
         ↓
 Query two ChromaDB collections in parallel
   ├── tmep  → top 3 subsection chunks (doctrine)
@@ -90,8 +90,8 @@ backend/rag/
 ├── embedder.py          # bge-base-en-v1.5, lazy-loaded, MPS-accelerated
 ├── store.py             # ChromaDB PersistentClient, two collections
 ├── chunker.py           # RecursiveCharacterTextSplitter (600t / 80 overlap)
-├── hyde.py              # Cheap DeepSeek call → hypothetical paragraph
-├── retriever.py         # Full pipeline: HyDE → embed → parallel query → format_context()
+├── agent.py             # LLM tool-calling loop → search_tmep / search_ttab queries
+├── retriever.py         # Full pipeline: agent → embed → parallel query → format_context()
 ├── chroma_db/           # Persisted vector store (not committed to git)
 ├── data/                # Drop source zips here (not committed to git)
 └── ingest/
@@ -154,7 +154,7 @@ Spot checks (mark + description without legal vocabulary) all miss intentionally
 ## Milestones
 
 - [x] **1** — TMEP ingest + ChromaDB `tmep` collection
-- [ ] **2** — `hyde.py` — cheap LLM call + embedding smoke test
+- [x] **2** — `agent.py` — LLM tool-calling retrieval loop (replaced the HyDE approach)
 - [ ] **3** — `retriever.py` — query both collections, verify TMEP doctrine surfaces
 - [ ] **4** — TTAB loader — parse 1,000 decisions, validate reasoning extraction
 - [ ] **5** — Modify `llm_service.py` — inject doctrine context into prompt

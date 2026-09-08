@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_PYTHON="$ROOT/backend/.venv/bin/python"
 
 # --- Environment -------------------------------------------------------------
-# Load .env (HF_MODEL_ID, HF_TOKEN, DEEPSEEK_API_KEY, …) into the environment so
+# Load .env (HF_MODEL_ID, HF_TOKEN, GEMINI_API_KEY, …) into the environment so
 # the backend picks them up at runtime.
 if [[ -f "$ROOT/.env" ]]; then
   set -a
@@ -14,10 +14,63 @@ if [[ -f "$ROOT/.env" ]]; then
   set +a
 fi
 
+# This script runs the backend on the host, not in the compose network, so the
+# compose service name "postgres-dev" does not resolve. docker-compose.dev.yml
+# publishes Postgres on 127.0.0.1:5432, so rewrite the host for the host run.
+if [[ -n "${DATABASE_URL:-}" ]]; then
+  export DATABASE_URL="${DATABASE_URL/@postgres-dev:/@127.0.0.1:}"
+fi
+
+# --- Postgres --------------------------------------------------------------
+# The backend needs the dev Postgres. Start the compose service if it is not
+# already running, then wait until it accepts connections.
+if [[ "${DATABASE_URL:-}" == *"@127.0.0.1:"* || "${DATABASE_URL:-}" == *"@localhost:"* ]]; then
+  if ! docker info >/dev/null 2>&1; then
+    echo "Error: Docker daemon is not running. Start Docker Desktop, then re-run this script." >&2
+    exit 1
+  fi
+  if [[ -z "$(docker compose -f "$ROOT/docker-compose.dev.yml" ps -q postgres-dev 2>/dev/null)" ]]; then
+    echo "Starting Postgres (postgres-dev)…"
+    docker compose -f "$ROOT/docker-compose.dev.yml" up -d postgres-dev
+  fi
+  echo "Waiting for Postgres…"
+  for _ in $(seq 1 30); do
+    if docker compose -f "$ROOT/docker-compose.dev.yml" exec -T postgres-dev pg_isready -q -U markchecker 2>/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+fi
+
 # The model is loaded from the Hugging Face hub at runtime. Point MODEL_DIR at
 # the HF repo id (overridable: export MODEL_DIR=/path/to/local/model to use a
 # local copy instead).
 export MODEL_DIR="${MODEL_DIR:-${HF_MODEL_ID:-vtnguye/automating-abercrombie}}"
+
+# --- Free the dev ports -----------------------------------------------------
+# Kill any process that already holds a port this script needs, then reuse the
+# same port. A stale uvicorn or vite from a killed terminal keeps the old .env,
+# so the reload of a changed key never happens without this.
+free_port() {
+  local port="$1"
+  local pids
+  pids="$(lsof -ti "tcp:$port" -sTCP:LISTEN 2>/dev/null || true)"
+  if [[ -n "$pids" ]]; then
+    echo "Port $port is in use by PID(s) $pids — killing…"
+    # shellcheck disable=SC2086
+    kill $pids 2>/dev/null || true
+    sleep 1
+    pids="$(lsof -ti "tcp:$port" -sTCP:LISTEN 2>/dev/null || true)"
+    if [[ -n "$pids" ]]; then
+      # shellcheck disable=SC2086
+      kill -9 $pids 2>/dev/null || true
+      sleep 1
+    fi
+  fi
+}
+
+free_port 8000
+free_port 5173
 
 cleanup() {
   echo ""

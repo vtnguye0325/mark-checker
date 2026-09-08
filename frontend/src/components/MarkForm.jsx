@@ -106,6 +106,11 @@ export default function MarkForm({
         </div>
       )}
 
+      <p className="t-small dim" style={{ marginTop: '20px' }}>
+        The analysis step sends the mark and the goods description to Google's Gemini API,
+        which runs on a free tier that may use the request to improve Google's products.
+      </p>
+
       <div className="form-actions">
         <button type="submit" className="btn" disabled={!canSubmit || loading}>
           {loading ? 'Opening…' : 'Open record'}

@@ -7,7 +7,10 @@ services:
       MODEL_DIR: ${HF_MODEL_ID:?Set HF_MODEL_ID in .env (Hugging Face repo id)}
       # HF_TOKEN is only required when EMBEDDER=hf_api; safe to leave unset for local BGE embeddings.
       HF_TOKEN: ${HF_TOKEN:-}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?Set DEEPSEEK_API_KEY in .env}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_MODEL: ${LLM_MODEL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       DISABLE_TURNSTILE: ${DISABLE_TURNSTILE:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173}
@@ -15,6 +18,13 @@ services:
       RAG_TMEP_N_RESULTS: ${RAG_TMEP_N_RESULTS:-3}
       RAG_TTAB_N_RESULTS: ${RAG_TTAB_N_RESULTS:-2}
       CHROMA_PATH: /data/chroma
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://markchecker:${POSTGRES_PASSWORD}@postgres:5432/markchecker}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env (openssl rand -hex 32)}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      RATE_LIMIT_ANALYZE_USER: ${RATE_LIMIT_ANALYZE_USER:-5/hour}
+      RATE_LIMIT_ANALYZE_IP: ${RATE_LIMIT_ANALYZE_IP:-20/hour}
     volumes:
       - hf-cache:/hf-cache
       - ./data/chroma:/data/chroma
@@ -24,6 +34,9 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -43,6 +56,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}}
     # Do not claim host port 80. Another app on the production host runs a
     # Caddy proxy that owns 80 and 443. The Cloudflare Tunnel reaches this
     # app on loopback port 8080 instead.
@@ -53,5 +67,23 @@ services:
       backend:
         condition: service_healthy
 
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: markchecker
+      POSTGRES_DB: markchecker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Publish no port. The backend reaches Postgres on the compose network. A
+    # published port bypasses ufw, the problem that commit 6fa1994 fixed.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "markchecker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   hf-cache:
+  pgdata:

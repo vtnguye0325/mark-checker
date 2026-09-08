@@ -1,5 +1,8 @@
 """
-Agentic RAG — DeepSeek tool-calling loop.
+Agentic RAG — LLM tool-calling loop.
+
+Runs on whichever provider llm_client selects (Gemini by default, DeepSeek
+when LLM_PROVIDER=deepseek).
 
 Agent receives mark info and two tools (search_tmep, search_ttab).
 Statute search is reserved for the chatbot; not wired here.
@@ -14,7 +17,10 @@ import logging
 import os
 import time
 
-from openai import OpenAI
+try:
+    from app.services.llm_client import LLM_MODEL, get_llm_client
+except ImportError:  # when the repo root, not backend/, is on sys.path
+    from backend.app.services.llm_client import LLM_MODEL, get_llm_client
 
 from rag.embedder import embed_query
 from rag.store import get_tmep_collection, get_ttab_collection
@@ -105,18 +111,6 @@ SHAP attributions (top tokens): {attributions}
 Find the TMEP doctrine and TTAB cases most relevant to this mark's position on the \
 Abercrombie spectrum."""
 
-_client: OpenAI | None = None
-
-
-def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        _client = OpenAI(
-            api_key=os.environ["DEEPSEEK_API_KEY"],
-            base_url="https://api.deepseek.com",
-        )
-    return _client
-
 
 def _search_tmep(query: str) -> list[dict]:
     col = get_tmep_collection()
@@ -167,7 +161,7 @@ def run_agent(
             "rounds": int,        # how many LLM calls were made
         }
     """
-    client = _get_client()
+    client = get_llm_client()
 
     messages: list[dict] = [
         {"role": "system", "content": _SYSTEM},
@@ -192,23 +186,41 @@ def run_agent(
         rounds += 1
         _t = time.perf_counter()
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model=LLM_MODEL,
             messages=messages,
             tools=_TOOLS,
             tool_choice="auto",
             max_tokens=200,
             temperature=0.1,
         )
-        msg = response.choices[0].message
+        choice = response.choices[0]
+        msg = choice.message
         log.info(
             "agent round %d LLM: %.2fs  tool_calls=%d",
             rounds,
             time.perf_counter() - _t,
             len(msg.tool_calls) if msg.tool_calls else 0,
         )
-        messages.append(msg.model_dump(exclude_none=True))
+
+        # Gemini's compatibility layer is stricter than DeepSeek about the
+        # assistant message that carries tool_calls. Send content="" rather than
+        # omit it, or the follow-up request with the tool results is rejected
+        # and the whole retrieval silently returns nothing.
+        assistant_msg = msg.model_dump(exclude_none=True)
+        if msg.tool_calls and not assistant_msg.get("content"):
+            assistant_msg["content"] = ""
+        messages.append(assistant_msg)
 
         if not msg.tool_calls:
+            # An empty completion with no tool calls reads the same as a model
+            # that chose not to search. Log finish_reason so a thinking-budget
+            # failure is not invisible.
+            if not (msg.content or "").strip():
+                log.warning(
+                    "agent round %d: empty completion, no tool calls (finish_reason=%s)",
+                    rounds,
+                    choice.finish_reason,
+                )
             break
 
         for tool_call in msg.tool_calls:

@@ -6,6 +6,25 @@ async function safeJson(res) {
   try { return JSON.parse(text) } catch { return { detail: text } }
 }
 
+// POST one stage. A 401 means the session expired mid-pipeline: ask the caller
+// to re-authenticate, then retry the same stage once. Retry once only, or a
+// backend that answers 401 forever loops.
+async function authedFetch(url, body, ctrl, onAuthExpired) {
+  const opts = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+    signal: ctrl.signal,
+  }
+  let res = await fetch(url, opts)
+  if (res.status === 401 && onAuthExpired) {
+    const ok = await onAuthExpired()
+    if (ok) res = await fetch(url, opts)
+  }
+  return res
+}
+
 export function useTrademarkPipeline() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -18,7 +37,8 @@ export function useTrademarkPipeline() {
   const [llmError, setLlmError] = useState(null)
   const abortRef = useRef(null)
 
-  async function submit(payload, turnstileToken = '', onAnalyzeComplete = null) {
+  async function submit(payload, turnstileToken = '', opts = {}) {
+    const { onAnalyzeComplete = null, onAuthExpired = null } = opts
     if (abortRef.current) abortRef.current.abort()
     const ctrl = new AbortController()
     abortRef.current = ctrl
@@ -32,12 +52,7 @@ export function useTrademarkPipeline() {
     setLlmError(null)
 
     try {
-      const res = await fetch('/ml-predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: ctrl.signal,
-      })
+      const res = await authedFetch('/ml-predict', payload, ctrl, onAuthExpired)
       if (!res.ok) {
         const err = await safeJson(res)
         const msg = Array.isArray(err.detail)
@@ -46,6 +61,7 @@ export function useTrademarkPipeline() {
         throw new Error(msg)
       }
       const data = await safeJson(res)
+      const queryId = data.query_id || null
       const predictResult = {
         ...data,
         mark: payload.mark,
@@ -57,12 +73,9 @@ export function useTrademarkPipeline() {
       setExplainLoading(true)
       let explainResult = null
       try {
-        const res2 = await fetch('/llm-explain', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: ctrl.signal,
-        })
+        const res2 = await authedFetch(
+          '/llm-explain', { ...payload, query_id: queryId }, ctrl, onAuthExpired,
+        )
         if (!res2.ok) throw new Error('Explain request failed')
         explainResult = await safeJson(res2)
         setExplainData(explainResult)
@@ -86,18 +99,22 @@ export function useTrademarkPipeline() {
             prob_distinctive: predictResult.prob_distinctive,
             attributions: explainResult.attributions,
             turnstile_token: turnstileToken,
+            query_id: queryId,
           }
-          const res3 = await fetch('/llm-assess', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(analyzePayload),
-            signal: ctrl.signal,
-          })
+          const res3 = await authedFetch('/llm-assess', analyzePayload, ctrl, onAuthExpired)
           if (abortRef.current !== ctrl) return
           if (res3.status === 429) {
             const retryAfter = res3.headers.get('Retry-After')
-            const wait = retryAfter ? `${retryAfter} seconds` : 'a moment'
-            setLlmError(`Too many analysis requests. Please wait ${wait} and try again.`)
+            const body = await safeJson(res3)
+            // A per-minute cap carries Retry-After and fits the wait-time line.
+            // A daily cap carries no Retry-After and a message that names the
+            // reset — show that verbatim so the user stops retrying.
+            if (!retryAfter && body.detail) {
+              setLlmError(body.detail)
+            } else {
+              const wait = retryAfter ? `${retryAfter} seconds` : 'a moment'
+              setLlmError(`Too many analysis requests. Please wait ${wait} and try again.`)
+            }
             onAnalyzeComplete?.()
             return
           }

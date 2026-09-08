@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 
-from openai import OpenAI
-
+from app.services.llm_client import LLM_MODEL, get_llm_client
 from app.services.text_formatter import NICE_DESCRIPTIONS
 
 log = logging.getLogger(__name__)
@@ -80,18 +78,9 @@ def analyze_trademark(
     prob_distinctive: float,
     attributions: list[dict],
 ) -> dict:
-    api_key = os.environ.get("DEEPSEEK_API_KEY")
-    if not api_key:
-        raise RuntimeError("DEEPSEEK_API_KEY environment variable is not set")
-
-    # Bound the call so a slow/hung DeepSeek response can't tie up a worker
-    # thread indefinitely, and cap retries so a paid endpoint can't fan out.
-    client = OpenAI(
-        api_key=api_key,
-        base_url="https://api.deepseek.com",
-        timeout=30.0,
-        max_retries=1,
-    )
+    # get_llm_client raises RuntimeError, naming the missing key, when the
+    # provider is not configured. analyze() maps that to a 503.
+    client = get_llm_client()
 
     attribution_lines = "\n".join(
         f"  {a['field']}: {a['value']}  ({a['attribution']:+.4f})" for a in attributions
@@ -131,7 +120,7 @@ def analyze_trademark(
 
     t1 = time.perf_counter()
     response = client.chat.completions.create(
-        model="deepseek-chat",
+        model=LLM_MODEL,
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": user_content},
@@ -148,8 +137,18 @@ def analyze_trademark(
     log.info("analyze total: %.2fs", time.perf_counter() - t_start)
     log.debug("prompt system=%r user=%r", _SYSTEM_PROMPT, user_content)
 
+    # A Gemini safety filter or an exhausted token budget returns content=None.
+    # Raise a RuntimeError naming finish_reason; analyze() turns it into a 503
+    # the user can act on, instead of an AttributeError and a 500.
+    choice = response.choices[0]
+    content = choice.message.content
+    if not content or not content.strip():
+        raise RuntimeError(
+            f"the model returned an empty analysis (finish_reason={choice.finish_reason})"
+        )
+
     return {
-        "analysis": response.choices[0].message.content.strip(),
+        "analysis": content.strip(),
         "sources": sources or None,
     }
 

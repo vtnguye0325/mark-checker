@@ -1,8 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EMPTY_FORM } from './constants/formDefaults'
 import { useTrademarkPipeline } from './hooks/useTrademarkPipeline'
 import { useScrollSpy } from './hooks/useScrollSpy'
+import { useAuth } from './hooks/useAuth'
+import SignInModal from './components/SignInModal'
 import RecordBar from './components/RecordBar'
+import HistoryPanel from './components/HistoryPanel'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
 import MarkForm from './components/MarkForm'
@@ -50,10 +53,20 @@ function buildParts(state) {
 }
 
 export default function App() {
+  const { user, status, signIn, signOut, sessionExpired } = useAuth()
+  const [signInOpen, setSignInOpen] = useState(false)
+  // 'check' is the form and the live result; 'history' is the stored records.
+  // Only a signed-in user reaches 'history', so drop back to 'check' on sign-out.
+  const [view, setView] = useState('check')
   const [form, setForm] = useState(EMPTY_FORM)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef(null)
   const filedRef = useRef(null)
+  // A check the visitor started before signing in. Held here, not in form state,
+  // because the form unmounts once the pipeline runs.
+  const pendingPayloadRef = useRef(null)
+  // Resolver for an onAuthExpired promise while the pipeline waits on a re-sign-in.
+  const authResolverRef = useRef(null)
   const { submit, reset, state } = useTrademarkPipeline()
 
   const onFieldChange = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
@@ -66,12 +79,77 @@ export default function App() {
     ...(form.pseudo_mark.trim() && { pseudo_mark: form.pseudo_mark.trim() }),
   })
 
+  const runSubmit = (payload) => {
+    submit(payload, turnstileToken, {
+      onAnalyzeComplete: () => {
+        turnstileRef.current?.reset()
+        setTurnstileToken('')
+      },
+      // The pipeline hit a 401. Clear the user, open the modal, and resolve
+      // true once the sign-in returns so the stage retries.
+      onAuthExpired: () =>
+        new Promise((resolve) => {
+          sessionExpired()
+          authResolverRef.current = resolve
+          setSignInOpen(true)
+        }),
+    })
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
-    submit(buildPayload(), turnstileToken, () => {
-      turnstileRef.current?.reset()
-      setTurnstileToken('')
-    })
+    const payload = buildPayload()
+    // Prompt for the sign-in at the check button, not at page load. Keep the
+    // typed values and run the check from the modal callback.
+    if (status !== 'signed-in') {
+      pendingPayloadRef.current = payload
+      setSignInOpen(true)
+      return
+    }
+    runSubmit(payload)
+  }
+
+  const handleSignedIn = () => {
+    setSignInOpen(false)
+    const resolve = authResolverRef.current
+    if (resolve) {
+      authResolverRef.current = null
+      resolve(true)
+      return
+    }
+    const payload = pendingPayloadRef.current
+    if (payload) {
+      pendingPayloadRef.current = null
+      runSubmit(payload)
+    }
+  }
+
+  // A check clicked while GET /auth/me was still in flight. Once the status
+  // resolves to signed-in, run the held payload instead of dropping it. The ref
+  // is cleared first, so this and handleSignedIn cannot both run it.
+  useEffect(() => {
+    if (status !== 'signed-in') return
+    const payload = pendingPayloadRef.current
+    if (!payload) return
+    pendingPayloadRef.current = null
+    setSignInOpen(false)
+    runSubmit(payload)
+  })
+
+  // The history view needs a session. Drop back to the check when the session
+  // ends, so a signed-out user never sees a dead panel.
+  useEffect(() => {
+    if (status === 'signed-out' && view === 'history') setView('check')
+  }, [status, view])
+
+  const handleSignInClose = () => {
+    setSignInOpen(false)
+    pendingPayloadRef.current = null
+    const resolve = authResolverRef.current
+    if (resolve) {
+      authResolverRef.current = null
+      resolve(false)
+    }
   }
 
   const handleReset = () => {
@@ -111,12 +189,34 @@ export default function App() {
     sources: sourceCount || null,
   }
 
+  // The modal opens only on an explicit action (the check button, a 401, or the
+  // RecordBar link), never automatically, so there is no reload flash to guard
+  // against. Do not show it once the user is signed in.
+  const canOpenSignIn = status !== 'signed-in'
+
   return (
     <div className={`record ${accent}`}>
       <div className="accent-rule" />
-      <RecordBar />
+      <RecordBar
+        status={status}
+        email={user?.email}
+        onSignIn={() => setSignInOpen(true)}
+        onSignOut={signOut}
+        showingHistory={view === 'history'}
+        onToggleHistory={() => setView((v) => (v === 'history' ? 'check' : 'history'))}
+      />
 
-      {result && (
+      {signInOpen && canOpenSignIn && (
+        <SignInModal
+          onCredential={signIn}
+          onSignedIn={handleSignedIn}
+          onClose={handleSignInClose}
+        />
+      )}
+
+      {view === 'history' && <HistoryPanel onSessionExpired={sessionExpired} />}
+
+      {view === 'check' && result && (
         <RecordPlate
           result={result}
           llmData={state.llmData}
@@ -126,6 +226,7 @@ export default function App() {
         />
       )}
 
+      {view === 'check' && (
       <div className="doc">
         {hasActivity
           ? <RecordRail meta={meta} parts={parts} current={currentPart} />
@@ -185,6 +286,7 @@ export default function App() {
           )}
         </main>
       </div>
+      )}
     </div>
   )
 }

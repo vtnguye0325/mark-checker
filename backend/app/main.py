@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 # Load .env from the repo root (two levels up from this file) so local dev
 # picks up TURNSTILE_SECRET, DISABLE_TURNSTILE, etc. without manual exports.
 # In Docker, env vars are injected by compose and load_dotenv is a no-op.
-load_dotenv(Path(__file__).parent.parent.parent / ".env", override=True)
+# Use override=False so a value already in the environment wins over the .env
+# file. start.sh rewrites the DATABASE_URL host for the host run and exports it;
+# override=True would restore the compose-only "postgres-dev" host and break it.
+load_dotenv(Path(__file__).parent.parent.parent / ".env", override=False)
 
 logging.basicConfig(
     level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO),
@@ -23,9 +26,12 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from slowapi import _rate_limit_exceeded_handler  # noqa: E402
 from slowapi.errors import RateLimitExceeded  # noqa: E402
 
+from app.db import init_models  # noqa: E402
 from app.limiter import limiter  # noqa: E402
 from app.routes.analyze import router as analyze_router  # noqa: E402
+from app.routes.auth import router as auth_router  # noqa: E402
 from app.routes.explain import router as explain_router  # noqa: E402
+from app.routes.history import router as history_router  # noqa: E402
 from app.routes.predict import router as predict_router  # noqa: E402
 from app.services.model_service import is_loaded, warm_up  # noqa: E402
 
@@ -41,6 +47,7 @@ allow_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    await init_models()
     warm_up()
     yield
 
@@ -52,13 +59,16 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(predict_router)
 app.include_router(explain_router)
 app.include_router(analyze_router)
+app.include_router(history_router)
 
 
 @app.get("/health")
