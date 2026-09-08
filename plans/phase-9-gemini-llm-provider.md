@@ -27,11 +27,12 @@ prompt or the parsing.
 
 ## Decisions to make before any code changes
 
-1. **Free-tier data use.** Google may use free-tier API content to improve its
-   products. The prompts carry the user's mark and goods description, which is
-   their business information, and Phase 8 now stores those rows against a named
-   account. Decide whether that is acceptable, and say so in `docs/ENGINEERING.md`
-   either way. A paid Gemini tier removes the question.
+1. **Free-tier data use — decided.** Google may use free-tier API content to
+   improve its products. The prompts carry the user's mark and goods
+   description. This is acceptable for now. State it plainly in
+   `docs/ENGINEERING.md`, and tell the user in the UI before they run a check,
+   because the mark is their business information and Phase 8 stores it against
+   a named account. Revisit if the app takes paying users.
 2. **The model.** Prefer a Flash model. Check the free-tier request-per-minute
    and request-per-day caps in the Google AI Studio console, then divide by three
    to get the real `/llm-assess` ceiling.
@@ -70,7 +71,11 @@ routine:
    (`useTrademarkPipeline.js:106`), so the user sees "try again in N seconds"
    rather than a broken panel.
 2. Catch `openai.APIError` and `openai.APITimeoutError` and return **503**.
-3. Leave the Phase 8 behavior alone: `/llm-assess` still writes no row on
+3. Separate the two 429s. A per-minute cap carries a `Retry-After` of seconds,
+   and the existing frontend line fits it. A per-day cap does not: the wait is
+   hours. Return a distinct message that names the daily quota, so the user
+   stops retrying instead of hammering a closed door.
+4. Leave the Phase 8 behavior alone: `/llm-assess` still writes no row on
    failure, because `update_query_stage` runs only after a result exists.
 
 ### Step 3 — Guard an empty completion
@@ -138,7 +143,7 @@ bullets in a fixed format, and TMEP citations drawn only from the retrieved text
 |---|---|
 | `GEMINI_API_KEY` unset | `get_llm_client` raises `RuntimeError`. `/llm-assess` returns 503 naming the variable. Stages 1 and 2 still work, and the query row keeps a null `analysis`. |
 | Free-tier request-per-minute cap hit | 429 with `Retry-After`. The pipeline already shows the wait time. The row keeps a null `analysis`, which the history view reads as an incomplete check. |
-| Free-tier request-per-day cap hit | The same 429 path, but it lasts until the quota resets. Decide whether to fall back to DeepSeek automatically, or to show the cap. Automatic fallback spends money without asking, so make it explicit. |
+| Free-tier request-per-day cap hit | The same 429 path, but it lasts until the quota resets. **Show the cap; never fall back to DeepSeek automatically.** The message must say the daily limit is reached and name the reset, not "try again in N seconds", because the wait is hours. |
 | Safety filter blocks the answer | `content` is `None`. Step 3 raises, and the route returns 503. Without Step 3 this is a 500 and an `AttributeError` in the log. |
 | Thinking budget eats `max_tokens` in the agent | Empty content, no tool calls, the loop breaks after one round. The doctrine is missing and the analysis still returns 200. Step 3's WARNING is the only signal. |
 | Gemini rejects the assistant tool-call message | The agent raises, `_retrieve_doctrine` catches it, and the analysis runs with no doctrine. The endpoint returns 200. Step 4 is what catches this. |
@@ -150,5 +155,6 @@ bullets in a fixed format, and TMEP citations drawn only from the retrieved text
 - No provider abstraction beyond one module and one environment variable. Two
   providers behind one OpenAI-compatible SDK do not need an interface.
 - No automatic failover from Gemini to DeepSeek. It spends money silently.
+  `LLM_PROVIDER=deepseek` is the deliberate switch, and a person throws it.
 - No change to the prompts, the RAG corpus, or the retrieval parameters. Change
   the provider first, then judge quality against a fixed prompt.
