@@ -79,6 +79,10 @@ jobs:
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
       VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+      # Phase 8 auth. docker compose interpolates these at build time and they
+      # fail closed, so the deploy job must pass them from the repo secrets.
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
     steps:
       - name: Sync code to production directory
         run: |
