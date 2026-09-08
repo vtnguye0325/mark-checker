@@ -10,7 +10,10 @@ from dotenv import load_dotenv
 # Load .env from the repo root (two levels up from this file) so local dev
 # picks up TURNSTILE_SECRET, DISABLE_TURNSTILE, etc. without manual exports.
 # In Docker, env vars are injected by compose and load_dotenv is a no-op.
-load_dotenv(Path(__file__).parent.parent.parent / ".env", override=True)
+# Use override=False so a value already in the environment wins over the .env
+# file. start.sh rewrites the DATABASE_URL host for the host run and exports it;
+# override=True would restore the compose-only "postgres-dev" host and break it.
+load_dotenv(Path(__file__).parent.parent.parent / ".env", override=False)
 
 logging.basicConfig(
     level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO),
