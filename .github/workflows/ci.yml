@@ -83,6 +83,7 @@ jobs:
       # fail closed, so the deploy job must pass them from the repo secrets.
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
     steps:
       - name: Sync code to production directory
         run: |
