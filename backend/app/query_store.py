@@ -34,9 +34,7 @@ async def update_query_stage(
         return
     try:
         result = await session.execute(
-            update(Query)
-            .where(Query.id == row_id, Query.user_id == user_id)
-            .values(**values)
+            update(Query).where(Query.id == row_id, Query.user_id == user_id).values(**values)
         )
         await session.commit()
     except SQLAlchemyError as exc:
@@ -44,6 +42,4 @@ async def update_query_stage(
         log.error("update_query_stage: database error for query_id %s: %s", row_id, exc)
         return
     if result.rowcount == 0:
-        log.warning(
-            "update_query_stage: no row for query_id %s and user %s", row_id, user_id
-        )
+        log.warning("update_query_stage: no row for query_id %s and user %s", row_id, user_id)

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EMPTY_FORM } from './constants/formDefaults'
 import { useTrademarkPipeline } from './hooks/useTrademarkPipeline'
 import { useScrollSpy } from './hooks/useScrollSpy'
@@ -119,6 +119,18 @@ export default function App() {
       runSubmit(payload)
     }
   }
+
+  // A check clicked while GET /auth/me was still in flight. Once the status
+  // resolves to signed-in, run the held payload instead of dropping it. The ref
+  // is cleared first, so this and handleSignedIn cannot both run it.
+  useEffect(() => {
+    if (status !== 'signed-in') return
+    const payload = pendingPayloadRef.current
+    if (!payload) return
+    pendingPayloadRef.current = null
+    setSignInOpen(false)
+    runSubmit(payload)
+  })
 
   const handleSignInClose = () => {
     setSignInOpen(false)

@@ -43,9 +43,7 @@ def _session_key(request: Request) -> str:
     user = getattr(request.state, "user", None)
     if user is not None:
         return f"user:{user.id}"
-    log.warning(
-        "_session_key fell back to the IP key — the route lacks a current_user dependency"
-    )
+    log.warning("_session_key fell back to the IP key — the route lacks a current_user dependency")
     return f"ip:{_client_ip(request)}"
 
 

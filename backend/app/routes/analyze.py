@@ -5,6 +5,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.auth import SessionUser, current_user
 from app.db import get_session
@@ -49,7 +50,11 @@ async def analyze(
 ) -> AnalyzeResponse:
     log.info("llm-assess request  mark=%r class=%d label=%s", req.mark, req.nice_class, req.label)
     try:
-        result = analyze_trademark(
+        # analyze_trademark blocks: a paid DeepSeek call plus ChromaDB retrieval.
+        # This route is async, so run it in the threadpool or it stalls the event
+        # loop, and one uvicorn worker means the whole backend stalls with it.
+        result = await run_in_threadpool(
+            analyze_trademark,
             mark=req.mark,
             description=req.description,
             nice_class=req.nice_class,
