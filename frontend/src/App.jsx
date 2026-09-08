@@ -5,6 +5,7 @@ import { useScrollSpy } from './hooks/useScrollSpy'
 import { useAuth } from './hooks/useAuth'
 import SignInModal from './components/SignInModal'
 import RecordBar from './components/RecordBar'
+import HistoryPanel from './components/HistoryPanel'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
 import MarkForm from './components/MarkForm'
@@ -54,6 +55,9 @@ function buildParts(state) {
 export default function App() {
   const { user, status, signIn, signOut, sessionExpired } = useAuth()
   const [signInOpen, setSignInOpen] = useState(false)
+  // 'check' is the form and the live result; 'history' is the stored records.
+  // Only a signed-in user reaches 'history', so drop back to 'check' on sign-out.
+  const [view, setView] = useState('check')
   const [form, setForm] = useState(EMPTY_FORM)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef(null)
@@ -132,6 +136,12 @@ export default function App() {
     runSubmit(payload)
   })
 
+  // The history view needs a session. Drop back to the check when the session
+  // ends, so a signed-out user never sees a dead panel.
+  useEffect(() => {
+    if (status === 'signed-out' && view === 'history') setView('check')
+  }, [status, view])
+
   const handleSignInClose = () => {
     setSignInOpen(false)
     pendingPayloadRef.current = null
@@ -192,6 +202,8 @@ export default function App() {
         email={user?.email}
         onSignIn={() => setSignInOpen(true)}
         onSignOut={signOut}
+        showingHistory={view === 'history'}
+        onToggleHistory={() => setView((v) => (v === 'history' ? 'check' : 'history'))}
       />
 
       {signInOpen && canOpenSignIn && (
@@ -202,7 +214,9 @@ export default function App() {
         />
       )}
 
-      {result && (
+      {view === 'history' && <HistoryPanel onSessionExpired={sessionExpired} />}
+
+      {view === 'check' && result && (
         <RecordPlate
           result={result}
           llmData={state.llmData}
@@ -212,6 +226,7 @@ export default function App() {
         />
       )}
 
+      {view === 'check' && (
       <div className="doc">
         {hasActivity
           ? <RecordRail meta={meta} parts={parts} current={currentPart} />
@@ -271,6 +286,7 @@ export default function App() {
           )}
         </main>
       </div>
+      )}
     </div>
   )
 }

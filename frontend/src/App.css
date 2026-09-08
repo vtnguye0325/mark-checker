@@ -350,3 +350,17 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
   cursor: pointer;
 }
 .recordbar-link:hover { border-bottom-color: var(--paper); }
+
+/* --- History list and record view (Phase 8, Batch D) --- */
+/* One stored check. A button that reads as a ruled row, so the list matches
+   the .index rows elsewhere in the record. */
+.history-row {
+  display: grid; grid-template-columns: 1fr auto; gap: 24px;
+  align-items: baseline; width: 100%; text-align: left;
+  padding: 16px 0; border: none; border-bottom: 1px solid var(--gray-12);
+  background: none; font: inherit; color: var(--ink); cursor: pointer;
+}
+.history-row:hover { background: var(--gray-06, rgba(0, 0, 0, 0.03)); }
+.history-row:disabled { cursor: default; opacity: 0.5; }
+.history-row .row-val { text-align: right; }
+.history-back { margin: 24px var(--margin) 0; }

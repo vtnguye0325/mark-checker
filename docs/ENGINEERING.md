@@ -74,6 +74,11 @@ flowchart LR
   pins 50 known-good predictions; a checkpoint swap that breaks them fails CI.
 - **Safe public deployment.** Per-IP rate limits, a Cloudflare Turnstile check on the paid
   LLM endpoint, and a Cloudflare Tunnel that keeps the backend off the public internet.
+- **Per-account history that cannot leak.** A signed-in user reads past checks through
+  `GET /history`. Both history routes filter by `user_id` in the SQL query, never after the
+  fetch, and return `404` for another account's id, so the endpoint never confirms that an
+  id exists for someone else. If Postgres is down the history view fails alone; the check
+  flow stays usable because the session comes from a signed cookie, not the database.
 
 ## Tech stack
 
@@ -101,7 +106,7 @@ or switch to `LLM_PROVIDER=deepseek` for a paid API that does not train on reque
 
 | Doc | Contents |
 |---|---|
-| [API.md](API.md) | The four endpoints, request and response shapes, rate limits, input format |
+| [API.md](API.md) | The endpoints, request and response shapes, rate limits, input format |
 | [RAG.md](RAG.md) | Doctrine store, the retrieval agent, index builds, retrieval eval |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Docker, Cloudflare Tunnel, the security checklist, CI/CD, troubleshooting |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Local run, tests, smoke test, project structure |

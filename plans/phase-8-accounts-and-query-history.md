@@ -173,17 +173,17 @@ change sends it; separately, the app is broken in between.
 
 ### Batch D — History
 
-- [ ] Write `backend/app/routes/history.py` — `GET /history` and
+- [x] Write `backend/app/routes/history.py` — `GET /history` and
       `GET /history/{query_id}`, both filtered by `user_id` in the query itself.
       Return 404, not 403, for another user's row.
-- [ ] Mount the history router. Add `location /history` to `nginx.conf` and to
+- [x] Mount the history router. Add `location /history` to `nginx.conf` and to
       the vite proxy.
-- [ ] Write `frontend/src/components/HistoryPanel.jsx`. Add the history toggle to
+- [x] Write `frontend/src/components/HistoryPanel.jsx`. Add the history toggle to
       `RecordBar.jsx`.
-- [ ] Render a selected record through the existing part components.
-- [ ] Add the styles to `App.css`.
-- [ ] Update `.env.example`, `docs/API.md`, `docs/DEPLOYMENT.md`,
-      `docs/ENGINEERING.md`, and the README.
+- [x] Render a selected record through the existing part components.
+- [x] Add the styles to `App.css`.
+- [x] Update `.env.example` (no new var — Batch D adds none), `docs/API.md`,
+      `docs/DEPLOYMENT.md`, `docs/ENGINEERING.md`, and the README.
 - [ ] **Verify.** The list shows your own checks and no one else's. A `query_id`
       from another account returns 404.
 

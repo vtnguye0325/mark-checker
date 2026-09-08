@@ -36,7 +36,7 @@ docker compose up --build
 ```
 
 - UI: **http://localhost:8080** — static assets; `/ml-predict`, `/llm-explain`,
-  `/llm-assess`, `/health` are proxied to the backend.
+  `/llm-assess`, `/auth`, `/history`, `/health` are proxied to the backend.
 - API directly: **http://localhost:8000** (optional).
 
 ### Published ports

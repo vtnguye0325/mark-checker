@@ -1,4 +1,11 @@
-export default function RecordBar({ status, email, onSignIn, onSignOut }) {
+export default function RecordBar({
+  status,
+  email,
+  onSignIn,
+  onSignOut,
+  onToggleHistory,
+  showingHistory,
+}) {
   return (
     <div className="recordbar">
       <span><b>Trademark Name Checker</b></span>
@@ -7,6 +14,9 @@ export default function RecordBar({ status, email, onSignIn, onSignOut }) {
         {status === 'signed-in' && (
           <>
             {email && <span className="recordbar-email">{email}</span>}
+            <button type="button" className="recordbar-link" onClick={onToggleHistory}>
+              {showingHistory ? 'Back to the check' : 'History'}
+            </button>
             <button type="button" className="recordbar-link" onClick={onSignOut}>
               Sign out
             </button>

@@ -105,8 +105,10 @@ The app does **not**:
 ### Your data
 
 The name and description you type go to the app's own model, and to a language model that
-writes the explanation. Do not type anything you must keep confidential. The app stores no
-account and keeps no history — close the page and the record is gone.
+writes the explanation. Do not type anything you must keep confidential. You sign in with a
+Google account to run a check, and the app stores each check against that account. The
+**History** view in the top bar lists your own past checks and opens any one of them again.
+You see only your own checks, and no other account can see them.
 
 ### Words you will meet
 

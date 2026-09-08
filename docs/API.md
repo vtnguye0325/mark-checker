@@ -1,7 +1,7 @@
 # API reference
 
-Base URL in local dev: `http://localhost:8000`. In production, Nginx proxies the four paths
-below to the backend; every other path serves the static frontend.
+Base URL in local dev: `http://localhost:8000`. In production, Nginx proxies the paths
+below (and `/auth`) to the backend; every other path serves the static frontend.
 
 ## Input format
 
@@ -138,6 +138,70 @@ in `turnstile_token` unless `DISABLE_TURNSTILE=true`.
 Turnstile is not configured. `429` when the analyze rate limit is hit, or the provider's
 free-tier quota is reached — a per-minute cap carries a `Retry-After` header, a daily cap
 carries a message that names the reset instead.
+
+## `GET /history`
+
+Returns the signed-in user's own checks, newest first. The `user_id` filter is in
+the query, so the list never shows another account's checks. Requires the `session`
+cookie that `POST /auth/google` sets.
+
+**Query parameters:**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `limit` | int (1–100) | 50 | Maximum rows to return |
+| `offset` | int (≥ 0) | 0 | Rows to skip, for paging |
+
+**Response (200 OK):** an array of summary objects.
+
+```json
+[
+  {
+    "id": "b1e2...",
+    "created_at": "2026-01-02T03:04:05+00:00",
+    "mark": "ACME",
+    "nice_class": 9,
+    "label": "distinctive",
+    "prob_distinctive": 0.81
+  }
+]
+```
+
+`label` and `prob_distinctive` are `null` when the prediction stage did not finish.
+
+**Errors:** `401` when the session cookie is missing or expired. `503` when Postgres
+is unreachable.
+
+## `GET /history/{query_id}`
+
+Returns one full check, filtered by `user_id`. A bad id, a missing row, and a row
+that belongs to another account all return `404`, so the endpoint never confirms
+that an id exists for somebody else.
+
+**Response (200 OK):**
+
+```json
+{
+  "id": "b1e2...",
+  "created_at": "2026-01-02T03:04:05+00:00",
+  "mark": "ACME",
+  "description": "widgets",
+  "nice_class": 9,
+  "translation": "",
+  "pseudo_mark": "",
+  "label": "distinctive",
+  "prob_distinctive": 0.81,
+  "formatted_input": "ACME | widgets",
+  "attributions": [ ... ],
+  "analysis": "**What the model found**\n...",
+  "sources": { "tmep": [ ... ], "ttab": [ ... ] }
+}
+```
+
+Any stage field is `null` when that stage did not finish for this check.
+
+**Errors:** `401` when the session cookie is missing or expired. `404` for a bad,
+missing, or foreign `query_id`. `503` when Postgres is unreachable.
 
 ## Validation errors (422)
 
