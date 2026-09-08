@@ -111,6 +111,7 @@ SHAP attributions (top tokens): {attributions}
 Find the TMEP doctrine and TTAB cases most relevant to this mark's position on the \
 Abercrombie spectrum."""
 
+
 def _search_tmep(query: str) -> list[dict]:
     col = get_tmep_collection()
     emb = embed_query(query)

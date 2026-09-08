@@ -30,9 +30,7 @@ _PROVIDERS = {
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").strip().lower()
 if LLM_PROVIDER not in _PROVIDERS:
-    raise RuntimeError(
-        f"LLM_PROVIDER={LLM_PROVIDER!r} is not one of {sorted(_PROVIDERS)}"
-    )
+    raise RuntimeError(f"LLM_PROVIDER={LLM_PROVIDER!r} is not one of {sorted(_PROVIDERS)}")
 
 _CONFIG = _PROVIDERS[LLM_PROVIDER]
 
