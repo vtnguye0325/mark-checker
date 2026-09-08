@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 import os
 
 from slowapi import Limiter
 from starlette.requests import Request
+
+log = logging.getLogger(__name__)
 
 
 def _client_ip(request: Request) -> str:
@@ -25,9 +28,36 @@ def _client_ip(request: Request) -> str:
     return client.host if client else "127.0.0.1"
 
 
+def _session_key(request: Request) -> str:
+    """Rate-limit key for /llm-assess: the account, with the IP as a fallback.
+
+    ``current_user`` runs as a dependency and stashes the user on
+    ``request.state`` before the limiter wrapper calls this function. An account
+    is the right unit now: one office behind one NAT address no longer shares a
+    bucket, and a user cannot reset the cap by changing network.
+
+    The ``user:`` and ``ip:`` prefixes stop a user id and an address from ever
+    landing on the same bucket. The fallback fires only when a limited route
+    forgot to depend on ``current_user``, which is a wiring mistake, so log it.
+    """
+    user = getattr(request.state, "user", None)
+    if user is not None:
+        return f"user:{user.id}"
+    log.warning(
+        "_session_key fell back to the IP key — the route lacks a current_user dependency"
+    )
+    return f"ip:{_client_ip(request)}"
+
+
 # Per-IP limits. /llm-assess spends money on a paid LLM, so it is throttled harder
 # than the local-inference endpoints. Both are env-overridable for deployment.
 DEFAULT_LIMIT = os.getenv("RATE_LIMIT_DEFAULT", "100/hour")
-ANALYZE_LIMIT = os.getenv("RATE_LIMIT_ANALYZE", "5/hour")
+
+# /llm-assess stacks two limits. The account limit is the real cap. The IP limit
+# is the backstop against one person who registers many Google accounts on one
+# machine, so keep it looser than the account limit or a shared office address
+# cannot fit several users.
+ANALYZE_USER_LIMIT = os.getenv("RATE_LIMIT_ANALYZE_USER", "5/hour")
+ANALYZE_IP_LIMIT = os.getenv("RATE_LIMIT_ANALYZE_IP", "20/hour")
 
 limiter = Limiter(key_func=_client_ip, default_limits=[DEFAULT_LIMIT])

@@ -147,22 +147,22 @@ Batch A is written. Only the verify step is open.
 Land every box below in one commit. Step 6 requires the cookie and the pipeline
 change sends it; separately, the app is broken in between.
 
-- [ ] Convert `predict` and `explain` to `async def`, and wrap `predict_one` and
+- [x] Convert `predict` and `explain` to `async def`, and wrap `predict_one` and
       `explain_one` in `run_in_threadpool`.
-- [ ] Add `current_user` and `get_session` to all three check routes.
-- [ ] `/ml-predict` inserts the query row and returns `query_id`. A failed insert
+- [x] Add `current_user` and `get_session` to all three check routes.
+- [x] `/ml-predict` inserts the query row and returns `query_id`. A failed insert
       returns 503.
-- [ ] `/llm-explain` and `/llm-assess` accept an optional `query_id` and update
+- [x] `/llm-explain` and `/llm-assess` accept an optional `query_id` and update
       the row where `id = query_id AND user_id = user.id`. A failed update logs
       at ERROR and still returns the result.
-- [ ] Add `_session_key` to `backend/app/limiter.py`. Stack the account limit and
+- [x] Add `_session_key` to `backend/app/limiter.py`. Stack the account limit and
       the IP limit on `/llm-assess`.
-- [ ] Add `credentials: 'include'` to all three fetches in
+- [x] Add `credentials: 'include'` to all three fetches in
       `useTrademarkPipeline.js`, and thread `query_id` through them.
-- [ ] Open the sign-in modal instead of calling `/ml-predict` when the status is
+- [x] Open the sign-in modal instead of calling `/ml-predict` when the status is
       `signed-out`. Run the check on the sign-in callback, with the form values
       the user already typed.
-- [ ] Treat a 401 from any stage as an expired session: clear the user, open the
+- [x] Treat a 401 from any stage as an expired session: clear the user, open the
       modal, and re-run that stage once after the sign-in returns. Keep
       `query_id` across the retry.
 - [ ] **Verify.** One full check writes one row with all three stages filled in.

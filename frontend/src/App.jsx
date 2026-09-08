@@ -52,12 +52,17 @@ function buildParts(state) {
 }
 
 export default function App() {
-  const { user, status, signIn, signOut } = useAuth()
+  const { user, status, signIn, signOut, sessionExpired } = useAuth()
   const [signInOpen, setSignInOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef(null)
   const filedRef = useRef(null)
+  // A check the visitor started before signing in. Held here, not in form state,
+  // because the form unmounts once the pipeline runs.
+  const pendingPayloadRef = useRef(null)
+  // Resolver for an onAuthExpired promise while the pipeline waits on a re-sign-in.
+  const authResolverRef = useRef(null)
   const { submit, reset, state } = useTrademarkPipeline()
 
   const onFieldChange = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
@@ -70,12 +75,59 @@ export default function App() {
     ...(form.pseudo_mark.trim() && { pseudo_mark: form.pseudo_mark.trim() }),
   })
 
+  const runSubmit = (payload) => {
+    submit(payload, turnstileToken, {
+      onAnalyzeComplete: () => {
+        turnstileRef.current?.reset()
+        setTurnstileToken('')
+      },
+      // The pipeline hit a 401. Clear the user, open the modal, and resolve
+      // true once the sign-in returns so the stage retries.
+      onAuthExpired: () =>
+        new Promise((resolve) => {
+          sessionExpired()
+          authResolverRef.current = resolve
+          setSignInOpen(true)
+        }),
+    })
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
-    submit(buildPayload(), turnstileToken, () => {
-      turnstileRef.current?.reset()
-      setTurnstileToken('')
-    })
+    const payload = buildPayload()
+    // Prompt for the sign-in at the check button, not at page load. Keep the
+    // typed values and run the check from the modal callback.
+    if (status !== 'signed-in') {
+      pendingPayloadRef.current = payload
+      setSignInOpen(true)
+      return
+    }
+    runSubmit(payload)
+  }
+
+  const handleSignedIn = () => {
+    setSignInOpen(false)
+    const resolve = authResolverRef.current
+    if (resolve) {
+      authResolverRef.current = null
+      resolve(true)
+      return
+    }
+    const payload = pendingPayloadRef.current
+    if (payload) {
+      pendingPayloadRef.current = null
+      runSubmit(payload)
+    }
+  }
+
+  const handleSignInClose = () => {
+    setSignInOpen(false)
+    pendingPayloadRef.current = null
+    const resolve = authResolverRef.current
+    if (resolve) {
+      authResolverRef.current = null
+      resolve(false)
+    }
   }
 
   const handleReset = () => {
@@ -115,9 +167,10 @@ export default function App() {
     sources: sourceCount || null,
   }
 
-  // The form renders at every status. Open no modal while the status is still
-  // loading, or a reload flashes one at a user who is already signed in.
-  const canOpenSignIn = status === 'signed-out'
+  // The modal opens only on an explicit action (the check button, a 401, or the
+  // RecordBar link), never automatically, so there is no reload flash to guard
+  // against. Do not show it once the user is signed in.
+  const canOpenSignIn = status !== 'signed-in'
 
   return (
     <div className={`record ${accent}`}>
@@ -132,8 +185,8 @@ export default function App() {
       {signInOpen && canOpenSignIn && (
         <SignInModal
           onCredential={signIn}
-          onSignedIn={() => setSignInOpen(false)}
-          onClose={() => setSignInOpen(false)}
+          onSignedIn={handleSignedIn}
+          onClose={handleSignInClose}
         />
       )}
 
