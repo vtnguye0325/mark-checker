@@ -337,14 +337,16 @@ a { color: var(--blue); text-underline-offset: 3px; text-decoration-thickness: 1
 .signin-button { min-height: 40px; }
 
 .recordbar-account { display: flex; align-items: center; gap: 16px; }
-.recordbar-email { color: var(--gray-60); }
+/* --gray-30 is the repo's on-ink gray; --gray-60 is too dark to read here. */
+.recordbar-email { color: var(--gray-30); }
 .recordbar-link {
   font: inherit;
-  color: var(--ink);
+  /* The bar background is --ink, so the label must be --paper. */
+  color: var(--paper);
   background: none;
   border: none;
-  border-bottom: 1px solid var(--gray-12);
+  border-bottom: 1px solid var(--gray-60);
   padding: 0 0 1px;
   cursor: pointer;
 }
-.recordbar-link:hover { border-bottom-color: var(--ink); }
+.recordbar-link:hover { border-bottom-color: var(--paper); }

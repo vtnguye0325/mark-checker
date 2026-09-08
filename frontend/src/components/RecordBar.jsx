@@ -1,7 +1,7 @@
 export default function RecordBar({ status, email, onSignIn, onSignOut }) {
   return (
     <div className="recordbar">
-      <span>Mark Checker · <b>Distinctiveness record</b></span>
+      <span><b>Trademark Name Checker</b></span>
       <span className="recordbar-account">
         <span>Not legal advice</span>
         {status === 'signed-in' && (

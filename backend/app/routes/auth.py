@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.limiter import limiter
 
 from app.auth import (
     COOKIE_NAME,
@@ -19,6 +17,7 @@ from app.auth import (
     verify_google_id_token,
 )
 from app.db import get_session
+from app.limiter import limiter
 from app.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -36,7 +35,10 @@ class PublicUser(BaseModel):
 
 
 @router.post("/google", response_model=PublicUser)
-@limiter.limit("20/hour")
+# A whole office behind one NAT IP shares this bucket, so keep it high enough
+# that normal sign-ins never hit it. Google ID-token verification is the real
+# abuse gate.
+@limiter.limit("200/hour")
 async def google_login(
     request: Request,  # noqa: ARG001  (slowapi reads the client IP off this)
     body: GoogleLoginRequest,
@@ -44,7 +46,7 @@ async def google_login(
     session: AsyncSession = Depends(get_session),
 ) -> PublicUser:
     claims = await verify_google_id_token(body.credential)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Upsert on google_sub. on_conflict_do_update lets two parallel logins race
     # without a duplicate-key error.
@@ -73,7 +75,9 @@ async def google_login(
     user_id = result.scalar_one()
     await session.commit()
 
-    token = create_session_token(user_id, claims["email"])
+    token = create_session_token(
+        user_id, claims["email"], claims.get("name"), claims.get("picture")
+    )
     # SameSite=Lax blocks the cookie on cross-site POST, which is what protects
     # the check endpoints from CSRF. Keep every state-changing route on POST.
     response.set_cookie(
@@ -95,11 +99,15 @@ async def google_login(
 
 @router.post("/logout", status_code=204)
 async def logout(response: Response) -> Response:
-    response.delete_cookie(COOKIE_NAME, path="/", samesite="lax", secure=COOKIE_SECURE)
+    # Match every attribute set in google_login so the browser clears the exact
+    # cookie it stored.
+    response.delete_cookie(
+        COOKIE_NAME, path="/", httponly=True, samesite="lax", secure=COOKIE_SECURE
+    )
     response.status_code = 204
     return response
 
 
 @router.get("/me", response_model=PublicUser)
 async def me(user: SessionUser = Depends(current_user)) -> PublicUser:
-    return PublicUser(id=user.id, email=user.email)
+    return PublicUser(id=str(user.id), email=user.email, name=user.name, picture=user.picture)

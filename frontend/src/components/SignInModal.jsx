@@ -21,6 +21,7 @@ export default function SignInModal({ onCredential, onSignedIn, onClose }) {
   const onCredentialRef = useRef(onCredential)
   const onSignedInRef = useRef(onSignedIn)
   const onCloseRef = useRef(onClose)
+  const mountedRef = useRef(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -28,6 +29,16 @@ export default function SignInModal({ onCredential, onSignedIn, onClose }) {
     onSignedInRef.current = onSignedIn
     onCloseRef.current = onClose
   })
+
+  // The Google callback below resolves after a network round trip. If the
+  // visitor closes the modal first, drop the state update instead of warning
+  // about a set on an unmounted component.
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   // Escape closes the modal, and focus moves into the card on open and is not
   // trapped there — a keyboard user must be able to leave.
@@ -67,7 +78,9 @@ export default function SignInModal({ onCredential, onSignedIn, onClose }) {
           setError(null)
           Promise.resolve(onCredentialRef.current(response.credential))
             .then(() => onSignedInRef.current?.())
-            .catch((err) => setError(err.message || 'Sign-in failed'))
+            .catch((err) => {
+              if (mountedRef.current) setError(err.message || 'Sign-in failed')
+            })
         },
       })
       window.google.accounts.id.renderButton(buttonRef.current, {

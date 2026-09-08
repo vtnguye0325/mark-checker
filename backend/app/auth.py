@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+import uuid
 from dataclasses import dataclass
 
 import jwt
@@ -23,7 +24,9 @@ if not GOOGLE_CLIENT_ID:
     raise RuntimeError("GOOGLE_CLIENT_ID is unset. Set it before you start the backend.")
 
 SESSION_TTL_HOURS = int(os.getenv("SESSION_TTL_HOURS", "168"))
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
+# Fail closed: the cookie is Secure unless COOKIE_SECURE is set to exactly
+# "false". A typo therefore keeps the cookie Secure, not the reverse.
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").strip().lower() != "false"
 COOKIE_NAME = "session"
 _ALGORITHM = "HS256"
 
@@ -34,8 +37,10 @@ _CLOCK_SKEW_SECONDS = 10
 
 @dataclass(frozen=True)
 class SessionUser:
-    id: str
+    id: uuid.UUID
     email: str
+    name: str | None = None
+    picture: str | None = None
 
 
 async def verify_google_id_token(token: str) -> dict:
@@ -71,11 +76,20 @@ async def verify_google_id_token(token: str) -> dict:
     return claims
 
 
-def create_session_token(user_id: str, email: str) -> str:
+def create_session_token(
+    user_id: str,
+    email: str,
+    name: str | None = None,
+    picture: str | None = None,
+) -> str:
     now = int(time.time())
     payload = {
         "sub": str(user_id),
         "email": email,
+        # name and picture ride in the JWT so /auth/me can return the same user
+        # shape as /auth/google without a database read.
+        "name": name,
+        "picture": picture,
         "iat": now,
         "exp": now + SESSION_TTL_HOURS * 3600,
     }
@@ -100,7 +114,16 @@ def current_user(request: Request) -> SessionUser:
     email = payload.get("email")
     if not sub or not email:
         raise HTTPException(status_code=401, detail="Session is invalid or expired")
-    user = SessionUser(id=sub, email=email)
+    try:
+        user_id = uuid.UUID(str(sub))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Session is invalid or expired") from exc
+    user = SessionUser(
+        id=user_id,
+        email=email,
+        name=payload.get("name"),
+        picture=payload.get("picture"),
+    )
     # Step 7's rate-limit key function reads this, which saves a second decode.
     request.state.user = user
     return user

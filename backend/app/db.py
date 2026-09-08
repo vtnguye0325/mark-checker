@@ -34,6 +34,11 @@ async def get_session():
         yield session
 
 
+# asyncpg SQLSTATEs that a retry can never fix: bad password, bad auth,
+# unknown database. Stop on the first one instead of waiting out 10 rounds.
+_FATAL_SQLSTATES = {"28P01", "28000", "3D000"}
+
+
 async def init_models() -> None:
     """Create the tables from SQLAlchemy metadata.
 
@@ -52,6 +57,12 @@ async def init_models() -> None:
             return
         except (OSError, OperationalError) as exc:
             last_error = exc
+            sqlstate = (
+                getattr(exc.orig, "sqlstate", None) if isinstance(exc, OperationalError) else None
+            )
+            if sqlstate in _FATAL_SQLSTATES:
+                logger.error("init_models: unrecoverable database error (SQLSTATE %s)", sqlstate)
+                raise
             is_last = attempt == 10
             logger.warning(
                 "init_models attempt %d/10 failed: %s",
