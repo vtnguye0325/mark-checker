@@ -8,7 +8,11 @@ import RecordBar from './components/RecordBar'
 import HistoryPanel from './components/HistoryPanel'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
+import RecordScale from './components/RecordScale'
 import MarkForm from './components/MarkForm'
+import Marquee from './components/Marquee'
+import HowItWorks from './components/HowItWorks'
+import MethodPage from './components/MethodPage'
 import ProgressBar from './components/ui/ProgressBar'
 import PartSpectrum from './components/parts/PartSpectrum'
 import PartBasis from './components/parts/PartBasis'
@@ -43,19 +47,23 @@ function buildParts(state) {
   // typed `dict | None`, so a finished assess can carry `sources: null`.
   const authorityPresent = !!llmData
   const actionPresent = !!llmData
+  // The reader order is the answer first, then the evidence behind it. The
+  // pipeline still runs the basis step before the analysis, so part 04 can fill
+  // before parts 02 and 03. Each part states its own state, so that is safe.
   return [
     { id: 'p1', name: 'Spectrum', no: '01', status: spectrumReady ? 'Ready' : 'Queued', present: spectrumReady },
-    { id: 'p2', name: 'Basis', no: '02', status: basisStatus, present: basisPresent || !!explainError },
-    { id: 'p3', name: 'Authority', no: '03', status: stageThreeStatus(authorityPresent), present: authorityPresent || !!llmError || !!explainError },
-    { id: 'p4', name: 'Action', no: '04', status: stageThreeStatus(actionPresent), present: actionPresent || !!llmError || !!explainError },
-    { id: 'p5', name: 'Input', no: '05', status: spectrumReady ? 'Ready' : 'Queued', present: spectrumReady },
+    { id: 'p2', name: 'Action', no: '02', status: stageThreeStatus(actionPresent), present: actionPresent || !!llmError || !!explainError },
+    { id: 'p3', name: 'Sources', no: '03', status: stageThreeStatus(authorityPresent), present: authorityPresent || !!llmError || !!explainError },
+    { id: 'p4', name: 'Why', no: '04', status: basisStatus, present: basisPresent || !!explainError },
+    { id: 'p5', name: 'Submission', no: '05', status: spectrumReady ? 'Ready' : 'Queued', present: spectrumReady },
   ]
 }
 
 export default function App() {
   const { user, status, signIn, signOut, sessionExpired } = useAuth()
   const [signInOpen, setSignInOpen] = useState(false)
-  // 'check' is the form and the live result; 'history' is the stored records.
+  // 'check' is the form and the live result; 'history' is the stored records;
+  // 'method' is the long explainer behind the landing button.
   // Only a signed-in user reaches 'history', so drop back to 'check' on sign-out.
   const [view, setView] = useState('check')
   const [form, setForm] = useState(EMPTY_FORM)
@@ -136,6 +144,10 @@ export default function App() {
     runSubmit(payload)
   })
 
+  // A view change swaps the whole page. Start the new view at the top, or the
+  // reader lands in the middle of it.
+  useEffect(() => { window.scrollTo(0, 0) }, [view])
+
   // The history view needs a session. Drop back to the check when the session
   // ends, so a signed-out user never sees a dead panel.
   useEffect(() => {
@@ -194,16 +206,24 @@ export default function App() {
   // against. Do not show it once the user is signed in.
   const canOpenSignIn = status !== 'signed-in'
 
+  // The landing state is the specimen page: masthead, headline, marquee, and
+  // the ledger form. The record state adds the accent rule, the ink record bar,
+  // the plate, and the rail. See docs/DESIGN_PRINCIPLES.md 9.
+  const landing = view === 'check' && !hasActivity
+
   return (
     <div className={`record ${accent}`}>
-      <div className="accent-rule" />
+      {!landing && view !== 'method' && <div className="accent-rule" />}
       <RecordBar
+        landing={landing}
         status={status}
         email={user?.email}
         onSignIn={() => setSignInOpen(true)}
         onSignOut={signOut}
         showingHistory={view === 'history'}
         onToggleHistory={() => setView((v) => (v === 'history' ? 'check' : 'history'))}
+        showingMethod={view === 'method'}
+        onToggleMethod={() => setView((v) => (v === 'method' ? 'check' : 'method'))}
       />
 
       {signInOpen && canOpenSignIn && (
@@ -216,6 +236,51 @@ export default function App() {
 
       {view === 'history' && <HistoryPanel onSessionExpired={sessionExpired} />}
 
+      {view === 'method' && (
+        <>
+          <MethodPage onBack={() => setView('check')} />
+          <footer className="foot">
+            <span>Mark Checker</span>
+            <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+            <span>Probability, never certainty.</span>
+          </footer>
+        </>
+      )}
+
+      {landing && (
+        <>
+          <section className="head">
+            <h1 className="headline"><span className="headline-lead">Is your</span>trademark<em>registrable?</em></h1>
+            <div className="deck">
+              <span className="stamp">First read. Not legal advice</span>
+              <p>
+                Our agent reads your trademark name and grades its distinctiveness on the Abercrombie
+                spectrum, from <b>generic</b> to <b>distinctive</b>, with the reason for the
+                grade. The more distinctive the name, the better it registers. Fill the sheet
+                to start.
+              </p>
+            </div>
+          </section>
+          <Marquee />
+          <MarkForm
+            form={form}
+            onFieldChange={onFieldChange}
+            error={state.error}
+            loading={loading}
+            onSubmit={handleSubmit}
+            canSubmit={canSubmit}
+            turnstileRef={turnstileRef}
+            onTurnstileToken={setTurnstileToken}
+            turnstileSiteKey={TURNSTILE_SITE_KEY}
+          />
+          <HowItWorks onOpenMethod={() => setView('method')} />
+          <footer className="foot">
+            <span>Mark Checker</span>
+            <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+          </footer>
+        </>
+      )}
+
       {view === 'check' && result && (
         <RecordPlate
           result={result}
@@ -225,32 +290,13 @@ export default function App() {
           explainError={state.explainError}
         />
       )}
+      {view === 'check' && result && <RecordScale score={result.prob_distinctive} />}
 
-      {view === 'check' && (
+      {view === 'check' && hasActivity && (
       <div className="doc">
-        {hasActivity
-          ? <RecordRail meta={meta} parts={parts} current={currentPart} />
-          : (
-            <aside className="rail">
-              <p className="t-small dim">The record opens after you submit a mark.</p>
-            </aside>
-          )}
+        <RecordRail meta={meta} parts={parts} current={currentPart} />
 
         <main className="body">
-          {!hasActivity && (
-            <MarkForm
-              form={form}
-              onFieldChange={onFieldChange}
-              error={state.error}
-              loading={loading}
-              onSubmit={handleSubmit}
-              canSubmit={canSubmit}
-              turnstileRef={turnstileRef}
-              onTurnstileToken={setTurnstileToken}
-              turnstileSiteKey={TURNSTILE_SITE_KEY}
-            />
-          )}
-
           {loading && !result && (
             <ProgressBar
               trackClassName="progress"
@@ -265,27 +311,36 @@ export default function App() {
                 <PartSpectrum score={result.prob_distinctive} />
               </section>
               <section className="part" id="p2">
-                <PartBasis loading={state.explainLoading} data={state.explainData} error={state.explainError} />
+                <PartAction loading={state.llmLoading} data={state.llmData} error={state.llmError} explainError={state.explainError} />
               </section>
               <section className="part" id="p3">
                 <PartAuthority loading={state.llmLoading} data={state.llmData} error={state.llmError} explainError={state.explainError} />
               </section>
               <section className="part" id="p4">
-                <PartAction loading={state.llmLoading} data={state.llmData} error={state.llmError} explainError={state.explainError} />
+                <PartBasis loading={state.explainLoading} data={state.explainData} error={state.explainError} />
               </section>
               <section className="part" id="p5">
                 <PartInput formattedInput={result.formatted_input} />
               </section>
 
-              <div style={{ paddingTop: '48px' }}>
-                <button type="button" className="btn btn--secondary" onClick={handleReset}>
-                  Check another name
+              <div className="close">
+                <p>One check at a time. A new record clears this one from the screen, not from your history.</p>
+                <button type="button" className="btn btn--wide" onClick={handleReset}>
+                  Check another name <span className="btn-arrow" aria-hidden="true">→</span>
                 </button>
               </div>
             </>
           )}
         </main>
       </div>
+      )}
+
+      {view === 'check' && result && (
+        <footer className="foot">
+          <span>Mark Checker</span>
+          <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+          <span>Probability, never certainty.</span>
+        </footer>
       )}
     </div>
   )

@@ -35,12 +35,12 @@ export default function RecordRail({ meta, parts, current }) {
                 aria-current={part.id === current ? 'location' : undefined}
               >
                 <span>{part.name}</span>
-                <span className="mono">{part.status}</span>
+                <span className={`mono${part.status === 'Loading' ? ' mono--load' : ''}`}>{part.status}</span>
               </a>
             ) : (
               <div className="rail-row" key={part.id}>
                 <span>{part.name}</span>
-                <span className="mono">{part.status}</span>
+                <span className={`mono${part.status === 'Loading' ? ' mono--load' : ''}`}>{part.status}</span>
               </div>
             )
           )}

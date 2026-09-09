@@ -54,3 +54,5 @@ chroma_db/
 data/chroma/
 backend/rag/data/
 graphify-out
+# Impeccable skill scratch
+.impeccable/

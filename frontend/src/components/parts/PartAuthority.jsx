@@ -1,11 +1,12 @@
 import PartError from './PartError'
+import PartPending from './PartPending'
 
-// Part 03 — the authority the analysis relied on. Replaces LegalSources.
+// Part 03 — the sources the analysis read. Replaces LegalSources.
 export default function PartAuthority({ loading, data, error, explainError }) {
   const head = (
     <div className="part-head">
       <span className="part-no">Part 03</span>
-      <h2 className="t-h2">Authority relied on</h2>
+      <h2 className="t-h2">Our sources</h2>
     </div>
   )
 
@@ -14,7 +15,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
       <>
         {head}
         <PartError label="Unavailable">
-          The basis step did not complete, so no authority was retrieved.
+          The earlier step did not complete, so we read no sources.
         </PartError>
       </>
     )
@@ -25,8 +26,8 @@ export default function PartAuthority({ loading, data, error, explainError }) {
       <>
         {head}
         <PartError label="Unavailable">{error}</PartError>
-        <p className="t-small dim" style={{ marginTop: '16px' }}>
-          The analysis names its authority; without it, this part stays empty.
+        <p className="key">
+          The answer names its sources. Without the answer, this part stays empty.
         </p>
       </>
     )
@@ -36,7 +37,10 @@ export default function PartAuthority({ loading, data, error, explainError }) {
     return (
       <>
         {head}
-        <p className="t-body dim">The retrieval agent is still pulling passages.</p>
+        <PartPending label="Retrieving. About 20 seconds">
+          We are reading the trademark manual and past decisions. They appear here
+          when the answer lands.
+        </PartPending>
       </>
     )
   }
@@ -57,7 +61,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
     return (
       <>
         {head}
-        <p className="t-body dim">The analysis cited no external authority.</p>
+        <p className="t-body dim">The answer cited no outside source.</p>
       </>
     )
   }
@@ -69,23 +73,23 @@ export default function PartAuthority({ loading, data, error, explainError }) {
   return (
     <>
       {head}
-      <p className="t-body" style={{ marginBottom: '24px' }}>
-        The retrieval agent pulled these passages before the analysis was written, and
-        the analysis may cite nothing else.
+      <p className="lead">
+        We read these sections before writing the answer. The answer uses nothing else.
+        TMEP is the trademark examiner's manual. TTAB is the trademark appeal board.
       </p>
 
       {first && (
         <blockquote className="quote">
           {first.text}
-          <cite className="t-label dim-on-ink">
-            TMEP § {first.metadata?.section_number ?? '—'} — {first.metadata?.section_title ?? '—'}
+          <cite>
+            TMEP § {first.metadata?.section_number ?? '—'}. {first.metadata?.section_title ?? '—'}
           </cite>
         </blockquote>
       )}
 
       {showAlso && (
         <>
-          <p className="t-label" style={{ marginTop: '48px' }}>
+          <p className="t-label" style={{ marginBottom: '14px' }}>
             {first ? 'Also retrieved, not cited' : 'Retrieved'}
           </p>
           <div className="index">
@@ -104,7 +108,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
                   <span className="t-h3">{c.metadata?.mark ?? '—'}</span>{' '}
                   <span className="mono t-small dim">NC {c.metadata?.nice_class ?? '—'}</span>
                 </span>
-                <span className="row-val t-small">TTAB — {c.metadata?.outcome ?? '—'}</span>
+                <span className="row-val t-small dim">TTAB. {c.metadata?.outcome ?? '—'}</span>
               </div>
             ))}
           </div>
