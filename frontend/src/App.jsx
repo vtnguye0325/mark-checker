@@ -52,7 +52,7 @@ function buildParts(state) {
   // before parts 02 and 03. Each part states its own state, so that is safe.
   return [
     { id: 'p1', name: 'Spectrum', no: '01', status: spectrumReady ? 'Ready' : 'Queued', present: spectrumReady },
-    { id: 'p2', name: 'Action', no: '02', status: stageThreeStatus(actionPresent), present: actionPresent || !!llmError || !!explainError },
+    { id: 'p2', name: 'Reading', no: '02', status: stageThreeStatus(actionPresent), present: actionPresent || !!llmError || !!explainError },
     { id: 'p3', name: 'Sources', no: '03', status: stageThreeStatus(authorityPresent), present: authorityPresent || !!llmError || !!explainError },
     { id: 'p4', name: 'Why', no: '04', status: basisStatus, present: basisPresent || !!explainError },
     { id: 'p5', name: 'Submission', no: '05', status: spectrumReady ? 'Ready' : 'Queued', present: spectrumReady },

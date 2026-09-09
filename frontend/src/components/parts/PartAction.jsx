@@ -64,7 +64,7 @@ export default function PartAction({ loading, data, error, explainError }) {
   const head = (
     <div className="part-head">
       <span className="part-no">Part 02</span>
-      <h2 className="t-h2">What to do next</h2>
+      <h2 className="t-h2">Our reading</h2>
     </div>
   )
 
