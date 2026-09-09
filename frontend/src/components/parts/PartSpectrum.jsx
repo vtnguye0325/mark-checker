@@ -8,7 +8,7 @@ export default function PartSpectrum({ score }) {
     <>
       <div className="part-head">
         <span className="part-no">Part 01</span>
-        <h2 className="t-h2">Position on the spectrum</h2>
+        <h2 className="t-h2">How distinctive your name is</h2>
       </div>
 
       <div className="index">
@@ -30,12 +30,7 @@ export default function PartSpectrum({ score }) {
         })}
       </div>
 
-      {activeId ? (
-        <p className="key">
-          The filled square marks the tier. The score on the plate above falls inside
-          the range printed on that row.
-        </p>
-      ) : (
+      {!activeId && (
         <p className="key">
           The classifier did not return a score, so no tier is marked.
         </p>

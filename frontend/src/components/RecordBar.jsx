@@ -8,10 +8,15 @@ export default function RecordBar({
   onSignOut,
   onToggleHistory,
   showingHistory,
+  onToggleMethod,
+  showingMethod,
   landing = false,
 }) {
   const actions = (
     <>
+      <button type="button" className="recordbar-link" onClick={onToggleMethod}>
+        {showingMethod ? 'Back to the check' : 'How it works'}
+      </button>
       {status === 'signed-in' && (
         <>
           {email && <span className="recordbar-email">{email}</span>}

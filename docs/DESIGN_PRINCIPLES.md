@@ -366,7 +366,12 @@ The product answers one question and then shows its work. The two states share o
   the second line outlined. The deck with the stamp and one paragraph. The marquee. The
   ledger form: mark (inverted), goods, NICE class, translation (optional), pseudo mark
   (optional). The yellow notice about the free tier. The action row with the hint and
-  "Open record →". The footer.
+  "Open record →". The "How it works" section: a 32px title, one line of deck, three stage
+  columns divided by 1px rules, one line for each stage, and the "Read the method" button.
+  The footer.
+- **The method state.** The long explainer behind the "Read the method" button. A 96px title,
+  a deck, and one part for each stage, in the part rhythm of the record. A "What it does not
+  do" part holds the limits. The close row returns the reader to the form. The footer.
 - **The record state.** The record bar and the accent rule. The plate: the finding on the
   left, the subject ledger on the right, with Confidence "Pending" in `--yellow` until stage
   three returns. The frozen scale with the pin at the score. The document: the rail on the

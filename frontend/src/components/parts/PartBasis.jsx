@@ -1,7 +1,7 @@
 import PartError from './PartError'
 import PartPending from './PartPending'
 
-// Part 02 — the signed attribution track. Replaces AttributionChart.
+// Part 04 — the signed attribution track. Replaces AttributionChart.
 const HIDDEN_FIELDS = new Set(['Mark Length', 'NICE Category', 'Translation'])
 
 const truncate = (s, n) => (s.length > n ? `${s.slice(0, n)}…` : s)
@@ -9,8 +9,8 @@ const truncate = (s, n) => (s.length > n ? `${s.slice(0, n)}…` : s)
 export default function PartBasis({ loading, data, error }) {
   const head = (
     <div className="part-head">
-      <span className="part-no">Part 02</span>
-      <h2 className="t-h2">Basis for the finding</h2>
+      <span className="part-no">Part 04</span>
+      <h2 className="t-h2">Why this score</h2>
     </div>
   )
 
@@ -20,7 +20,7 @@ export default function PartBasis({ loading, data, error }) {
         {head}
         <PartError label="Unavailable">{error}</PartError>
         <p className="key">
-          Parts 03 and 04 depend on this step, so they are unavailable too.
+          Parts 02 and 03 depend on this step, so they are unavailable too.
         </p>
       </>
     )
@@ -31,8 +31,8 @@ export default function PartBasis({ loading, data, error }) {
       <>
         {head}
         <PartPending label="Measuring. About 10 seconds">
-          Each field is blanked in turn and the score re-measured. The retrieval of
-          TMEP and TTAB doctrine starts when this step ends.
+          We are removing each part of your name in turn to watch the score move.
+          The reading of the manual and past decisions starts when this step ends.
         </PartPending>
       </>
     )
@@ -42,7 +42,7 @@ export default function PartBasis({ loading, data, error }) {
     return (
       <>
         {head}
-        <p className="t-body dim">The basis step has not run yet.</p>
+        <p className="t-body dim">The score breakdown has not run yet.</p>
       </>
     )
   }
@@ -53,9 +53,9 @@ export default function PartBasis({ loading, data, error }) {
     return (
       <>
         {head}
-        <PartError label="Unavailable">The basis step returned an unreadable response.</PartError>
+        <PartError label="Unavailable">The score breakdown returned an unreadable response.</PartError>
         <p className="key">
-          Parts 03 and 04 depend on this step, so they are unavailable too.
+          Parts 02 and 03 depend on this step, so they are unavailable too.
         </p>
       </>
     )
@@ -79,8 +79,8 @@ export default function PartBasis({ loading, data, error }) {
     <>
       {head}
       <p className="lead">
-        Each input field was blanked in turn and the score re-measured. The swing is
-        that field's contribution to the finding on the plate.
+        We removed each part of your name in turn and watched the score move. A bigger
+        bar means that part mattered more.
       </p>
       <div className="index">
         {visible.map(({ field, value, attribution }) => {
@@ -111,10 +111,9 @@ export default function PartBasis({ loading, data, error }) {
       </div>
       <p className="key">
         <i className="key-fill" aria-hidden="true" />
-        Filled, right of the axis: the field pushes toward distinctive. &nbsp;
+        Bars to the right helped your score. &nbsp;
         <i className="key-outline" aria-hidden="true" />
-        Outlined, left of the axis: it pushes against. Fill and side carry the sign,
-        so the chart reads without color.
+        Bars to the left hurt it.
       </p>
     </>
   )

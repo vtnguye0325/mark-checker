@@ -82,7 +82,7 @@ export function useTrademarkPipeline() {
       } catch (err) {
         console.error(err)
         if (err.name !== 'AbortError' && abortRef.current === ctrl) {
-          setExplainError('The basis step did not complete. Try again.')
+          setExplainError('The score breakdown did not complete. Try again.')
         }
       } finally {
         if (abortRef.current === ctrl) setExplainLoading(false)

@@ -353,13 +353,20 @@ h1, h2, h3, p { margin: 0; }
 .head { padding: 40px var(--m) 0; }
 .headline {
   font-family: var(--cond); font-weight: 700; text-transform: uppercase;
-  font-size: clamp(52px, 15.5vw, 224px); line-height: 0.82; letter-spacing: -0.02em;
+  /* "TRADEMARK" is the longest line, so the size follows that word, not "NAME".
+     The line height holds the lines apart at that size. */
+  font-size: clamp(42px, 12.2vw, 176px); line-height: 0.88; letter-spacing: -0.02em;
   overflow-wrap: anywhere;
+}
+/* The lead words carry no weight in the question, so they run smaller than
+   "TRADEMARK" and sit on their own line. */
+.headline-lead {
+  display: block; font-size: 0.58em; line-height: 1; letter-spacing: -0.01em;
 }
 .headline em {
   font-style: normal; display: block;
   color: var(--paper); -webkit-text-stroke: 2px var(--ink);
-  font-size: clamp(34px, 9.6vw, 138px); letter-spacing: -0.01em; line-height: 0.9; margin-top: 0.06em;
+  font-size: clamp(30px, 8.4vw, 120px); letter-spacing: -0.01em; line-height: 0.92; margin-top: 0.06em;
 }
 .deck {
   display: grid; gap: 16px; grid-template-columns: 1fr;
@@ -475,7 +482,19 @@ h1, h2, h3, p { margin: 0; }
 .error-block .t-label { color: var(--red); margin-bottom: 8px; }
 .error-block > p + p { font-size: 16px; line-height: 1.5; max-width: 66ch; }
 
-.stack > * + * { margin-top: 24px; }
+.stack > * + * { margin-top: 32px; }
+
+/* The analysis is model-written markdown. The rules below hold the rhythm of
+   that prose: a ruled sub-heading, air between paragraphs, and real lists. */
+.prose > * + * { margin-top: 14px; }
+.prose-title {
+  padding-bottom: 8px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.prose-list { max-width: 66ch; margin: 0; padding-left: 22px; }
+.prose-list li { font-size: 16px; line-height: 1.5; margin-bottom: 8px; }
+.prose-list li:last-child { margin-bottom: 0; }
+.prose-list li::marker { color: var(--gray); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -514,3 +533,70 @@ h1, h2, h3, p { margin: 0; }
 .history-row:disabled { cursor: default; color: var(--gray); }
 .history-row .row-val { text-align: right; }
 .history-back { margin: 24px var(--m) 0; }
+
+/* ── Landing: how it works ─────────────────────────────────── */
+/* Three stages, one column each above 760px, stacked below. The rules between
+   the columns carry the boundary, so the steps need no box. */
+.how { border-top: 2px solid var(--ink); }
+.how-head {
+  display: grid; gap: 12px; grid-template-columns: 1fr;
+  padding: 40px var(--m) 28px;
+}
+@media (min-width: 900px) { .how-head { grid-template-columns: 1fr 2fr; gap: 48px; } }
+.how-title {
+  font-family: var(--cond); font-weight: 700; font-size: 32px;
+  letter-spacing: -0.01em; line-height: 1.1; text-transform: uppercase;
+}
+.how-deck { max-width: 66ch; }
+.how-grid {
+  display: grid; grid-template-columns: 1fr;
+  border-top: 1px solid var(--rule); list-style: none; margin: 0; padding: 0;
+}
+@media (min-width: 760px) { .how-grid { grid-template-columns: repeat(3, 1fr); } }
+.how-step { padding: 24px var(--m) 32px; border-top: 1px solid var(--rule); }
+.how-step:first-child { border-top: 0; }
+@media (min-width: 760px) {
+  .how-step { border-top: 0; border-left: 1px solid var(--rule); }
+  .how-step:first-child { border-left: 0; }
+}
+.how-no {
+  display: block; margin-bottom: 10px;
+  font-family: var(--cond); font-weight: 700; font-size: 12px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--gray);
+}
+.how-name {
+  font-family: var(--cond); font-weight: 700; font-size: 22px;
+  text-transform: uppercase; line-height: 1.2; margin-bottom: 10px;
+}
+.how-text { max-width: 66ch; }
+
+/* ── Landing: the button to the method page ────────────────── */
+.how-more { padding: 28px var(--m) 44px; border-top: 1px solid var(--rule); }
+
+/* ── The method page ───────────────────────────────────────── */
+/* The same part rhythm as the record, so the two states read the same. */
+.method-head { padding: 48px var(--m) 36px; border-bottom: 2px solid var(--ink); }
+.method-title {
+  font-family: var(--cond); font-weight: 700; text-transform: uppercase;
+  font-size: clamp(44px, 9vw, 96px); line-height: 0.9; letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+.method-deck { max-width: 66ch; font-size: 17px; line-height: 1.5; }
+.method-part { padding: 36px var(--m) 40px; border-bottom: 1px solid var(--rule); }
+.method-part-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px;
+  padding-bottom: 12px; margin-bottom: 22px; border-bottom: 2px solid var(--ink);
+}
+.method-no {
+  font-family: var(--cond); font-weight: 700; font-size: 12px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--gray); white-space: nowrap;
+}
+.method-name {
+  font-family: var(--cond); font-weight: 700; font-size: 32px;
+  letter-spacing: -0.01em; line-height: 1.1; text-transform: uppercase;
+}
+.method-text { max-width: 66ch; margin-bottom: 14px; }
+.method-text:last-child { margin-bottom: 0; }
+.method-list { max-width: 66ch; margin: 0; padding-left: 20px; }
+.method-list li { margin-bottom: 10px; }
+.method-list li:last-child { margin-bottom: 0; }

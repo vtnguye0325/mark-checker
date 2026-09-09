@@ -124,8 +124,8 @@ export default function MarkForm({
       <div className="notice">
         <span className="t-label notice-tag">Read this</span>
         <p>
-          The analysis step sends the mark and the goods description to Google's Gemini API,
-          which runs on a free tier that may use the request to improve Google's products.
+          The service keeps a record of each check that you run. Sign in to read that
+          history at any time.
         </p>
       </div>
 

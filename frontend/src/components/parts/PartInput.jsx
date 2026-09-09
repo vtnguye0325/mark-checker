@@ -22,12 +22,9 @@ export default function PartInput({ formattedInput }) {
     <>
       <div className="part-head">
         <span className="part-no">Part 05</span>
-        <h2 className="t-h2">What the model read</h2>
+        <h2 className="t-h2">Your submission</h2>
       </div>
-      <p className="lead">
-        The classifier read one string, built from the {labelled ? 'eight ' : ''}fields below.
-        Nothing else reached it.
-      </p>
+      <p className="lead">This is exactly what we read. Nothing else.</p>
       {lines.length === 0 ? (
         <p className="key">The classifier input was not returned.</p>
       ) : (

@@ -1,12 +1,12 @@
 import PartError from './PartError'
 import PartPending from './PartPending'
 
-// Part 03 — the authority the analysis relied on. Replaces LegalSources.
+// Part 03 — the sources the analysis read. Replaces LegalSources.
 export default function PartAuthority({ loading, data, error, explainError }) {
   const head = (
     <div className="part-head">
       <span className="part-no">Part 03</span>
-      <h2 className="t-h2">Authority relied on</h2>
+      <h2 className="t-h2">Our sources</h2>
     </div>
   )
 
@@ -15,7 +15,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
       <>
         {head}
         <PartError label="Unavailable">
-          The basis step did not complete, so no authority was retrieved.
+          The earlier step did not complete, so we read no sources.
         </PartError>
       </>
     )
@@ -27,7 +27,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
         {head}
         <PartError label="Unavailable">{error}</PartError>
         <p className="key">
-          The analysis names its authority; without it, this part stays empty.
+          The answer names its sources. Without the answer, this part stays empty.
         </p>
       </>
     )
@@ -38,8 +38,8 @@ export default function PartAuthority({ loading, data, error, explainError }) {
       <>
         {head}
         <PartPending label="Retrieving. About 20 seconds">
-          The retrieval agent pulls TMEP sections and TTAB decisions before the
-          analysis is written. The passages appear here when the analysis lands.
+          We are reading the trademark manual and past decisions. They appear here
+          when the answer lands.
         </PartPending>
       </>
     )
@@ -61,7 +61,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
     return (
       <>
         {head}
-        <p className="t-body dim">The analysis cited no external authority.</p>
+        <p className="t-body dim">The answer cited no outside source.</p>
       </>
     )
   }
@@ -74,8 +74,8 @@ export default function PartAuthority({ loading, data, error, explainError }) {
     <>
       {head}
       <p className="lead">
-        The retrieval agent pulled these passages before the analysis was written, and
-        the analysis may cite nothing else.
+        We read these sections before writing the answer. The answer uses nothing else.
+        TMEP is the trademark examiner's manual. TTAB is the trademark appeal board.
       </p>
 
       {first && (
