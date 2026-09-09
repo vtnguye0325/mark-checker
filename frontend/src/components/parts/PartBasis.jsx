@@ -1,4 +1,5 @@
 import PartError from './PartError'
+import PartPending from './PartPending'
 
 // Part 02 — the signed attribution track. Replaces AttributionChart.
 const HIDDEN_FIELDS = new Set(['Mark Length', 'NICE Category', 'Translation'])
@@ -18,7 +19,7 @@ export default function PartBasis({ loading, data, error }) {
       <>
         {head}
         <PartError label="Unavailable">{error}</PartError>
-        <p className="t-small dim" style={{ marginTop: '16px' }}>
+        <p className="key">
           Parts 03 and 04 depend on this step, so they are unavailable too.
         </p>
       </>
@@ -29,16 +30,10 @@ export default function PartBasis({ loading, data, error }) {
     return (
       <>
         {head}
-        <div className="index">
-          <div className="row row--tall">
-            <span className="t-small dim">Measuring each field in turn…</span>
-            <span className="row-val t-label dim">Running</span>
-          </div>
-          <div className="row row--tall">
-            <span className="t-small dim">Retrieving TMEP and TTAB doctrine</span>
-            <span className="row-val t-label dim">Queued</span>
-          </div>
-        </div>
+        <PartPending label="Measuring. About 10 seconds">
+          Each field is blanked in turn and the score re-measured. The retrieval of
+          TMEP and TTAB doctrine starts when this step ends.
+        </PartPending>
       </>
     )
   }
@@ -59,7 +54,7 @@ export default function PartBasis({ loading, data, error }) {
       <>
         {head}
         <PartError label="Unavailable">The basis step returned an unreadable response.</PartError>
-        <p className="t-small dim" style={{ marginTop: '16px' }}>
+        <p className="key">
           Parts 03 and 04 depend on this step, so they are unavailable too.
         </p>
       </>
@@ -83,7 +78,7 @@ export default function PartBasis({ loading, data, error }) {
   return (
     <>
       {head}
-      <p className="t-body" style={{ marginBottom: '32px' }}>
+      <p className="lead">
         Each input field was blanked in turn and the score re-measured. The swing is
         that field's contribution to the finding on the plate.
       </p>
@@ -114,10 +109,10 @@ export default function PartBasis({ loading, data, error }) {
           )
         })}
       </div>
-      <p className="t-small dim" style={{ marginTop: '16px', maxWidth: '68ch' }}>
-        <span style={{ display: 'inline-block', width: '20px', height: '10px', background: 'var(--ink)', marginRight: '8px' }} />
+      <p className="key">
+        <i className="key-fill" aria-hidden="true" />
         Filled, right of the axis: the field pushes toward distinctive. &nbsp;
-        <span style={{ display: 'inline-block', width: '20px', height: '10px', border: '1px solid var(--ink)', marginRight: '8px' }} />
+        <i className="key-outline" aria-hidden="true" />
         Outlined, left of the axis: it pushes against. Fill and side carry the sign,
         so the chart reads without color.
       </p>

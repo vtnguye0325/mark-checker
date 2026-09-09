@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mark Checker — A. Result Record</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Archivo+Narrow:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1EFE8; --ink:#0A0A0A; --rule:#0A0A0A;
+  --gray:#6B6A65; --faint:#D8D5CC; --dim-ink:#9A9790;
+  --blue:#0B3FD9; --red:#D62015; --yellow:#F2C200;
+  --accent:var(--blue);
+  --sans:'Archivo',Helvetica,Arial,sans-serif;
+  --cond:'Archivo Narrow','Archivo',Helvetica,sans-serif;
+  --m:20px;
+}
+@media(min-width:900px){:root{--m:48px}}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--paper);color-scheme:light;scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+::selection{background:var(--ink);color:var(--paper)}
+.plate ::selection,.quote ::selection,.recordbar ::selection{background:var(--paper);color:var(--ink)}
+*{caret-color:var(--red);scrollbar-color:var(--ink) var(--paper);scrollbar-width:thin}
+::-webkit-scrollbar{width:13px;height:13px}
+::-webkit-scrollbar-track{background:var(--paper);border-left:1px solid var(--ink)}
+::-webkit-scrollbar-thumb{background:var(--ink)}
+a{color:var(--blue);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}
+a:hover{background:var(--blue);color:var(--paper);text-decoration-color:transparent}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.recordbar :focus-visible,.plate :focus-visible,.quote :focus-visible{outline-color:var(--yellow)}
+.lbl{font-family:var(--cond);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;line-height:1.3;margin:0}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.dim{color:var(--gray)}
+.on-ink-dim{color:var(--dim-ink)}
+h2,h3,p{margin:0}
+
+/* record bar */
+.recordbar{background:var(--ink);color:var(--dim-ink);padding:11px var(--m);
+  display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between;
+  font-family:var(--cond);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+.recordbar b{color:var(--paper);font-weight:700}
+.recordbar .acct{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+.recordbar button{font:inherit;background:none;border:0;padding:0;color:var(--paper);cursor:pointer;
+  border-bottom:2px solid var(--dim-ink)}
+.recordbar button:hover{background:var(--paper);color:var(--ink);border-color:transparent}
+.accent-rule{height:5px;background:var(--accent)}
+
+/* plate */
+.plate{background:var(--ink);color:var(--paper);display:grid;grid-template-columns:1fr}
+@media(min-width:900px){.plate{grid-template-columns:1.55fr 1fr}}
+.plate-verdict{padding:40px var(--m) 44px;display:flex;flex-direction:column;justify-content:flex-end;gap:18px}
+.plate-verdict h1{margin:0;font-family:var(--cond);font-weight:700;text-transform:uppercase;
+  font-size:clamp(54px,10vw,148px);line-height:.84;letter-spacing:-.02em;overflow-wrap:break-word}
+.plate-verdict p{max-width:52ch}
+.plate-side{padding:32px var(--m) 40px;border-top:1px solid var(--gray)}
+@media(min-width:900px){.plate-side{border-top:0;border-left:1px solid var(--gray);padding:40px 40px 44px}}
+.plate-mark{font-family:var(--cond);font-weight:700;text-transform:uppercase;letter-spacing:.01em;
+  font-size:clamp(30px,3.4vw,44px);line-height:1.05;margin:6px 0 28px;overflow-wrap:anywhere}
+.rows{display:grid}
+.rw{display:grid;grid-template-columns:1fr auto;gap:12px 20px;align-items:baseline;
+  padding:11px 0;border-top:1px solid var(--gray)}
+.rw:last-child{border-bottom:1px solid var(--gray)}
+.rw .v{text-align:right;font-size:15px}
+.rw .v--big{font-family:var(--cond);font-weight:700;font-size:22px;text-transform:uppercase}
+.pending{color:var(--yellow)}
+
+/* the frozen scale — the landing marquee, stopped and measured */
+.scale{border-bottom:2px solid var(--ink);background:var(--ink);color:var(--paper);padding:0 var(--m) 22px}
+.scale-head{display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between;align-items:baseline;padding:16px 0 14px}
+.scale-track{display:grid;grid-template-columns:28fr 22fr 20fr 18fr 12fr;border-top:2px solid var(--paper)}
+.scale-track div{padding:10px 8px 0;border-left:1px solid var(--gray);min-width:0}
+.scale-track div:first-child{border-left:0}
+.scale-track .t{font-family:var(--cond);font-weight:700;font-size:clamp(12px,1.5vw,19px);
+  text-transform:uppercase;letter-spacing:.04em;display:block;overflow-wrap:anywhere}
+.scale-track .r{font-size:11px;color:var(--dim-ink)}
+.scale-track .here .t{color:var(--yellow)}
+.scale-track .here{background:#1c1c1c;border-top:5px solid var(--yellow);margin-top:-5px}
+.scale-pin{position:relative;height:26px;margin-top:12px;border-top:1px solid var(--gray)}
+.scale-pin i{position:absolute;top:-1px;left:91%;width:2px;height:14px;background:var(--yellow)}
+.scale-pin span{position:absolute;top:14px;left:91%;transform:translateX(-50%);white-space:nowrap;
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--yellow)}
+
+/* body + rail */
+.doc{display:grid;grid-template-columns:1fr}
+@media(min-width:1000px){.doc{grid-template-columns:250px 1fr}}
+.rail{border-bottom:2px solid var(--ink);padding:20px var(--m) 24px}
+@media(min-width:1000px){.rail{border-bottom:0;border-right:2px solid var(--ink);position:sticky;top:0;align-self:start;
+  height:100vh;overflow:auto;padding:28px 24px 28px var(--m)}}
+.rail h2{margin:0 0 12px}
+.rail-rows{display:grid;margin-bottom:28px}
+.rail-row,.rail-link{display:grid;grid-template-columns:1fr auto;gap:10px;padding:8px 0;
+  border-top:1px solid var(--rule);font-size:13px}
+.rail-rows .rail-row:last-child{border-bottom:1px solid var(--rule)}
+.rail-link{color:var(--ink);text-decoration:none;border-top:1px solid var(--rule)}
+.rail-links .rail-link:last-child,.rail-links .rail-row:last-child{border-bottom:1px solid var(--rule)}
+.rail-link:hover{background:var(--ink);color:var(--paper);padding-left:6px;padding-right:6px}
+.rail-link--here{font-weight:600}
+.rail-link--here::before{content:"";position:absolute;margin-left:-14px;width:6px;height:6px;background:var(--red);margin-top:8px}
+.rail-link .st,.rail-row .st{font-family:var(--cond);font-weight:700;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gray)}
+.rail-link:hover .st{color:var(--paper)}
+.st--load{color:var(--red)}
+
+main{min-width:0}
+.part{padding:44px var(--m) 48px;border-bottom:1px solid var(--rule)}
+.part-head{display:flex;flex-wrap:wrap;gap:4px 20px;align-items:baseline;margin-bottom:26px;
+  padding-bottom:12px;border-bottom:2px solid var(--ink)}
+.part-head h2{font-family:var(--cond);font-weight:700;text-transform:uppercase;letter-spacing:-.01em;
+  font-size:clamp(26px,3.4vw,44px);line-height:1}
+.part-no{font-family:var(--cond);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.lead{max-width:68ch;margin-bottom:28px}
+
+/* part 01 tier table */
+.tier{display:grid;grid-template-columns:14px 1fr auto;gap:10px 16px;align-items:baseline;
+  padding:14px 0;border-top:1px solid var(--rule)}
+.tier:last-child{border-bottom:1px solid var(--rule)}
+.tier--here{background:var(--yellow);padding-left:10px;padding-right:10px;margin:0 -10px;border-top-color:var(--ink)}
+.glyph{width:12px;height:12px;border:2px solid var(--ink);align-self:center}
+.tier--here .glyph{background:var(--ink)}
+.tier .name{font-family:var(--cond);font-weight:700;font-size:20px;text-transform:uppercase}
+.tier .note{display:block;font-size:14px;color:var(--gray);grid-column:2}
+.tier--here .note{color:var(--ink)}
+.tier .range{font-size:14px}
+
+/* part 02 attribution */
+.attr{padding:16px 0;border-top:1px solid var(--rule)}
+.attr:last-of-type{border-bottom:1px solid var(--rule)}
+.attr-head{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.attr-head .f{font-family:var(--cond);font-weight:700;font-size:19px;text-transform:uppercase}
+.attr-head .v{font-size:14px;color:var(--gray)}
+.attr-track{display:grid;grid-template-columns:1fr 1fr;height:14px;border:1px solid var(--ink)}
+.attr-neg{border-right:2px solid var(--ink);display:flex;justify-content:flex-end}
+.attr-pos{display:flex}
+.attr-outline{border:1px solid var(--ink);height:100%}
+.attr-fill{background:var(--ink);height:100%}
+.key{margin-top:16px;max-width:68ch;font-size:14px;color:var(--gray)}
+.key i{display:inline-block;width:22px;height:11px;margin-right:8px;vertical-align:baseline}
+.key .kf{background:var(--ink)}.key .ko{border:1px solid var(--ink)}
+
+/* part 03 authority */
+.quote{background:var(--ink);color:var(--paper);margin:0 0 32px;padding:30px var(--m);
+  font-size:clamp(18px,2vw,23px);line-height:1.4;max-width:none}
+@media(min-width:900px){.quote{padding:34px 40px}}
+.quote cite{display:block;margin-top:20px;font-style:normal;color:var(--dim-ink);
+  font-family:var(--cond);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+.src{display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:baseline;padding:12px 0;border-top:1px solid var(--rule)}
+.src:last-of-type{border-bottom:1px solid var(--rule)}
+.src .ttl{font-family:var(--cond);font-weight:700;font-size:18px;text-transform:uppercase}
+.src .tag{font-size:13px;color:var(--gray);text-align:right}
+
+/* part 04 pending */
+.pending-block{border:2px solid var(--ink);padding:22px var(--m)}
+@media(min-width:900px){.pending-block{padding:24px 28px}}
+.pending-block .lbl{background:var(--yellow);display:inline-block;padding:4px 8px;margin-bottom:14px}
+.bones{display:grid;gap:10px;margin-top:20px}
+.bone{height:13px;background:var(--faint)}
+.bone:nth-child(2){width:92%}.bone:nth-child(3){width:78%}.bone:nth-child(4){width:86%}
+
+/* part 05 input */
+.inputline{display:grid;grid-template-columns:1fr;gap:2px;padding:10px 0;border-top:1px solid var(--rule)}
+@media(min-width:640px){.inputline{grid-template-columns:210px 1fr;gap:20px}}
+.inputline:last-of-type{border-bottom:1px solid var(--rule)}
+.inputline .k{font-family:var(--cond);font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.inputline .v{font-size:16px;overflow-wrap:anywhere}
+
+/* close */
+.close{display:grid;grid-template-columns:1fr}
+@media(min-width:760px){.close{grid-template-columns:1fr auto}}
+.close p{padding:18px var(--m);color:var(--gray);font-size:14px;align-self:center}
+.close a{font-family:var(--cond);font-weight:700;font-size:clamp(20px,3.2vw,30px);letter-spacing:.1em;
+  text-transform:uppercase;background:var(--ink);color:var(--paper);text-decoration:none;
+  padding:22px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.close a:hover{background:var(--blue)}
+.close a .arrow{font-family:var(--sans);font-weight:600}
+footer{padding:22px var(--m) 48px;display:flex;flex-wrap:wrap;gap:8px 28px;color:var(--gray);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="recordbar">
+  <span><b>Mark Checker</b></span>
+  <span class="acct">
+    <span>Not legal advice</span>
+    <span>vy@example.com</span>
+    <button type="button">History</button>
+    <button type="button">Sign out</button>
+  </span>
+</div>
+<div class="accent-rule"></div>
+
+<section class="plate">
+  <div class="plate-verdict">
+    <p class="lbl on-ink-dim">Finding</p>
+    <h1>Distinctive</h1>
+    <p class="on-ink-dim">The classifier reads this mark as inherently distinctive. That is a
+    first read, not a registration decision and not legal advice.</p>
+  </div>
+  <div class="plate-side">
+    <p class="lbl on-ink-dim">Subject of this record</p>
+    <p class="plate-mark">Zephyrline</p>
+    <div class="rows">
+      <div class="rw"><span class="lbl on-ink-dim">Goods &amp; services</span><span class="v">insulated water bottles</span></div>
+      <div class="rw"><span class="lbl on-ink-dim">NICE class</span><span class="v num">21</span></div>
+      <div class="rw"><span class="lbl on-ink-dim">Score</span><span class="v v--big num">0.91</span></div>
+      <div class="rw"><span class="lbl on-ink-dim">Confidence</span><span class="v v--big pending">Pending</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="scale" aria-label="Where this mark sits on the Abercrombie spectrum">
+  <div class="scale-head">
+    <p class="lbl">The spectrum, measured</p>
+    <p class="lbl on-ink-dim">Score 0.91 of 1.00</p>
+  </div>
+  <div class="scale-track">
+    <div><span class="t">Generic</span><span class="r num">0.00–0.28</span></div>
+    <div><span class="t">Descriptive</span><span class="r num">0.28–0.50</span></div>
+    <div><span class="t">Suggestive</span><span class="r num">0.50–0.70</span></div>
+    <div><span class="t">Arbitrary</span><span class="r num">0.70–0.88</span></div>
+    <div class="here"><span class="t">Fanciful</span><span class="r num">0.88–1.00</span></div>
+  </div>
+  <div class="scale-pin"><i></i><span>This mark</span></div>
+</section>
+
+<div class="doc">
+  <aside class="rail">
+    <h2 class="lbl">Record</h2>
+    <div class="rail-rows">
+      <div class="rail-row"><span>Filed</span><span class="num">2026-09-08 14:02</span></div>
+      <div class="rail-row"><span>Class</span><span class="num">21</span></div>
+      <div class="rail-row"><span>Score</span><span class="num">0.91</span></div>
+      <div class="rail-row"><span>Model</span><span>ModernBERT</span></div>
+      <div class="rail-row"><span>Sources</span><span class="num">6</span></div>
+    </div>
+    <nav aria-label="Parts of this record">
+      <h2 class="lbl">Parts</h2>
+      <div class="rail-links">
+        <a class="rail-link rail-link--here" href="#p1" aria-current="location"><span>Spectrum</span><span class="st">Ready</span></a>
+        <a class="rail-link" href="#p2"><span>Basis</span><span class="st">Ready</span></a>
+        <a class="rail-link" href="#p3"><span>Authority</span><span class="st">Ready</span></a>
+        <a class="rail-link" href="#p4"><span>Action</span><span class="st st--load">Writing</span></a>
+        <a class="rail-link" href="#p5"><span>Input</span><span class="st">Ready</span></a>
+      </div>
+    </nav>
+  </aside>
+
+  <main>
+    <section class="part" id="p1">
+      <div class="part-head"><span class="part-no">Part 01</span><h2>Position on the spectrum</h2></div>
+      <div>
+        <div class="tier"><span class="glyph"></span><span class="name">Generic</span><span class="range num">0.00–0.28</span><span class="note">Never registrable</span></div>
+        <div class="tier"><span class="glyph"></span><span class="name">Descriptive</span><span class="range num">0.28–0.50</span><span class="note">Needs acquired meaning</span></div>
+        <div class="tier"><span class="glyph"></span><span class="name">Suggestive</span><span class="range num">0.50–0.70</span><span class="note">Inherently distinctive</span></div>
+        <div class="tier"><span class="glyph"></span><span class="name">Arbitrary</span><span class="range num">0.70–0.88</span><span class="note">Inherently distinctive</span></div>
+        <div class="tier tier--here" aria-current="true"><span class="glyph"></span><span class="name">Fanciful — this mark</span><span class="range num">0.88–1.00</span><span class="note">Strongest protection</span></div>
+      </div>
+      <p class="key">The filled square marks the tier. The score on the plate above falls inside
+      the range printed on that row.</p>
+    </section>
+
+    <section class="part" id="p2">
+      <div class="part-head"><span class="part-no">Part 02</span><h2>Basis for the finding</h2></div>
+      <p class="lead">Each input field was blanked in turn and the score re-measured. The swing is
+      that field's contribution to the finding on the plate.</p>
+      <div>
+        <div class="attr">
+          <div class="attr-head"><span><span class="f">Mark</span> <span class="v">Zephyrline</span></span><span class="num">+0.41 toward</span></div>
+          <div class="attr-track"><span class="attr-neg"></span><span class="attr-pos"><i class="attr-fill" style="width:100%"></i></span></div>
+        </div>
+        <div class="attr">
+          <div class="attr-head"><span><span class="f">Goods &amp; services</span> <span class="v">insulated water bottles</span></span><span class="num">−0.12 against</span></div>
+          <div class="attr-track"><span class="attr-neg"><i class="attr-outline" style="width:29%"></i></span><span class="attr-pos"></span></div>
+        </div>
+        <div class="attr">
+          <div class="attr-head"><span><span class="f">Pseudo mark</span> <span class="v">zephyr line</span></span><span class="num">+0.18 toward</span></div>
+          <div class="attr-track"><span class="attr-neg"></span><span class="attr-pos"><i class="attr-fill" style="width:44%"></i></span></div>
+        </div>
+        <div class="attr">
+          <div class="attr-head"><span><span class="f">Owner name</span> <span class="v">Zephyrline Goods LLC</span></span><span class="num">+0.04 toward</span></div>
+          <div class="attr-track"><span class="attr-neg"></span><span class="attr-pos"><i class="attr-fill" style="width:10%"></i></span></div>
+        </div>
+        <div class="attr">
+          <div class="attr-head"><span><span class="f">Filing basis</span> <span class="v">1(b) intent to use</span></span><span class="num">0.00 neutral</span></div>
+          <div class="attr-track"><span class="attr-neg"></span><span class="attr-pos"></span></div>
+        </div>
+      </div>
+      <p class="key"><i class="kf"></i>Filled, right of the axis: the field pushes toward distinctive.
+      &nbsp;<i class="ko"></i>Outlined, left of the axis: it pushes against. Fill and side carry the
+      sign, so the chart reads without color.</p>
+    </section>
+
+    <section class="part" id="p3">
+      <div class="part-head"><span class="part-no">Part 03</span><h2>Authority relied on</h2></div>
+      <p class="lead">The retrieval agent pulled these passages before the analysis was written, and
+      the analysis may cite nothing else.</p>
+      <blockquote class="quote">
+        A coined term, invented for use as a mark and carrying no meaning of its own,
+        sits at the strongest end of the spectrum and is registrable on the Principal
+        Register without proof of acquired distinctiveness.
+        <cite>TMEP § 1209.01(a) — Fanciful, arbitrary and suggestive marks</cite>
+      </blockquote>
+      <p class="lbl" style="margin-bottom:14px">Also retrieved, not cited</p>
+      <div>
+        <div class="src"><span><span class="num">§ 1209.01(b)</span> <span class="ttl">Merely descriptive marks</span></span><span class="tag">TMEP</span></div>
+        <div class="src"><span><span class="num">§ 1209.03(e)</span> <span class="ttl">Marks that are a play on words</span></span><span class="tag">TMEP</span></div>
+        <div class="src"><span><span class="ttl">Zephyr Air</span> <span class="num">NC 11</span></span><span class="tag">TTAB — refusal affirmed</span></div>
+        <div class="src"><span><span class="ttl">Chillline</span> <span class="num">NC 21</span></span><span class="tag">TTAB — refusal reversed</span></div>
+        <div class="src"><span><span class="ttl">Hydrocore</span> <span class="num">NC 21</span></span><span class="tag">TTAB — refusal affirmed</span></div>
+      </div>
+    </section>
+
+    <section class="part" id="p4">
+      <div class="part-head"><span class="part-no">Part 04</span><h2>Recommended action</h2></div>
+      <div class="pending-block" aria-busy="true">
+        <p class="lbl">Writing — about 20 seconds</p>
+        <p>The analysis is still being written. The verdict above is final; this part adds
+        what to do about it, and the confidence word on the plate fills at the same moment.</p>
+        <div class="bones" aria-hidden="true">
+          <span class="bone"></span><span class="bone"></span><span class="bone"></span><span class="bone"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="part" id="p5">
+      <div class="part-head"><span class="part-no">Part 05</span><h2>What the model read</h2></div>
+      <p class="lead">The classifier read one string, built from the eight fields below. Nothing
+      else reached it.</p>
+      <div>
+        <div class="inputline"><span class="k">Mark</span><span class="v">ZEPHYRLINE</span></div>
+        <div class="inputline"><span class="k">Mark length</span><span class="v num">10</span></div>
+        <div class="inputline"><span class="k">Goods &amp; services</span><span class="v">insulated water bottles</span></div>
+        <div class="inputline"><span class="k">NICE class</span><span class="v num">21</span></div>
+        <div class="inputline"><span class="k">NICE category</span><span class="v">Housewares &amp; glass</span></div>
+        <div class="inputline"><span class="k">Translation</span><span class="v dim">none given</span></div>
+        <div class="inputline"><span class="k">Pseudo mark</span><span class="v">zephyr line</span></div>
+        <div class="inputline"><span class="k">Filing basis</span><span class="v">1(b) intent to use</span></div>
+      </div>
+    </section>
+
+    <div class="close">
+      <p>One check at a time. Opening a new record clears this one from the screen, not from your history.</p>
+      <a href="#">Check another name <span class="arrow">→</span></a>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <span>Mark Checker</span><span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+  <span>Probability, never certainty.</span>
+</footer>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import PartError from './PartError'
+import PartPending from './PartPending'
 
 // Part 03 — the authority the analysis relied on. Replaces LegalSources.
 export default function PartAuthority({ loading, data, error, explainError }) {
@@ -25,7 +26,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
       <>
         {head}
         <PartError label="Unavailable">{error}</PartError>
-        <p className="t-small dim" style={{ marginTop: '16px' }}>
+        <p className="key">
           The analysis names its authority; without it, this part stays empty.
         </p>
       </>
@@ -36,7 +37,10 @@ export default function PartAuthority({ loading, data, error, explainError }) {
     return (
       <>
         {head}
-        <p className="t-body dim">The retrieval agent is still pulling passages.</p>
+        <PartPending label="Retrieving. About 20 seconds">
+          The retrieval agent pulls TMEP sections and TTAB decisions before the
+          analysis is written. The passages appear here when the analysis lands.
+        </PartPending>
       </>
     )
   }
@@ -69,7 +73,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
   return (
     <>
       {head}
-      <p className="t-body" style={{ marginBottom: '24px' }}>
+      <p className="lead">
         The retrieval agent pulled these passages before the analysis was written, and
         the analysis may cite nothing else.
       </p>
@@ -77,15 +81,15 @@ export default function PartAuthority({ loading, data, error, explainError }) {
       {first && (
         <blockquote className="quote">
           {first.text}
-          <cite className="t-label dim-on-ink">
-            TMEP § {first.metadata?.section_number ?? '—'} — {first.metadata?.section_title ?? '—'}
+          <cite>
+            TMEP § {first.metadata?.section_number ?? '—'}. {first.metadata?.section_title ?? '—'}
           </cite>
         </blockquote>
       )}
 
       {showAlso && (
         <>
-          <p className="t-label" style={{ marginTop: '48px' }}>
+          <p className="t-label" style={{ marginBottom: '14px' }}>
             {first ? 'Also retrieved, not cited' : 'Retrieved'}
           </p>
           <div className="index">
@@ -104,7 +108,7 @@ export default function PartAuthority({ loading, data, error, explainError }) {
                   <span className="t-h3">{c.metadata?.mark ?? '—'}</span>{' '}
                   <span className="mono t-small dim">NC {c.metadata?.nice_class ?? '—'}</span>
                 </span>
-                <span className="row-val t-small">TTAB — {c.metadata?.outcome ?? '—'}</span>
+                <span className="row-val t-small dim">TTAB. {c.metadata?.outcome ?? '—'}</span>
               </div>
             ))}
           </div>

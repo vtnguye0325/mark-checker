@@ -22,7 +22,7 @@ export default function PartSpectrum({ score }) {
               aria-current={here ? 'true' : undefined}
             >
               <span className="tier-glyph" aria-hidden="true" />
-              <span className="t-h3">{tier.label}{here ? ' — this mark' : ''}</span>
+              <span className="t-h3">{tier.label}{here ? '. This mark' : ''}</span>
               <span className="tier-note">{tier.note}</span>
               <span className="tier-range">{lo.toFixed(2)}–{hi.toFixed(2)}</span>
             </div>
@@ -31,12 +31,12 @@ export default function PartSpectrum({ score }) {
       </div>
 
       {activeId ? (
-        <p className="t-small dim" style={{ marginTop: '16px' }}>
+        <p className="key">
           The filled square marks the tier. The score on the plate above falls inside
           the range printed on that row.
         </p>
       ) : (
-        <p className="t-small dim" style={{ marginTop: '16px' }}>
+        <p className="key">
           The classifier did not return a score, so no tier is marked.
         </p>
       )}

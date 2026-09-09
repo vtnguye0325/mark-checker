@@ -1,23 +1,41 @@
-// Part 05 — the ruled lines from formatted_input. See IMPLEMENTATION_PLAN_D.md 2.5.
+// Part 05 — the eight fields the classifier read, as ruled lines.
+// See IMPLEMENTATION_PLAN_D.md 2.5. The backend joins the fields with ". ",
+// in this order (backend/app/services/text_formatter.py, format_mark).
+const FIELD_LABELS = [
+  'Mark',
+  'Goods & services',
+  'Translation',
+  'WordNet flag',
+  'Mark length',
+  'NICE category',
+  'NICE description',
+  'Pseudo mark',
+]
+
 export default function PartInput({ formattedInput }) {
   const lines = (formattedInput || '').split('. ').filter(Boolean)
+  // A goods description that holds ". " breaks the count. Then print the raw
+  // lines without labels rather than mislabel them.
+  const labelled = lines.length === FIELD_LABELS.length
 
   return (
     <>
       <div className="part-head">
         <span className="part-no">Part 05</span>
-        <h2 className="t-h2">Classifier input</h2>
+        <h2 className="t-h2">What the model read</h2>
       </div>
-      <p className="t-body" style={{ marginBottom: '24px' }}>
-        The string below is the exact text the model read. Everything above derives from it.
+      <p className="lead">
+        The classifier read one string, built from the {labelled ? 'eight ' : ''}fields below.
+        Nothing else reached it.
       </p>
       {lines.length === 0 ? (
-        <p className="t-small dim">The classifier input was not returned.</p>
+        <p className="key">The classifier input was not returned.</p>
       ) : (
         <div className="index">
           {lines.map((line, i) => (
-            <div className="row" key={i}>
-              <span className="mono t-small">{line}</span>
+            <div className="inputline" key={i}>
+              {labelled && <span className="inputline-k">{FIELD_LABELS[i]}</span>}
+              <span className="inputline-v">{line}</span>
             </div>
           ))}
         </div>

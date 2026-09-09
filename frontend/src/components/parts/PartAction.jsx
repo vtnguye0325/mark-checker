@@ -1,5 +1,6 @@
 import { parseSections } from '../../lib/parseLegalAnalysis'
 import PartError from './PartError'
+import PartPending from './PartPending'
 
 // Copied verbatim from LLMAnalysis.jsx, which Phase 7 deletes.
 function renderInline(text) {
@@ -33,7 +34,7 @@ export default function PartAction({ loading, data, error, explainError }) {
       <>
         {head}
         <PartError label="Unavailable">{error}</PartError>
-        <p className="t-small dim" style={{ marginTop: '16px' }}>
+        <p className="key">
           The recommended action is part of the analysis, which did not arrive.
         </p>
       </>
@@ -44,7 +45,11 @@ export default function PartAction({ loading, data, error, explainError }) {
     return (
       <>
         {head}
-        <p className="t-body dim">The analysis is still being written.</p>
+        <PartPending label="Writing. About 20 seconds">
+          The analysis is still being written. The finding above is final. This part
+          adds what to do about it, and the confidence word on the plate fills at the
+          same moment.
+        </PartPending>
       </>
     )
   }

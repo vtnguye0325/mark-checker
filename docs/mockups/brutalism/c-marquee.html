@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mark Checker — C. Spectrum Marquee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Chivo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF; --ink:#000000; --gray:#666060;
+  --blue:#1414FF; --red:#FF2D16; --yellow:#FFE100;
+  --disp:'Syne','Chivo',Helvetica,sans-serif;
+  --sans:'Chivo',Helvetica,Arial,sans-serif;
+  --m:18px; --b:3px;
+}
+@media(min-width:900px){:root{--m:40px}}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--paper);color-scheme:light}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+::selection{background:var(--blue);color:var(--paper)}
+*{caret-color:var(--blue);scrollbar-color:var(--ink) var(--yellow);scrollbar-width:thin}
+::-webkit-scrollbar{width:14px;height:14px}
+::-webkit-scrollbar-track{background:var(--yellow);border-left:var(--b) solid var(--ink)}
+::-webkit-scrollbar-thumb{background:var(--ink)}
+a{color:var(--blue);text-underline-offset:3px;text-decoration-thickness:2px}
+a:hover{background:var(--blue);color:var(--paper);text-decoration:none}
+:focus-visible{outline:var(--b) solid var(--blue);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+header{border-bottom:var(--b) solid var(--ink);display:flex;justify-content:space-between;align-items:stretch}
+.brand{font-family:var(--disp);font-weight:800;font-size:17px;letter-spacing:-.01em;text-transform:uppercase;padding:14px var(--m)}
+header a{align-self:stretch;display:flex;align-items:center;padding:0 22px;border-left:var(--b) solid var(--ink);
+  font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);text-decoration:none}
+header a:hover{background:var(--yellow)}
+
+.hero{padding:44px var(--m) 0;overflow:hidden}
+h1{margin:0;font-family:var(--disp);font-weight:800;text-transform:uppercase;line-height:.88;letter-spacing:-.035em;
+  font-size:clamp(34px,7.1vw,104px);overflow-wrap:normal}
+h1 .out{color:var(--paper);-webkit-text-stroke:2px var(--ink)}
+h1 .hit{background:var(--yellow);box-decoration-break:clone;-webkit-box-decoration-break:clone;padding:0 .06em}
+.sub{display:grid;grid-template-columns:1fr;gap:18px;padding:30px 0 34px}
+@media(min-width:900px){.sub{grid-template-columns:1.1fr 1fr;gap:56px}}
+.sub p{margin:0;font-size:18px;max-width:60ch}
+.sub .facts{display:grid;gap:0;border-top:var(--b) solid var(--ink);align-self:start}
+.fact{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--ink);
+  font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+.fact b{font-weight:700}
+
+.marquee{border-top:var(--b) solid var(--ink);border-bottom:var(--b) solid var(--ink);background:var(--ink);
+  color:var(--paper);overflow:hidden;white-space:nowrap}
+.track{display:inline-block;padding:12px 0;animation:slide 26s linear infinite;font-family:var(--disp);font-weight:700;
+  font-size:26px;text-transform:uppercase;letter-spacing:.02em}
+.track span{padding:0 22px}
+.track .g{color:var(--red)}.track .f{color:var(--yellow)}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.track{animation:none}}
+
+.wrap{display:grid;grid-template-columns:1fr}
+@media(min-width:980px){.wrap{grid-template-columns:1fr 1.05fr}}
+.pitch{padding:36px var(--m) 40px;border-bottom:var(--b) solid var(--ink)}
+@media(min-width:980px){.pitch{border-bottom:0;border-right:var(--b) solid var(--ink)}}
+.pitch h2{font-family:var(--disp);font-weight:700;font-size:clamp(26px,3vw,38px);line-height:1.05;margin:0 0 16px;text-transform:uppercase;letter-spacing:-.02em}
+.pitch p{margin:0 0 16px;max-width:56ch}
+.pitch .warn{border:var(--b) solid var(--ink);background:var(--yellow);padding:14px 16px;margin-top:26px}
+.pitch .warn strong{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.pitch .warn p{margin:0;font-size:14px}
+
+form{padding:36px var(--m) 40px}
+.slab{border:var(--b) solid var(--ink)}
+.fld{border-bottom:var(--b) solid var(--ink);padding:14px 16px}
+.fld:last-of-type{border-bottom:0}
+.fld label{display:block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px}
+.fld label .o{display:block;font-weight:400;letter-spacing:0;text-transform:none;color:var(--gray);font-size:13px;margin-top:3px}
+input,select{width:100%;border:0;border-radius:0;background:transparent;color:var(--ink);appearance:none;
+  font-family:var(--sans);font-size:18px;padding:4px 0}
+input::placeholder{color:var(--gray)}
+.fld:focus-within{background:var(--yellow)}
+.fld--mark{background:var(--ink)}
+.fld--mark label{color:var(--paper)}
+.fld--mark input{color:var(--paper);font-family:var(--disp);font-weight:800;text-transform:uppercase;
+  letter-spacing:-.02em;font-size:clamp(26px,3.4vw,42px);line-height:1.1}
+.fld--mark input::placeholder{color:#7a7a7a}
+.fld--mark:focus-within{background:var(--blue)}
+.fld--mark:focus-within input::placeholder{color:#c9c9ff}
+select{background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:right 12px center,right 6px center;background-size:7px 7px;background-repeat:no-repeat;padding-right:32px}
+button{margin-top:18px;width:100%;font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.02em;
+  font-size:clamp(22px,3.4vw,32px);background:var(--blue);color:var(--paper);border:var(--b) solid var(--ink);
+  border-radius:0;padding:18px 22px;cursor:pointer;display:flex;justify-content:space-between;gap:16px}
+button:hover{background:var(--ink)}
+button:active{background:var(--red)}
+button[disabled]{background:var(--paper);color:var(--gray);cursor:not-allowed}
+.hint{margin:12px 0 0;font-size:14px;color:var(--gray)}
+footer{border-top:var(--b) solid var(--ink);padding:18px var(--m) 44px;display:flex;flex-wrap:wrap;gap:8px 26px;
+  font-size:13px;color:var(--gray)}
+</style>
+</head>
+<body>
+<header><div class="brand">Mark Checker</div><a href="#">Sign in</a></header>
+
+<section class="hero">
+  <h1>Your name<br><span class="out">is not</span><br><span class="hit">registrable</span><br>yet</h1>
+  <div class="sub">
+    <p>Not until the office agrees it is distinctive. Grade the name on the Abercrombie
+    spectrum in seconds, and read the TMEP sections and TTAB decisions behind the grade.</p>
+    <div class="facts">
+      <div class="fact"><span>Verdict from</span><b>ModernBERT classifier</b></div>
+      <div class="fact"><span>Doctrine from</span><b>TMEP + TTAB</b></div>
+      <div class="fact"><span>Standing</span><b>First read, not advice</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee"><div class="track">
+  <span class="g">Generic</span><span>Descriptive</span><span>Suggestive</span><span>Arbitrary</span><span class="f">Fanciful</span>
+  <span class="g">Generic</span><span>Descriptive</span><span>Suggestive</span><span>Arbitrary</span><span class="f">Fanciful</span>
+</div></div>
+
+<div class="wrap">
+  <section class="pitch">
+    <h2>Three results, in the order they arrive</h2>
+    <p>The classifier returns the verdict first. Then a leave-one-out pass measures how far
+    each field moved the score. Last, a retrieval agent cites the doctrine and names what to change.</p>
+    <p>Partial is the normal state. You read the verdict while the rest fills in.</p>
+    <div class="warn"><strong>Read this</strong>
+      <p>The analysis step sends the mark and the goods description to Google's Gemini API,
+      which runs on a free tier that may use the request to improve Google's products.</p></div>
+  </section>
+
+  <form novalidate>
+    <div class="slab">
+      <div class="fld fld--mark"><label for="mark">Mark</label>
+        <input id="mark" type="text" placeholder="ENTER A MARK" autocomplete="off" spellcheck="false"></div>
+      <div class="fld"><label for="d">Goods &amp; services</label>
+        <input id="d" type="text" placeholder="insulated water bottles"></div>
+      <div class="fld"><label for="n">NICE class</label>
+        <select id="n" class="num"><option value="">Select a class…</option>
+          <option>Class 9 — Electronics, Software &amp; Technology</option>
+          <option>Class 21 — Housewares &amp; Glass</option>
+          <option>Class 25 — Clothing &amp; Footwear</option></select></div>
+      <div class="fld"><label for="t">Translation<span class="o">Optional — the English meaning of a foreign-language mark</span></label>
+        <input id="t" type="text" placeholder="the west wind"></div>
+      <div class="fld"><label for="p">Pseudo mark<span class="o">Optional — the constituent words of a compound mark</span></label>
+        <input id="p" type="text" placeholder="zephyr line"></div>
+    </div>
+    <button type="submit" disabled>Open record <span>→</span></button>
+    <p class="hint">Enter the mark, the goods, and the NICE class to open the record.</p>
+  </form>
+</div>
+
+<footer><span>Mark Checker</span><span>Probability, never certainty.</span><span><a href="#">Read the method</a></span></footer>
+</body>
+</html>

@@ -1,28 +1,31 @@
-# Bauhaus Design Principles
+# Brutalist Design Principles
 
-This document defines the design language for the Mark Checker interface. The language comes
-from the Bauhaus school (Weimar and Dessau, 1919-1933) and from the Swiss typographic style
-that grew out of it.
+This document defines the design language for the Mark Checker interface. The language is
+raw web-brutalism: the page shows its structure, uses the default materials of the browser,
+and hides nothing behind decoration.
 
-Reference: the "Bauhaus Legacy" website concept by Eugene Shuklin on Dribbble
-(shot 24035833). The screenshots show the target look: black and white, very large grotesk
-type, hard rectangular blocks, and no decoration.
+Reference: the approved mockups in `docs/mockups/brutalism/`. `a-specimen.html` is the
+landing state. `a-result.html` is the record state. When this document and a mockup
+disagree, the mockup wins, and you must update this document.
+
+This document replaces the Bauhaus language. The two share one rule: form follows function.
+They differ in tone. Bauhaus was ordered and quiet. Brutalism is loud and direct.
 
 ---
 
 ## 1. The core rule
 
-**Form follows function.**
+**Show the structure. Hide nothing.**
 
-Every visual element must do a job. If an element does no job, delete it. Do not add a
-gradient, a shadow, a rounded corner, or an icon to make a screen look "finished". A screen
-is finished when a user can read it and act on it.
+A screen is a document with a ledger of fields and a set of findings. Every rule, border,
+and block must show the user where a thing starts and where it ends. Do not soften an edge,
+do not fade a state, and do not hide a boundary.
 
 Three tests for any element:
 
 1. What does this element tell the user?
 2. What happens if I delete it?
-3. Does a simpler shape do the same job?
+3. Can a thicker rule or a black block do the same job?
 
 If the answer to (2) is "nothing", delete the element.
 
@@ -30,113 +33,96 @@ If the answer to (2) is "nothing", delete the element.
 
 ## 2. The six principles
 
-### 2.1 Truth to materials
+### 2.1 Raw materials
 
-The web is flat. Text is text and a button is a rectangle. Do not imitate paper, glass,
-leather, or metal. Do not add drop shadows to fake depth. Use a border or a change of
-background color to separate two areas.
+The browser gives you text, rules, and rectangles. Use them as they are. Do not add a
+shadow, a gradient, a blur, or a rounded corner. Separate two areas with a rule or with an
+inverted block (black fill, paper text).
 
-### 2.2 Geometry first
+### 2.2 The ledger
 
-Build every component from the three primitive shapes: the rectangle, the circle, and the
-triangle. The rectangle carries content. The circle marks a person or a state. The triangle
-points.
+The product collects facts and reports facts. Lay out both as a ledger: one row per fact,
+a label on the left, a value on the right, a rule between rows. The form is a ledger. The
+record metadata is a ledger. The model inputs are a ledger.
 
-Use a 0px corner radius by default. Allow a full circle (999px) only for an avatar or a
-status dot. Never use a 4px or 8px "soft" radius; it reads as a generic template.
+### 2.3 Extreme scale
 
-### 2.3 Asymmetric balance
+Set the headline as large as the viewport permits. Set the body at 16px. Do not use the
+middle sizes. The landing headline runs to 224px. The verdict word runs to 148px. The mark
+input runs to 64px. The distance between the headline and the body makes the hierarchy.
 
-Do not center everything. Balance a large dark block on the left against small text on the
-right. Bauhaus layouts hold tension between unequal parts. A centered layout is static and
-safe, and it removes the hierarchy.
+### 2.4 The inverted block
 
-The reference shot shows this: a tall black quote panel takes the left third, a thin list of
-names takes the middle, and stacked photographs take the right.
+Use a full-bleed black block for the item that carries the most weight on the page. The
+landing page inverts the mark row. The record page inverts the plate, the spectrum band,
+and the cited passage. Do not invert more than three blocks on one page.
 
-### 2.4 Extreme contrast of scale
+### 2.5 One accent per state
 
-Set a headline 8 to 15 times larger than the body text. Do not use the middle sizes. A page
-with a 96px headline and a 16px body reads as designed. A page with a 24px headline and an
-18px body reads as a draft.
+Yellow marks a pending or cautionary state. Red marks a load, a refusal, or an error. Blue
+marks a link or a primary action. A page carries one accent rule, and each accent always
+sits next to a word.
 
-### 2.5 The grid rules the page
+### 2.6 Motion states a fact
 
-Place every element on a visible or implied grid. Nothing floats. Align edges hard. When two
-blocks sit side by side, their top edges must match to the pixel.
-
-### 2.6 Honest hierarchy
-
-Show importance through size, weight, and position only. Do not show importance through
-color alone, and do not show it through an icon. This keeps the interface readable for a
-user who cannot see color.
+The landing page carries one moving element: the spectrum marquee. It moves because the
+verdict is undecided. The record page carries the same band, stopped, and reads the score
+as a position on it. Nothing else on either page moves.
 
 ---
 
 ## 3. Typography
 
-Typography carries the whole design. Treat it as the primary material.
+### 3.1 Typefaces
 
-### 3.1 Typeface
+Use two families from one source. Both are grotesks and both are OFL.
 
-Use one geometric sans-serif family for the whole product. The Bauhaus built its
-letterforms from the circle, the triangle, and the square, so a geometric face carries the
-style and a grotesk does not. Approved choices, in order:
+| Token | Family | Weights | Use |
+|---|---|---|---|
+| `--sans` | Archivo | 400, 500, 600, 800 | Body, inputs, values, footer |
+| `--cond` | Archivo Narrow | 600, 700 | Headlines, labels, buttons, the mark, the verdict |
 
-| Rank | Family | Reason |
-|---|---|---|
-| 1 | Jost | Futura revival, full weight axis, tall x-height holds up at small sizes |
-| 2 | Poppins | Pure geometric, perfect circles, reads more contemporary |
-| 3 | Josefin Sans | The most period-correct, but too weak below 16px |
+Fallback stack: `Helvetica, Arial, sans-serif`.
 
-One display face is permitted, and only on the verdict word in the record plate. Set it
-in Poiret One, an OFL art-deco geometric that carries the Bauhaus gesture at 48px and
-above. Poiret One ships one weight, so never set it bold: the browser synthesises the
-weight and thickens the deco strokes. Do not use it below 48px, and do not use it for
-prose, labels, or figures.
-
-Do not mix two sans families. Do not add a serif family for "elegance". Do not add a
-monospace family. Bayer built the Universal alphabet to remove a second voice from the
-page, and this product obeys that. Set a mark number, a serial number, a class code, or
-raw JSON in the same family at weight 500, with `font-variant-numeric: tabular-nums` and
-0.06em to 0.1em of tracking. The tabular figures give you the column alignment that a
-monospace family gives you, and the tracking marks the text as machine data.
-
-A geometric face needs more air than a grotesk. Track display sizes at -0.02em, not
--0.04em, and set uppercase labels at 12px and 0.14em, because circular letterforms lose
-legibility faster than grotesk ones as the size drops.
+Load them from Google Fonts with `display=swap`. Do not add a third family. Do not add a
+monospace family for figures. Set figures with `font-variant-numeric: tabular-nums
+lining-nums` in `--sans`.
 
 ### 3.2 Type scale
 
-Use a large step ratio. A small ratio produces the flat, undesigned look.
-
-| Token | Size | Weight | Tracking | Use |
-|---|---|---|---|---|
-| `display` | 96-160px | 700 | -0.04em | One per page. The page name. |
-| `h1` | 56px | 700 | -0.03em | Section opener |
-| `h2` | 32px | 700 | -0.02em | Sub-section |
-| `h3` | 20px | 600 | -0.01em | Card title |
-| `body` | 16px | 400 | 0 | Paragraphs |
-| `small` | 13px | 400 | 0 | Metadata, captions |
-| `label` | 11px | 600 | 0.12em | Uppercase eyebrow, nav, table header |
+| Token | Family | Size | Weight | Tracking | Line height | Use |
+|---|---|---|---|---|---|---|
+| `headline` | cond | `clamp(52px, 15.5vw, 224px)` | 700 | -0.02em | 0.82 | The landing question, uppercase |
+| `headline-outline` | cond | `clamp(34px, 9.6vw, 138px)` | 700 | -0.01em | 0.9 | The second line of the headline, paper fill, 2px ink stroke |
+| `verdict` | cond | `clamp(54px, 10vw, 148px)` | 700 | -0.02em | 0.85 | The finding on the plate |
+| `mark-input` | cond | `clamp(34px, 6vw, 64px)` | 700 | 0.02em | 1.05 | The mark field, uppercase |
+| `mark` | cond | `clamp(30px, 3.4vw, 44px)` | 700 | 0.01em | 1.05 | The mark on the plate, uppercase |
+| `button` | cond | `clamp(20px, 3.2vw, 30px)` | 700 | 0.1em | 1 | Primary action, uppercase |
+| `marquee` | cond | `clamp(20px, 2.4vw, 30px)` | 700 | 0.04em | 1 | The spectrum band, uppercase |
+| `h2` | cond | 32px | 700 | -0.01em | 1.1 | Part title, uppercase |
+| `row-title` | cond | 18px to 22px | 700 | 0 | 1.2 | Tier name, source title, a large value, uppercase |
+| `quote` | sans | `clamp(18px, 2vw, 23px)` | 400 | 0 | 1.4 | The cited passage |
+| `input` | sans | 19px | 400 | 0 | 1.3 | Text field, select |
+| `body` | sans | 16px | 400 | 0 | 1.5 | Paragraphs, values |
+| `small` | sans | 13px to 14px | 400 | 0 | 1.5 | Hints, footer, secondary values |
+| `label` | cond | 12px | 700 | 0.16em | 1.3 | Uppercase eyebrow, row label, cite |
+| `brand` | cond | 15px | 700 | 0.2em | 1 | The product name in the header |
+| `status` | cond | 11px | 700 | 0.14em | 1 | Rail status word, uppercase |
 
 Rules:
 
-- Set tight tracking on large type. Large text at default tracking looks loose and weak.
-- Set wide tracking on the small uppercase label only.
-- Set the line height to 0.95 for display type, 1.15 for headings, and 1.55 for body text.
-- Never set body text below 14px.
+- Set every `--cond` element in uppercase. Set every `--sans` element in sentence case.
+- Set the headline with `overflow-wrap: anywhere` so that it cannot push the viewport wide.
+- Hold body text between 45 and 75 characters per line. Use `max-width: 66ch` on a
+  paragraph.
+- Never set body text below 13px.
+- Align text left. Do not justify, and do not center a paragraph.
 
-### 3.3 Line length and alignment
+### 3.3 Type as image
 
-Hold body text between 45 and 75 characters per line. Align text left and leave the right
-edge ragged. Do not justify text, and do not center a paragraph of more than two lines.
-
-### 3.4 Type as image
-
-A headline can act as the image. Set the page name at `display` size, break it across lines
-at a deliberate point, and let it fill the top of the screen. This removes the need for a
-decorative hero graphic.
+The headline is the hero. On the landing page it fills the top of the screen in two lines:
+a solid line and an outlined line. On the record page the verdict word does the same job.
+Neither page carries an illustration, an icon set, or a photograph.
 
 ---
 
@@ -144,83 +130,104 @@ decorative hero graphic.
 
 ### 4.1 The base
 
-The base is monochrome. Pure black, pure white, and a small set of true neutral grays. The
-reference shot uses this base with no color at all.
+The base is warm paper and near-black ink. Do not use pure white or pure black.
 
 | Token | Value | Use |
 |---|---|---|
-| `--ink` | `#000000` | Text on light, and dark panel fills |
-| `--paper` | `#FFFFFF` | Page background, text on dark |
-| `--gray-90` | `#111111` | Dark panel, an alternative to pure black |
-| `--gray-60` | `#666666` | Secondary text |
-| `--gray-30` | `#B3B3B3` | Disabled text, hairlines on dark |
-| `--gray-12` | `#E0E0E0` | Hairline rules, table borders |
-| `--gray-04` | `#F5F5F5` | Section band background |
+| `--paper` | `#F1EFE8` | Page background, text on ink |
+| `--ink` | `#0A0A0A` | Text on paper, inverted block fill, rules, buttons |
+| `--rule` | `#0A0A0A` | Hairline rules (alias of `--ink`) |
+| `--gray` | `#6B6A65` | Secondary text on paper, hairlines on ink |
+| `--dim-ink` | `#9A9790` | Secondary text on ink |
+| `--faint` | `#D8D5CC` | Skeleton bars, disabled fills |
 
-Use true neutrals. Do not use a blue-tinted or warm gray; the tint reads as a default UI kit.
-
-### 4.2 The accent
-
-Bauhaus permits the three primaries. Use them as signal, never as decoration.
+### 4.2 The accents
 
 | Token | Value | Meaning |
 |---|---|---|
-| `--red` | `#E63329` | Conflict, refusal, high risk, destructive action |
-| `--blue` | `#0B5FD9` | Link, primary action, information |
-| `--yellow` | `#F5C518` | Caution, pending, needs review |
+| `--yellow` | `#F2C200` | Pending, caution, the active tier, the score pin |
+| `--red` | `#D62015` | Loading, refusal, error, the focus ring, the caret |
+| `--blue` | `#0B3FD9` | Link, primary button hover, the accent rule on a distinctive finding |
 
 Rules:
 
-- Cover no more than 10% of a screen with accent color.
-- Use one accent per view. Two accents fight, and three make a toy.
-- Pair every accent with a word. Never signal state through color alone.
+- Pair every accent with a word. Never show a state through color alone.
+- Yellow fills a block (the notice, the stamp, the active tier row). Red and blue never fill
+  a block larger than a button.
+- Set the record accent rule to `--blue` when the finding is distinctive and to `--red`
+  when it is not distinctive.
+- The marquee colors "Generic" red and "Fanciful" yellow, and nothing else.
 
 ### 4.3 Contrast
 
-Meet WCAG AA at minimum: 4.5:1 for body text and 3:1 for large text. The black-on-white base
-passes with a large margin, so the burden falls on the accent colors and on gray text.
-`--gray-60` on `--paper` gives 5.7:1 and passes. `--gray-30` fails on white; use it on dark
-only.
+Meet WCAG AA at minimum. `--ink` on `--paper` gives 17:1. `--gray` on `--paper` gives
+4.7:1. `--dim-ink` on `--ink` gives 6.8:1. `--yellow` on `--ink` gives 12:1. `--ink` on
+`--yellow` gives 12:1. `--red` on `--ink` gives 3.8:1 and passes only as large text. Do not put `--gray` text on `--ink`, and do not put `--red` text on
+`--ink` below 24px.
+
+### 4.4 Browser chrome
+
+Theme the browser itself.
+
+- `::selection` is `--ink` on `--paper`. Inside an inverted block it is `--paper` on `--ink`.
+- `caret-color` is `--red`.
+- The scrollbar is `--ink` on `--paper`, thin, with a 1px `--ink` rule on the track.
+- `color-scheme: light`. The product ships one theme.
 
 ---
 
-## 5. Layout and grid
+## 5. Layout
 
-### 5.1 The grid
+### 5.1 Margins
 
-Use a 12-column grid with a 24px gutter. Set the page maximum width to 1440px. Set the outer
-margin to 24px on mobile and 64px on desktop.
+Use one margin token, `--m`. Set it to 20px below 900px and to 48px at 900px and above. Every
+full-bleed block pads its content by `--m`. Do not set a page maximum width; the rules run
+edge to edge.
 
 ### 5.2 The spacing scale
 
-Use an 8px base unit. Permitted values: 8, 16, 24, 32, 48, 64, 96, 128, 192.
+Use these values: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32, 40, 44, 48. Vertical
+padding inside a section is 40px to 48px. Padding inside a row is 8px to 22px.
 
-Do not invent an intermediate value. If 32px is too small and 48px is too large, the problem
-is the layout, not the scale.
+### 5.3 Rules and edges
 
-### 5.3 Whitespace
+| Weight | Use |
+|---|---|
+| 1px `--rule` | A row inside a ledger, a table row, a source row |
+| 1px `--gray` | A row inside an inverted block |
+| 2px `--ink` | The header, a section boundary, the form boundary, a bordered box, a button outline |
+| 5px accent | The accent rule under the record bar, the active tier on the frozen scale |
 
-Give a section room. Set the vertical padding between major sections to 96px or more on
-desktop. Bauhaus layouts are not dense; they are ordered. Empty space is a working element
-that groups the content and sets the reading pace.
+Do not use a dotted or dashed border. Do not use a border on a card, because there are no
+cards. Every boundary is a rule between two blocks.
 
 ### 5.4 Composition patterns
 
-Four patterns cover most screens:
+1. **The header strip.** The brand on the left, the nav on the right, each nav item cut by
+   a 2px left rule, a 2px rule below. Hover inverts an item.
+2. **The ledger.** A stack of rows. Each row is a two-column grid: a 190px label column with
+   a 1px right rule, then the value. Below 760px the row stacks.
+3. **The inverted block.** A full-bleed `--ink` block with `--paper` text. The mark row,
+   the plate, the spectrum band, and the cited passage use it.
+4. **The band.** A full-bleed inverted strip that carries one line of large condensed type.
+   The marquee is the moving band. The frozen scale is the measured band.
+5. **The action row.** A two-column grid: the hint on the left, the button on the right,
+   above a 2px rule. Below 760px the row stacks.
+6. **The document.** A 250px sticky rail on the left, the parts on the right. Below 1000px
+   the rail stacks on top.
+7. **The stamp.** A yellow box with a 2px border and a label, rotated -2deg. Use it once,
+   on the landing page, for the "not legal advice" mark.
 
-1. **The block split.** A full-bleed dark panel against a light panel. Split the width 1:2
-   or 2:1, never 1:1.
-2. **The stack.** A `display` headline, a rule, then a two-column body. Used for a section
-   opener.
-3. **The index.** A list of items, one per row, each row a hairline rule with the label on
-   the left and the value on the right. Used for results and metadata.
-4. **The plate.** A single image or screenshot inside a black frame with generous padding.
+### 5.5 Breakpoints
 
-### 5.5 Rules and edges
+| Width | Change |
+|---|---|
+| 640px | Input lines go to two columns |
+| 760px | Ledger rows, the action row, and the close row go to two columns |
+| 900px | `--m` grows to 48px, the deck and the plate go to two columns |
+| 1000px | The rail sticks to the left of the parts |
 
-Use a 1px hairline rule to separate rows. Use a 2px to 4px rule as a section divider or an
-underline for the active navigation item. Do not use a dotted or dashed border except to
-mark a drop zone.
+Test at 390px, 768px, and 1440px.
 
 ---
 
@@ -228,89 +235,151 @@ mark a drop zone.
 
 ### 6.1 Buttons
 
-A button is a rectangle with a 0px radius.
+A button is an `--ink` rectangle with `--paper` text, 0 radius, no border.
 
-- **Primary:** `--ink` fill, `--paper` text. Padding 16px 32px. Weight 600.
-- **Secondary:** transparent fill, 1px `--ink` border, `--ink` text.
-- **Destructive:** `--red` fill, `--paper` text.
-- **Hover:** invert the fill and the text color. Do not fade the opacity.
-- **Focus:** a 2px `--ink` outline, offset 2px. Never remove the focus ring.
+- **Primary:** `button` type, padding 22px 40px, full width of its cell, the label on the
+  left and an arrow on the right.
+- **Hover:** `--blue` fill. **Active:** `--red` fill.
+- **Disabled:** `--paper` fill, `--gray` text, a 2px inset `--gray` ring, `cursor:
+  not-allowed`.
+- **On ink** (the record bar): transparent fill, `--paper` text, a 1px `--paper` bottom
+  rule. Hover inverts to `--paper` fill and `--ink` text.
+- **Focus:** the global ring (see 6.7).
 
-Label a button with a verb: "Check mark", "Export report". Do not label it "Submit" or "OK".
+Label a button with a verb: "Open record", "Check another name". Do not label it "Submit".
 
 ### 6.2 Inputs
 
-Draw an input as a bottom rule only, 1px `--gray-30`, or as a full 1px `--ink` box. Choose
-one pattern and hold it. On focus, thicken the rule to 2px and turn it `--ink`. Place the
-label above the field, in the `label` token, uppercase.
+An input has no box. It has a 2px `--ink` bottom rule, transparent fill, 0 radius, and
+19px `--sans` text. Hover tints the fill 5% ink. Focus shows the global ring at 3px offset.
+The placeholder is `--gray`.
 
-### 6.3 Cards
+The mark input sits in the inverted row. It is `--cond`, uppercase, `mark-input` size,
+`--paper` text on `--ink`, with a 2px `--paper` bottom rule. Hover tints the fill 8% paper.
 
-A card is a rectangle with a 1px `--gray-12` border or a `--gray-04` fill. A card never has
-a shadow. Do not nest a card inside a card.
+A select carries the same rule and a two-triangle arrow drawn with `background-image`.
+Do not use the native arrow.
 
-### 6.4 Tables
+Place the label in the row's left column, in the `label` token. Mark an optional field with
+"Optional" in `--sans` 12px `--gray` under the label.
 
-Tables suit this product, because a trademark check produces rows of evidence. Use a hairline
-rule under each row, an uppercase `label` header, and the `.mono` class for the serial
-number and the class code. Align numbers right and text left.
+### 6.3 The notice
 
-### 6.5 Images
+A full-bleed `--yellow` strip with a 1px top rule. It holds a bordered label ("Read this")
+and one paragraph at 14px. Use it for a fact the user must read before they act, such as
+the free-tier limit.
 
-Render photographs in grayscale by default. Crop them into hard rectangles or a full circle.
-Do not round the corners, and do not apply a gradient overlay.
+### 6.4 The marquee
+
+A full-bleed inverted band. The track holds the five tier names twice and moves left by 50%
+over 30 seconds, linear, infinite. "Generic" is `--red` and "Fanciful" is `--yellow`. The
+band carries an `aria-label`. The track is `aria-hidden`. Under `prefers-reduced-motion:
+reduce` the animation stops and the first five names stand still.
+
+### 6.5 The frozen scale
+
+The record page shows the same band, stopped. The track is a five-column grid with the
+columns sized to the tier ranges: 28fr, 22fr, 20fr, 18fr, 12fr. Each cell shows the tier
+name and the range. The tier that holds the score has a 5px `--yellow` top rule, a
+`--yellow` name, and a `#1c1c1c` fill. A 2px `--yellow` pin sits under the track at the
+score position with the words "This mark".
+
+### 6.6 The tier table
+
+One row per tier: a 12px glyph, the name, the range, then the note. The glyph is a 12px
+square with a 2px `--ink` border. The row that holds the score fills `--yellow`, extends
+10px past the text edge on both sides, and fills the glyph solid. Its label reads
+"Fanciful — this mark".
+
+### 6.7 Focus
+
+`:focus-visible` is a 3px `--red` outline with a 2px offset. Inside an inverted block it is
+`--yellow`. Never remove the ring.
+
+### 6.8 The attribution bar
+
+A split axis. The track is a two-column grid, 14px tall, with a 1px `--ink` border and a
+2px `--ink` center rule. A positive value fills `--ink` to the right. A negative value draws
+a 1px outlined box to the left. The sign reads from the fill and from the side, so a user
+who cannot see color reads it.
+
+### 6.9 The cited passage
+
+An inverted block at `quote` size, padded 34px 40px, with the source in the `label` token
+in `--dim-ink` below it. The rows that were retrieved but not cited follow as a ledger.
+
+### 6.10 The pending block
+
+A box with a 2px `--ink` border. A `--yellow` label sits at the top with the status and the
+wait ("Writing — about 20 seconds"). One paragraph explains what will arrive. Skeleton
+bars in `--faint` show the shape of the missing text. Do not use a spinner.
+
+### 6.11 The rail
+
+A 250px sticky column with a 2px right rule. It holds two ledgers: the record metadata
+and the parts. Each part link shows a status word in the `status` token: Ready, Queued,
+Loading, or Unavailable. The current part carries a 6px `--red` square in the left gutter.
+Loading is `--red`. Hover inverts the link.
+
+### 6.12 The record bar
+
+A full-bleed `--ink` strip at 11px vertical padding. It holds the brand, "Not legal advice",
+the account email in `--dim-ink`, and the account buttons. A 5px accent rule sits under
+it.
 
 ---
 
 ## 7. Motion
 
-Motion states a fact; it does not entertain.
-
-- Duration: 150ms for a hover or a focus change, 250ms for a panel or a modal.
-- Easing: `cubic-bezier(0.2, 0, 0, 1)`.
-- Permitted properties: `transform`, `opacity`, `border-color`, `background-color`.
-- Move an element along one axis at a time. Do not bounce, do not spin, and do not stagger a
-  list by more than 40ms per item.
-- Obey `prefers-reduced-motion: reduce`. Remove all transforms and keep the opacity change.
+- The marquee is the only continuous animation. 30 seconds, linear, infinite.
+- Hover and focus change color with no transition. The change is instant.
+- `scroll-behavior: smooth` on the record page, for the rail links.
+- Obey `prefers-reduced-motion: reduce`. Stop the marquee. Set `scroll-behavior: auto`.
+- Do not fade an element in, do not slide a panel, and do not stagger a list.
 
 ---
 
 ## 8. Anti-patterns
 
-Do not use any of the following. Each one breaks the language.
-
 | Anti-pattern | Reason |
 |---|---|
-| Purple-to-blue gradient | The default AI and SaaS look. It is decoration. |
-| Soft drop shadow on a card | It fakes a material that the web does not have. |
-| 8px rounded corner everywhere | It removes the geometric edge. |
-| Glassmorphism, blur, and translucency | It lowers contrast and hides the grid. |
-| A decorative emoji or a 3D illustration | It carries no information. |
-| Centered body paragraphs | The ragged left edge slows reading. |
-| Two sans-serif families | It splits the voice of the page. |
-| A color-only status chip | A color-blind user cannot read it. |
-| A middle type scale (18/22/28px) | It removes the hierarchy. |
+| Any corner radius | It softens the edge. |
+| Any box shadow | It fakes depth. |
+| Pure white or pure black | It reads as a default. The paper is warm. |
+| A gradient, a blur, or translucency | It hides the structure. |
+| A card with a border | There are no cards. Use rules between blocks. |
+| A third font family | It splits the voice. |
+| A spinner or a progress ring | A skeleton and a word say more. |
+| A transition on hover | Brutalism does not ease. |
+| A color-only status | A color-blind user cannot read it. |
+| A middle type size (24px to 48px) for a heading | It flattens the hierarchy. |
+| A decorative icon or emoji | It carries no information. |
+| A second moving element | The marquee is the one. |
 
 ---
 
 ## 9. Application to Mark Checker
 
-The product reports a trademark conflict analysis. The analysis is evidence, so the interface
-must read as a document, not as a dashboard.
+The product answers one question and then shows its work. The two states share one world.
 
-- **The search page.** Set the mark name at `display` size as the hero. Place the input
-  under it as a single bottom-rule field. Show nothing else.
-- **The result page.** Open with a `display` verdict word: "CLEAR", "CAUTION", or
-  "CONFLICT". Set the verdict word in `--ink` and put the matching accent color on a 4px
-  rule above it.
-- **The evidence list.** Use the index pattern. One row per cited mark. Show the serial
-  number in the `.mono` class on the left, the mark name in `h3` in the middle, and the similarity
-  score on the right.
-- **The citation.** Set a quoted TTAB or TMEP passage inside a `--ink` panel with `--paper`
-  text, at 20px, with generous padding. This is the black quote panel from the reference
-  shot.
-- **The loading state.** Show a 2px `--ink` progress rule that grows from the left. Do not
-  use a spinner, and do not use a skeleton card.
+- **The landing state.** The header strip. The headline "IS YOUR NAME / REGISTRABLE?" with
+  the second line outlined. The deck with the stamp and one paragraph. The marquee. The
+  ledger form: mark (inverted), goods, NICE class, translation (optional), pseudo mark
+  (optional). The yellow notice about the free tier. The action row with the hint and
+  "Open record →". The footer.
+- **The record state.** The record bar and the accent rule. The plate: the finding on the
+  left, the subject ledger on the right, with Confidence "Pending" in `--yellow` until stage
+  three returns. The frozen scale with the pin at the score. The document: the rail on the
+  left, the five parts on the right. Part 01 the tier table. Part 02 the attribution bars.
+  Part 03 the cited passage and the retrieved rows. Part 04 the pending block while the
+  assessment writes. Part 05 the input ledger. The close row with "Check another name →".
+  The footer.
+- **Partial is normal.** Stage one returns first. The plate, the scale, and Parts 01, 02,
+  and 05 render at once. Parts 03 and 04 show their status in the rail and a pending block
+  in place until they return. An unavailable part keeps its slot and says "Unavailable".
+- **The error state.** A refusal (a 429, a billing error, a model error) is a fact. Show it
+  in the pending block's slot with a `--red` label and the words the user needs. Do not
+  hide the part.
 
 ---
 
@@ -318,13 +387,16 @@ must read as a document, not as a dashboard.
 
 Check every UI change against this list:
 
-- [ ] Every corner radius is 0px, or the element is an avatar or a status dot.
-- [ ] No element has a box shadow.
-- [ ] The page has exactly one `display` headline.
-- [ ] Every spacing value comes from the 8px scale.
-- [ ] Accent color covers less than 10% of the screen.
-- [ ] Every state has a word, not only a color.
+- [ ] Every corner radius is 0.
+- [ ] No element has a box shadow, a gradient, or a blur.
+- [ ] The page uses `--paper` and `--ink`, not white and black.
+- [ ] Only Archivo and Archivo Narrow load.
+- [ ] Every `--cond` element is uppercase.
+- [ ] The page has one hero: the headline or the verdict.
+- [ ] Every state has a word next to its color.
+- [ ] The rules are 1px, 2px, or 5px, and the 5px rule is an accent.
 - [ ] Body text contrast is 4.5:1 or better.
-- [ ] Every interactive element shows a visible focus ring.
-- [ ] The layout holds at 320px, 768px, and 1440px width.
-- [ ] `prefers-reduced-motion` removes the transforms.
+- [ ] Every interactive element shows the 3px focus ring.
+- [ ] The marquee is the only continuous animation, and it stops under reduced motion.
+- [ ] The layout holds at 390px, 768px, and 1440px, and nothing scrolls sideways.
+- [ ] `node ~/.claude/skills/impeccable/scripts/detect.mjs --json <file>` returns no findings other than the marquee.

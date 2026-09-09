@@ -8,7 +8,9 @@ import RecordBar from './components/RecordBar'
 import HistoryPanel from './components/HistoryPanel'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
+import RecordScale from './components/RecordScale'
 import MarkForm from './components/MarkForm'
+import Marquee from './components/Marquee'
 import ProgressBar from './components/ui/ProgressBar'
 import PartSpectrum from './components/parts/PartSpectrum'
 import PartBasis from './components/parts/PartBasis'
@@ -194,10 +196,16 @@ export default function App() {
   // against. Do not show it once the user is signed in.
   const canOpenSignIn = status !== 'signed-in'
 
+  // The landing state is the specimen page: masthead, headline, marquee, and
+  // the ledger form. The record state adds the accent rule, the ink record bar,
+  // the plate, and the rail. See docs/DESIGN_PRINCIPLES.md 9.
+  const landing = view === 'check' && !hasActivity
+
   return (
     <div className={`record ${accent}`}>
-      <div className="accent-rule" />
+      {!landing && <div className="accent-rule" />}
       <RecordBar
+        landing={landing}
         status={status}
         email={user?.email}
         onSignIn={() => setSignInOpen(true)}
@@ -216,6 +224,38 @@ export default function App() {
 
       {view === 'history' && <HistoryPanel onSessionExpired={sessionExpired} />}
 
+      {landing && (
+        <>
+          <section className="head">
+            <h1 className="headline">Is your<br />name<em>registrable?</em></h1>
+            <div className="deck">
+              <span className="stamp">First read. Not legal advice</span>
+              <p>
+                A classifier trained on trademark records grades your name on the Abercrombie
+                spectrum, from <b>generic</b> to <b>fanciful</b>, and shows the TMEP sections and
+                TTAB decisions behind the grade. Fill the sheet. Three results arrive in order.
+              </p>
+            </div>
+          </section>
+          <Marquee />
+          <MarkForm
+            form={form}
+            onFieldChange={onFieldChange}
+            error={state.error}
+            loading={loading}
+            onSubmit={handleSubmit}
+            canSubmit={canSubmit}
+            turnstileRef={turnstileRef}
+            onTurnstileToken={setTurnstileToken}
+            turnstileSiteKey={TURNSTILE_SITE_KEY}
+          />
+          <footer className="foot">
+            <span>Mark Checker</span>
+            <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+          </footer>
+        </>
+      )}
+
       {view === 'check' && result && (
         <RecordPlate
           result={result}
@@ -225,32 +265,13 @@ export default function App() {
           explainError={state.explainError}
         />
       )}
+      {view === 'check' && result && <RecordScale score={result.prob_distinctive} />}
 
-      {view === 'check' && (
+      {view === 'check' && hasActivity && (
       <div className="doc">
-        {hasActivity
-          ? <RecordRail meta={meta} parts={parts} current={currentPart} />
-          : (
-            <aside className="rail">
-              <p className="t-small dim">The record opens after you submit a mark.</p>
-            </aside>
-          )}
+        <RecordRail meta={meta} parts={parts} current={currentPart} />
 
         <main className="body">
-          {!hasActivity && (
-            <MarkForm
-              form={form}
-              onFieldChange={onFieldChange}
-              error={state.error}
-              loading={loading}
-              onSubmit={handleSubmit}
-              canSubmit={canSubmit}
-              turnstileRef={turnstileRef}
-              onTurnstileToken={setTurnstileToken}
-              turnstileSiteKey={TURNSTILE_SITE_KEY}
-            />
-          )}
-
           {loading && !result && (
             <ProgressBar
               trackClassName="progress"
@@ -277,15 +298,24 @@ export default function App() {
                 <PartInput formattedInput={result.formatted_input} />
               </section>
 
-              <div style={{ paddingTop: '48px' }}>
-                <button type="button" className="btn btn--secondary" onClick={handleReset}>
-                  Check another name
+              <div className="close">
+                <p>One check at a time. A new record clears this one from the screen, not from your history.</p>
+                <button type="button" className="btn btn--wide" onClick={handleReset}>
+                  Check another name <span className="btn-arrow" aria-hidden="true">→</span>
                 </button>
               </div>
             </>
           )}
         </main>
       </div>
+      )}
+
+      {view === 'check' && result && (
+        <footer className="foot">
+          <span>Mark Checker</span>
+          <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+          <span>Probability, never certainty.</span>
+        </footer>
       )}
     </div>
   )
