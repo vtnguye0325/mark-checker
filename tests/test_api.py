@@ -139,6 +139,7 @@ def _mock_turnstile_client(success: bool):
     httpx's Response.json() and raise_for_status() are synchronous, so we use
     MagicMock for the response object and only AsyncMock for the awaitable post().
     """
+
     async def fake_post(*args, **kwargs):
         resp = MagicMock()
         resp.json.return_value = {"success": success}
@@ -157,6 +158,7 @@ def _mock_turnstile_client(success: bool):
 # dependency is the first gate. Missing/empty token hits the dependency's 403
 # check before Pydantic's 422 can fire (unless TURNSTILE_SECRET is unset, in
 # which case the 503 fires even earlier).
+
 
 def test_analyze_missing_token_returns_403(monkeypatch):
     monkeypatch.setenv("TURNSTILE_SECRET", "dummy-secret")
@@ -198,8 +200,10 @@ def test_analyze_no_secret_disable_turnstile_bypasses(monkeypatch):
 
 def test_analyze_valid_token_returns_200(monkeypatch):
     monkeypatch.setenv("TURNSTILE_SECRET", "dummy-secret")
-    with _mock_turnstile_client(success=True), \
-         patch("mark_checker.api.analyze.analyze_trademark") as mock_analyze:
+    with (
+        _mock_turnstile_client(success=True),
+        patch("mark_checker.api.analyze.analyze_trademark") as mock_analyze,
+    ):
         mock_analyze.return_value = {"analysis": "Test analysis.", "sources": None}
         r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
     assert r.status_code == 200
@@ -233,13 +237,17 @@ def _post_analyze_raising(monkeypatch, exc: Exception):
 
 
 def test_analyze_billing_exhausted_returns_503(monkeypatch):
-    r = _post_analyze_raising(monkeypatch, _rate_limit_error("prepayment credits depleted"))
+    r = _post_analyze_raising(
+        monkeypatch, _rate_limit_error("prepayment credits depleted")
+    )
     assert r.status_code == 503
     assert r.json()["detail"] == "The analysis service is unavailable right now."
 
 
 def test_analyze_daily_quota_returns_429_with_the_daily_message(monkeypatch):
-    r = _post_analyze_raising(monkeypatch, _rate_limit_error("quota: requests per day exceeded"))
+    r = _post_analyze_raising(
+        monkeypatch, _rate_limit_error("quota: requests per day exceeded")
+    )
     assert r.status_code == 429
     assert "today" in r.json()["detail"]
 
@@ -257,3 +265,80 @@ def test_analyze_connection_error_returns_503(monkeypatch):
     )
     r = _post_analyze_raising(monkeypatch, exc)
     assert r.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# POST /llm-assess — a provider failure marks the query row
+# ---------------------------------------------------------------------------
+# The provider error reaches the app-wide handler in core/llm_errors.py, which
+# never sees the session. The route must write analysis_error on its way out,
+# or the row keeps its stage-2 shape and the history page shows the check as
+# pending for good.
+
+
+def test_analyze_provider_error_records_the_failed_stage(monkeypatch):
+    limiter.reset()
+    monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
+    monkeypatch.setenv("DISABLE_TURNSTILE", "true")
+    with (
+        patch(
+            "mark_checker.api.analyze.analyze_trademark",
+            side_effect=_rate_limit_error("too many requests"),
+        ),
+        patch(
+            "mark_checker.api.analyze.update_query_stage", new_callable=AsyncMock
+        ) as mock_stage,
+    ):
+        r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
+
+    assert r.status_code == 429
+    mock_stage.assert_awaited_once()
+    values = mock_stage.await_args.args[3]
+    assert values["analysis"] is None
+    assert "busy" in values["analysis_error"]
+
+
+def test_analyze_runtime_error_records_a_fixed_message(monkeypatch):
+    """The stored message must not carry the internals that the log carries."""
+    # main.py loads the .env that core.auth needs, so import the route module
+    # after it, not at the top of this file.
+    from mark_checker.api.analyze import _RUNTIME_FAILURE_DETAIL
+
+    limiter.reset()
+    monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
+    monkeypatch.setenv("DISABLE_TURNSTILE", "true")
+    with (
+        patch(
+            "mark_checker.api.analyze.analyze_trademark",
+            side_effect=RuntimeError("DEEPSEEK_API_KEY environment variable is not set"),
+        ),
+        patch(
+            "mark_checker.api.analyze.update_query_stage", new_callable=AsyncMock
+        ) as mock_stage,
+    ):
+        r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
+
+    assert r.status_code == 503
+    values = mock_stage.await_args.args[3]
+    assert values["analysis"] is None
+    assert "DEEPSEEK_API_KEY" not in values["analysis_error"]
+    assert values["analysis_error"] == _RUNTIME_FAILURE_DETAIL
+
+
+def test_analyze_success_clears_a_previous_failure(monkeypatch):
+    limiter.reset()
+    monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
+    monkeypatch.setenv("DISABLE_TURNSTILE", "true")
+    with (
+        patch("mark_checker.api.analyze.analyze_trademark") as mock_analyze,
+        patch(
+            "mark_checker.api.analyze.update_query_stage", new_callable=AsyncMock
+        ) as mock_stage,
+    ):
+        mock_analyze.return_value = {"analysis": "Looks strong.", "sources": None}
+        r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
+
+    assert r.status_code == 200
+    values = mock_stage.await_args.args[3]
+    assert values["analysis"] == "Looks strong."
+    assert values["analysis_error"] is None

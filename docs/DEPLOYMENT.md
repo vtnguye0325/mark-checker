@@ -103,6 +103,57 @@ You **do not** need `up --build` every time — only when Docker must **rebuild 
 - **Local `backend/model/`** is not copied into the image (`.dockerignore`); the container
   always uses the prebaked `/opt/model` from Hugging Face.
 
+## Database migrations
+
+Alembic owns the schema. The revisions live in `backend/alembic/versions/`, and
+`init_models` in `backend/mark_checker/core/db.py` upgrades the database to `head` on
+every backend start. A normal deploy needs no manual step: start the stack and the
+backend applies the pending revisions itself.
+
+### The first deploy on an existing database
+
+A database created before Alembic has the tables but no `alembic_version` table. On that
+database `init_models` stamps the baseline revision `0001_baseline` and then runs the
+later revisions, so the backend never tries to rebuild the live tables. The stamp happens
+once and logs `database predates Alembic, stamping 0001_baseline`.
+
+Before that first start, confirm that the live schema matches the baseline. Connect to the
+database and run:
+
+```bash
+docker compose exec postgres psql -U markchecker -d markchecker -c '\d queries'
+```
+
+The baseline holds every column except `analysis_error`. If a column of the baseline is
+missing from the live table, add it by hand before you start the backend, because the
+stamp tells Alembic that the baseline is already applied.
+
+### Add a revision
+
+Run the commands from `backend/` with `DATABASE_URL` set to the database you develop
+against:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "add queries.foo"
+# Read the generated file in alembic/versions/ and correct it.
+alembic upgrade head
+```
+
+Autogenerate compares the models in `mark_checker/core/models.py` against the live
+database, so point `DATABASE_URL` at a database that is already at `head`. An empty
+`upgrade()` body means the models and the schema agree.
+
+### Useful commands
+
+| Command | What it does |
+|---------|--------------|
+| `alembic current` | Print the revision the database is on. |
+| `alembic history` | List the revisions. |
+| `alembic upgrade head --sql` | Print the SQL without touching the database. |
+| `alembic downgrade -1` | Undo the last revision. |
+| `alembic stamp <rev>` | Record a revision as applied without running it. |
+
 ## Exposing to the internet (Cloudflare Tunnel)
 
 Expose the production stack to the public internet without router port forwarding. Traffic

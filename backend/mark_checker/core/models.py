@@ -63,9 +63,12 @@ class Query(Base):
     # Stage 2 result.
     attributions: Mapped[dict | list | None] = mapped_column(JSONB, nullable=True)
 
-    # Stage 3 results.
+    # Stage 3 results. analysis_error holds the user-facing message when the
+    # stage failed, so a row that never got an analysis reads as failed rather
+    # than as still pending. Exactly one of analysis and analysis_error is set.
     analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
     sources: Mapped[dict | list | None] = mapped_column(JSONB, nullable=True)
+    analysis_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     user: Mapped[User] = relationship(back_populates="queries")
 

@@ -61,11 +61,15 @@ function shapeRecord(row) {
   }
   const explainData = Array.isArray(row.attributions) ? { attributions: row.attributions } : null
   const llmData = row.analysis ? { analysis: row.analysis, sources: row.sources ?? null } : null
-  return { result, explainData, llmData }
+  // A saved row never loads, so a missing analysis is either a failure the
+  // backend recorded or a check that predates analysis_error. Only the first
+  // one has a message to show.
+  const llmError = !llmData && row.analysis_error ? row.analysis_error : null
+  return { result, explainData, llmData, llmError }
 }
 
 function DetailView({ row, onBack }) {
-  const { result, explainData, llmData } = shapeRecord(row)
+  const { result, explainData, llmData, llmError } = shapeRecord(row)
   const parts = [
     { id: 'p1', name: 'Spectrum', no: '01', status: 'Ready', present: true },
     { id: 'p2', name: 'Basis', no: '02', status: explainData ? 'Ready' : 'Unavailable', present: true },
@@ -92,7 +96,7 @@ function DetailView({ row, onBack }) {
       <button type="button" className="btn btn--secondary history-back" onClick={onBack}>
         Back to the list
       </button>
-      <RecordPlate result={result} llmData={llmData} llmLoading={false} llmError={null} explainError={null} />
+      <RecordPlate result={result} llmData={llmData} llmLoading={false} llmError={llmError} explainError={null} />
       <div className="doc">
         <RecordRail meta={meta} parts={parts} current={current} />
         <main className="body">
@@ -103,10 +107,10 @@ function DetailView({ row, onBack }) {
             <PartBasis loading={false} data={explainData} error={null} />
           </section>
           <section className="part" id="p3">
-            <PartAuthority loading={false} data={llmData} error={null} explainError={null} />
+            <PartAuthority loading={false} data={llmData} error={llmError} explainError={null} />
           </section>
           <section className="part" id="p4">
-            <PartAction loading={false} data={llmData} error={null} explainError={null} />
+            <PartAction loading={false} data={llmData} error={llmError} explainError={null} />
           </section>
           <section className="part" id="p5">
             <PartInput formattedInput={result.formatted_input} />

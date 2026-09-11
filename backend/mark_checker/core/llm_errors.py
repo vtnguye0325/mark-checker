@@ -7,6 +7,7 @@ mapping on the app, so no route carries a provider string.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 
 import openai
 from fastapi import FastAPI, Request
@@ -44,27 +45,46 @@ def _matches(exc: Exception, markers: tuple[str, ...]) -> bool:
     return any(marker in text for marker in markers)
 
 
-def llm_error_response(exc: openai.APIError) -> JSONResponse:
-    """Map a provider error to the response the frontend reads."""
+@dataclass(frozen=True)
+class LLMErrorDetail:
+    """The mapped form of a provider error.
+
+    A route needs the same ``detail`` text the handler returns, so it can
+    record the failure on the query row before it re-raises. Both read this.
+    """
+
+    status_code: int
+    detail: str
+    retry_after: str | None = None
+
+
+def llm_error_detail(exc: openai.APIError) -> LLMErrorDetail:
+    """Map a provider error to the status and message the frontend reads."""
     if isinstance(exc, openai.RateLimitError):
         if _matches(exc, _BILLING_MARKERS):
             # No balance on the account. This does not clear on a retry, so it
             # is a 503 and an operator alert, not a "try again".
             log.error("analyze: provider billing exhausted — check the API account")
-            return JSONResponse(status_code=503, content={"detail": _UNAVAILABLE})
+            return LLMErrorDetail(503, _UNAVAILABLE)
         if _matches(exc, _DAILY_QUOTA_MARKERS):
             log.warning("analyze: provider daily quota reached")
-            return JSONResponse(status_code=429, content={"detail": _DAILY_QUOTA})
+            return LLMErrorDetail(429, _DAILY_QUOTA)
         retry_after = _retry_after_seconds(exc)
         log.warning("analyze: provider rate limit, retry-after=%s", retry_after)
-        return JSONResponse(
-            status_code=429,
-            content={"detail": _BUSY},
-            headers={"Retry-After": retry_after} if retry_after else None,
-        )
+        return LLMErrorDetail(429, _BUSY, retry_after)
     # Covers APITimeoutError and APIConnectionError, both subclasses.
     log.error("analyze: provider error: %s", exc)
-    return JSONResponse(status_code=503, content={"detail": _UNAVAILABLE})
+    return LLMErrorDetail(503, _UNAVAILABLE)
+
+
+def llm_error_response(exc: openai.APIError) -> JSONResponse:
+    """Map a provider error to the response the frontend reads."""
+    mapped = llm_error_detail(exc)
+    return JSONResponse(
+        status_code=mapped.status_code,
+        content={"detail": mapped.detail},
+        headers={"Retry-After": mapped.retry_after} if mapped.retry_after else None,
+    )
 
 
 def register_llm_error_handler(app: FastAPI) -> None:

@@ -1,8 +1,8 @@
 """
 Quick smoke test — edit CASES below and run:
 
-    python trademark_app/scripts/smoke_test.py
-    python trademark_app/scripts/smoke_test.py --verbose
+    python scripts/smoke_test.py
+    python scripts/smoke_test.py --verbose
 
 Each case is (formatted_input, expected_label).
 formatted_input is the full dot-separated bert_input_processed string.
@@ -12,12 +12,8 @@ expected_label is 'distinctive' or 'not_distinctive'.
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
-
-from app.services.model_service import predict_one
+from mark_checker.services.model_service import predict_one
 
 # ---------------------------------------------------------------------------
 # Edit this list to test the cases you care about.

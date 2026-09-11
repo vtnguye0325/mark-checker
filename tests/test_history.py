@@ -40,6 +40,7 @@ def _row(**over):
         attributions=[{"field": "Mark", "attribution": 0.2}],
         analysis="Looks strong.",
         sources={"tmep": [], "ttab": []},
+        analysis_error=None,
     )
     base.update(over)
     return SimpleNamespace(**base)

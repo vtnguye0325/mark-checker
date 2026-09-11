@@ -51,6 +51,7 @@ class HistoryRecord(BaseModel):
     attributions: list | dict | None = None
     analysis: str | None = None
     sources: list | dict | None = None
+    analysis_error: str | None = None
 
 
 @router.get("", response_model=list[HistoryItem])
@@ -138,4 +139,5 @@ async def get_history_record(
         attributions=row.attributions,
         analysis=row.analysis,
         sources=row.sources,
+        analysis_error=row.analysis_error,
     )
