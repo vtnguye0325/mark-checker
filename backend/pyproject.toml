@@ -29,7 +29,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 # Prompt template with intentionally long lines sent to the LLM
-"mark_checker/services/llm_service.py" = ["E501", "RUF001"]
+"mark_checker/services/analysis/prompts.py" = ["E501", "RUF001"]
 # NICE class descriptions are government-defined data strings, not code
 "mark_checker/services/text_formatter.py" = ["E501"]
 

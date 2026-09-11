@@ -14,7 +14,11 @@ Install backend dependencies:
 ```bash
 cd backend
 pip install -r requirements.txt
+pip install --no-deps -e .
 ```
+
+The editable install puts the `mark_checker` package on the path, so every
+import resolves the same way in Docker, in CI and in the local virtualenv.
 
 `requirements.txt` installs `torch`, `transformers`, `huggingface_hub`, `accelerate`,
 `fastapi`, `uvicorn`, `nltk`, `openai`, `slowapi`, `chromadb`, and supporting libraries.
@@ -23,7 +27,7 @@ pip install -r requirements.txt
 
 ```bash
 cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn mark_checker.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The server starts at `http://localhost:8000`. The model loads at worker startup (~5–10 s on
@@ -78,28 +82,44 @@ mark-checker/
 ├── .env.example                 # Copy to .env for Docker (HF_MODEL_ID, etc.)
 ├── backend/
 │   ├── Dockerfile
-│   ├── app/
+│   ├── pyproject.toml           # The mark_checker package; pip install -e backend
+│   ├── mark_checker/
 │   │   ├── main.py              # FastAPI app, CORS, rate limiter, /health, lifespan warm-up
-│   │   ├── limiter.py           # Shared slowapi Limiter (per-IP, X-Forwarded-For aware)
-│   │   ├── turnstile.py         # Cloudflare Turnstile verify dependency for /llm-assess
-│   │   ├── routes/
+│   │   ├── api/
 │   │   │   ├── predict.py       # POST /ml-predict
 │   │   │   ├── explain.py       # POST /llm-explain
-│   │   │   └── analyze.py       # POST /llm-assess
-│   │   └── services/
-│   │       ├── model_service.py # ModelHandle, predict_one(), explain_one()
-│   │       ├── llm_service.py   # DeepSeek analysis + RAG doctrine retrieval
-│   │       └── text_formatter.py# format_mark() → FormattedMark{.text, .fields}
-│   ├── rag/                     # RAG layer — grounds LLM analysis in legal doctrine
-│   │   ├── embedder.py          # bge-base-en-v1.5, local or HF Inference API
-│   │   ├── store.py             # ChromaDB PersistentClient, tmep + ttab + statute collections
-│   │   ├── agent.py             # DeepSeek tool-calling loop → targeted doctrine queries
-│   │   ├── retriever.py         # run agent → collect chunks → format_context()
-│   │   └── ingest/
-│   │       ├── tmep_loader.py   # Parse TMEP zip at section boundaries
-│   │       ├── ttab_loader.py   # Parse TTAB bulk data, filter ex parte decisions
-│   │       ├── lanham_loader.py # Parse the Lanham Act / 37 CFR PDF
-│   │       └── landmark_cases.json  # Seeded landmark court opinions
+│   │   │   ├── analyze.py       # POST /llm-assess
+│   │   │   ├── auth.py          # POST /auth/google, session cookie
+│   │   │   └── history.py       # GET /history
+│   │   ├── schemas/
+│   │   │   └── analysis.py      # Request and response models for the three check routes
+│   │   ├── core/                # No import of api/, services/ or rag/ from here
+│   │   │   ├── auth.py          # Google ID token check, SessionUser, current_user
+│   │   │   ├── db.py            # Async engine, AsyncSessionLocal, Base, init_models()
+│   │   │   ├── models.py        # User and Query ORM classes
+│   │   │   ├── limiter.py       # Shared slowapi Limiter (per-IP, X-Forwarded-For aware)
+│   │   │   ├── llm_client.py    # Provider client, LLM_MODEL, get_llm_client()
+│   │   │   ├── llm_errors.py    # openai.APIError -> HTTP response, registered on the app
+│   │   │   └── turnstile.py     # Cloudflare Turnstile verify dependency for /llm-assess
+│   │   ├── services/
+│   │   │   ├── model_service.py # ModelHandle, predict_one(), explain_one()
+│   │   │   ├── query_store.py   # update_query_stage()
+│   │   │   ├── text_formatter.py# format_mark() → FormattedMark{.text, .fields}
+│   │   │   └── analysis/        # The analysis stage
+│   │   │       ├── __init__.py  # analyze_trademark() — the only public name
+│   │   │       ├── prompts.py   # System prompt, user template, doctrine section
+│   │   │       ├── tiers.py     # _confidence_tier(), _field_value()
+│   │   │       └── doctrine.py  # _retrieve_doctrine() — best-effort RAG context
+│   │   └── rag/                 # RAG layer — grounds LLM analysis in legal doctrine
+│   │       ├── embedder.py      # bge-base-en-v1.5, local or HF Inference API
+│   │       ├── store.py         # ChromaDB PersistentClient, tmep + ttab + statute collections
+│   │       ├── agent.py         # Tool-calling loop → targeted doctrine queries
+│   │       ├── retriever.py     # run agent → collect chunks → format_context()
+│   │       └── ingest/
+│   │           ├── tmep_loader.py   # Parse TMEP zip at section boundaries
+│   │           ├── ttab_loader.py   # Parse TTAB bulk data, filter ex parte decisions
+│   │           ├── lanham_loader.py # Parse the Lanham Act / 37 CFR PDF
+│   │           └── landmark_cases.json  # Seeded landmark court opinions
 │   ├── model/                   # Fine-tuned weights (local dev only)
 │   └── scripts/
 │       └── build_rag_index.py

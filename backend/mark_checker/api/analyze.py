@@ -11,7 +11,7 @@ from mark_checker.core.db import get_session
 from mark_checker.core.limiter import ANALYZE_IP_LIMIT, ANALYZE_USER_LIMIT, _session_key, limiter
 from mark_checker.core.turnstile import verify_turnstile
 from mark_checker.schemas.analysis import AnalyzeRequest, AnalyzeResponse
-from mark_checker.services.llm_service import analyze_trademark
+from mark_checker.services.analysis import analyze_trademark
 from mark_checker.services.query_store import update_query_stage
 
 log = logging.getLogger(__name__)
