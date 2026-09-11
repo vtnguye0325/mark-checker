@@ -13,13 +13,18 @@ Usage:
 import argparse
 from pathlib import Path
 
-_ROOT = Path(__file__).parent.parent
-
-from mark_checker.rag.store import get_tmep_collection, get_ttab_collection, get_statute_collection, reset_collections
 from mark_checker.rag.embedder import embed_documents
-from mark_checker.rag.ingest.tmep_loader import load_tmep_chunks
-from mark_checker.rag.ingest.ttab_loader import load_ttab_chunks, load_landmark_chunks
 from mark_checker.rag.ingest.lanham_loader import load_lanham_chunks
+from mark_checker.rag.ingest.tmep_loader import load_tmep_chunks
+from mark_checker.rag.ingest.ttab_loader import load_landmark_chunks, load_ttab_chunks
+from mark_checker.rag.store import (
+    get_statute_collection,
+    get_tmep_collection,
+    get_ttab_collection,
+    reset_collections,
+)
+
+_ROOT = Path(__file__).parent.parent
 
 LANDMARK_JSON = _ROOT / "backend/mark_checker/rag/ingest/landmark_cases.json"
 BATCH_SIZE = 64

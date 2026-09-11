@@ -7,7 +7,7 @@ package was restructured to remove. Fail the build when that happens.
 import ast
 from pathlib import Path
 
-_PACKAGE = Path(__file__).resolve().parents[1] / "backend" / "mark_checker"
+_PACKAGE = Path(__file__).resolve().parents[2] / "backend" / "mark_checker"
 
 # layer -> the layers it must never import
 _FORBIDDEN = {

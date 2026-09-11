@@ -10,40 +10,13 @@ from __future__ import annotations
 
 import socket
 import uuid
-from datetime import UTC, datetime
-from types import SimpleNamespace
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 
-from mark_checker.main import app  # noqa: I001  (loads .env before mark_checker.core.auth reads SESSION_SECRET)
 from mark_checker.core.auth import SessionUser, current_user
 from mark_checker.core.db import get_session
-
-_client = TestClient(app)
-
-
-def _row(**over):
-    base = dict(
-        id=uuid.uuid4(),
-        user_id=uuid.uuid4(),
-        created_at=datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC),
-        mark="ACME",
-        description="widgets",
-        nice_class=9,
-        translation="",
-        pseudo_mark="",
-        label="distinctive",
-        prob_distinctive=0.81,
-        formatted_input="ACME | widgets",
-        attributions=[{"field": "Mark", "attribution": 0.2}],
-        analysis="Looks strong.",
-        sources={"tmep": [], "ttab": []},
-        analysis_error=None,
-    )
-    base.update(over)
-    return SimpleNamespace(**base)
+from mark_checker.main import app
 
 
 class _Result:
@@ -100,75 +73,75 @@ def user_id():
     # The autouse conftest fixture pops the key after this; nothing to restore.
 
 
-def test_list_returns_summary_fields(user_id):
-    rows = [_row(user_id=user_id), _row(user_id=user_id)]
+def test_list_returns_summary_fields(client, history_row, user_id):
+    rows = [history_row(user_id=user_id), history_row(user_id=user_id)]
     app.dependency_overrides[get_session] = _session_returning(rows)
-    resp = _client.get("/history")
+    resp = client.get("/history")
     assert resp.status_code == 200
     body = resp.json()
     assert len(body) == 2
     assert set(body[0]) == {"id", "created_at", "mark", "nice_class", "label", "prob_distinctive"}
 
 
-def test_list_caps_limit_at_100(user_id):
+def test_list_caps_limit_at_100(client, user_id):
     app.dependency_overrides[get_session] = _session_returning([])
-    assert _client.get("/history?limit=500").status_code == 422
-    assert _client.get("/history?limit=100").status_code == 200
+    assert client.get("/history?limit=500").status_code == 422
+    assert client.get("/history?limit=100").status_code == 200
 
 
 @pytest.mark.parametrize("exc", DB_DOWN_ERRORS, ids=lambda e: type(e).__name__)
-def test_list_database_down_returns_503(user_id, exc):
+def test_list_database_down_returns_503(client, user_id, exc):
     app.dependency_overrides[get_session] = _session_returning([], raises=exc)
-    resp = _client.get("/history")
+    resp = client.get("/history")
     assert resp.status_code == 503
     assert resp.json()["detail"] == "History is unavailable right now."
 
 
 @pytest.mark.parametrize("exc", DB_DOWN_ERRORS, ids=lambda e: type(e).__name__)
-def test_record_database_down_returns_503(user_id, exc):
+def test_record_database_down_returns_503(client, user_id, exc):
     app.dependency_overrides[get_session] = _session_returning([], raises=exc)
-    resp = _client.get(f"/history/{uuid.uuid4()}")
+    resp = client.get(f"/history/{uuid.uuid4()}")
     assert resp.status_code == 503
     assert resp.json()["detail"] == "History is unavailable right now."
 
 
-def test_list_filters_by_caller_user_id(user_id):
+def test_list_filters_by_caller_user_id(client, user_id):
     """The user_id filter must be in the SQL, not applied after the fetch."""
     seen = []
     app.dependency_overrides[get_session] = _session_returning([], sink=seen)
-    assert _client.get("/history").status_code == 200
+    assert client.get("/history").status_code == 200
     sql = str(seen[0].compile(compile_kwargs={"literal_binds": True}))
     assert "user_id" in sql
     assert user_id.hex in sql.replace("-", "")
 
 
-def test_record_filters_by_caller_user_id(user_id):
+def test_record_filters_by_caller_user_id(client, history_row, user_id):
     seen = []
-    row = _row(user_id=user_id)
+    row = history_row(user_id=user_id)
     app.dependency_overrides[get_session] = _session_returning([row], sink=seen)
-    assert _client.get(f"/history/{row.id}").status_code == 200
+    assert client.get(f"/history/{row.id}").status_code == 200
     sql = str(seen[0].compile(compile_kwargs={"literal_binds": True}))
     assert "user_id" in sql
     assert user_id.hex in sql.replace("-", "")
 
 
-def test_record_returns_full_row(user_id):
-    row = _row(user_id=user_id)
+def test_record_returns_full_row(client, history_row, user_id):
+    row = history_row(user_id=user_id)
     app.dependency_overrides[get_session] = _session_returning([row])
-    resp = _client.get(f"/history/{row.id}")
+    resp = client.get(f"/history/{row.id}")
     assert resp.status_code == 200
     body = resp.json()
     assert body["analysis"] == "Looks strong."
     assert body["attributions"] == [{"field": "Mark", "attribution": 0.2}]
 
 
-def test_record_foreign_or_missing_returns_404(user_id):
+def test_record_foreign_or_missing_returns_404(client, user_id):
     app.dependency_overrides[get_session] = _session_returning([])
-    resp = _client.get(f"/history/{uuid.uuid4()}")
+    resp = client.get(f"/history/{uuid.uuid4()}")
     assert resp.status_code == 404
 
 
-def test_record_bad_uuid_returns_404(user_id):
-    app.dependency_overrides[get_session] = _session_returning([_row()])
-    resp = _client.get("/history/not-a-uuid")
+def test_record_bad_uuid_returns_404(client, history_row, user_id):
+    app.dependency_overrides[get_session] = _session_returning([history_row()])
+    resp = client.get("/history/not-a-uuid")
     assert resp.status_code == 404

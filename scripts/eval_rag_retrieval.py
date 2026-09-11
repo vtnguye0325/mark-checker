@@ -245,7 +245,7 @@ def run_custom_query(query: str) -> None:
 def print_collection_stats() -> None:
     tmep = get_tmep_collection()
     ttab = get_ttab_collection()
-    print(f"\n=== COLLECTION STATS ===")
+    print("\n=== COLLECTION STATS ===")
     print(f"  tmep collection: {tmep.count()} docs")
     print(f"  ttab collection: {ttab.count()} docs")
 
@@ -277,7 +277,7 @@ def main() -> None:
     passed, total = run_reachability()
     print(f"\n{'═'*60}")
     print(f"  Reachability: {passed}/{total} key sections surfaced in top-5")
-    print(f"  (run with --spot for the model→agent inspection)")
+    print("  (run with --spot for the model→agent inspection)")
     print(f"{'═'*60}")
 
 
