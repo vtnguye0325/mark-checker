@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useScrollSpy } from '../hooks/useScrollSpy'
+import * as api from '../lib/api'
 import RecordPlate from './RecordPlate'
 import RecordRail from './RecordRail'
 import PartSpectrum from './parts/PartSpectrum'
@@ -10,34 +11,15 @@ import PartInput from './parts/PartInput'
 
 const LIST_LIMIT = 50
 
-// GET /history and GET /history/{id}. Both filter by the session user on the
-// server, so this component never sends an id it owns; it only renders what
-// comes back. A 401 means the session lapsed; a 429 means the per-IP rate limit;
-// a 503 means Postgres is down.
-async function getJSON(url, signal) {
-  const resp = await fetch(url, { credentials: 'include', signal })
-  if (resp.status === 401) {
-    const err = new Error('Sign in again to see your history.')
-    err.code = 401
-    throw err
-  }
-  if (resp.status === 429) {
-    throw new Error('Too many requests. Wait a moment and try again.')
-  }
-  if (!resp.ok) {
-    let detail = 'History is unavailable right now.'
-    try {
-      // FastAPI validation errors send `detail` as a list of objects; only take
-      // a plain string. slowapi sends `error`, not `detail`, so 429 is handled
-      // above and never reaches here.
-      const body = await resp.json()
-      if (typeof body.detail === 'string') detail = body.detail
-    } catch {
-      // keep the default
-    }
-    throw new Error(detail)
-  }
-  return resp.json()
+// Both history routes filter by the session user on the server, so this
+// component never sends an id it owns; it only renders what comes back.
+// Turn the ApiError from lib/api into the line the panel shows. A 401 means the
+// session lapsed, a 429 means the per-IP rate limit, and a 503 means Postgres
+// is down.
+function historyMessage(err) {
+  if (err.status === 401) return 'Sign in again to see your history.'
+  if (err.status === 429) return 'Too many requests. Wait a moment and try again.'
+  return err.detail || 'History is unavailable right now.'
 }
 
 function fmtDate(iso) {
@@ -139,12 +121,13 @@ export default function HistoryPanel({ onSessionExpired }) {
   useEffect(() => {
     mountedRef.current = true
     const ctrl = new AbortController()
-    getJSON(`/history?limit=${LIST_LIMIT}`, ctrl.signal)
+    api
+      .history(LIST_LIMIT, { signal: ctrl.signal })
       .then((data) => mountedRef.current && setItems(data))
       .catch((err) => {
         if (err.name === 'AbortError' || !mountedRef.current) return
-        if (err.code === 401) handle401()
-        setListError(err.message)
+        if (err.status === 401) handle401()
+        setListError(historyMessage(err))
       })
     return () => {
       mountedRef.current = false
@@ -156,7 +139,8 @@ export default function HistoryPanel({ onSessionExpired }) {
     const myReq = ++reqRef.current
     setDetailError(null)
     setDetailLoading(true)
-    getJSON(`/history/${id}`)
+    api
+      .historyRecord(id)
       .then((row) => {
         if (myReq !== reqRef.current || !mountedRef.current) return
         setSelected(row)
@@ -164,8 +148,8 @@ export default function HistoryPanel({ onSessionExpired }) {
       })
       .catch((err) => {
         if (myReq !== reqRef.current || !mountedRef.current) return
-        if (err.code === 401) handle401()
-        setDetailError(err.message)
+        if (err.status === 401) handle401()
+        setDetailError(historyMessage(err))
       })
       .finally(() => {
         if (myReq === reqRef.current && mountedRef.current) setDetailLoading(false)
