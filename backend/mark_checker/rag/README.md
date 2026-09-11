@@ -86,7 +86,7 @@ The Abercrombie spectrum sections (§§1209–1209.04) are the primary retrieval
 ## Files
 
 ```
-backend/rag/
+backend/mark_checker/rag/
 ├── embedder.py          # bge-base-en-v1.5, lazy-loaded, MPS-accelerated
 ├── store.py             # ChromaDB PersistentClient, two collections
 ├── chunker.py           # RecursiveCharacterTextSplitter (600t / 80 overlap)
@@ -107,16 +107,16 @@ backend/rag/
 **Build / rebuild the index:**
 ```bash
 # TMEP only (Milestone 1 — current state)
-python scripts/build_rag_index.py --tmep backend/rag/data/tmep-may2026-pdf.zip
+python scripts/build_rag_index.py --tmep backend/mark_checker/rag/data/tmep-may2026-pdf.zip
 
 # Full rebuild with TTAB bulk data
 python scripts/build_rag_index.py \
-  --tmep backend/rag/data/tmep-may2026-pdf.zip \
-  --ttab backend/rag/data/ttab_bulk.zip \
+  --tmep backend/mark_checker/rag/data/tmep-may2026-pdf.zip \
+  --ttab backend/mark_checker/rag/data/ttab_bulk.zip \
   --reset
 
 # Partial TTAB ingest during development
-python scripts/build_rag_index.py --ttab backend/rag/data/ttab_bulk.zip --max-ttab 1000
+python scripts/build_rag_index.py --ttab backend/mark_checker/rag/data/ttab_bulk.zip --max-ttab 1000
 ```
 
 **Evaluate retrieval quality:**

@@ -9,7 +9,7 @@ import httpx  # noqa: E402
 from fastapi import HTTPException  # noqa: E402
 from starlette.requests import Request  # noqa: E402
 
-from app.limiter import _client_ip  # noqa: E402
+from mark_checker.core.limiter import _client_ip  # noqa: E402
 
 _VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 _TIMEOUT = 5.0

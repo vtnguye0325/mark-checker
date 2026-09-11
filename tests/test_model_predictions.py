@@ -13,7 +13,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from app.services.model_service import predict_one
+from mark_checker.services.model_service import predict_one
 
 CASES: list[tuple[str, str]] = [
     (

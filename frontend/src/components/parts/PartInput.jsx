@@ -1,6 +1,6 @@
 // Part 05 — the eight fields the classifier read, as ruled lines.
 // See IMPLEMENTATION_PLAN_D.md 2.5. The backend joins the fields with ". ",
-// in this order (backend/app/services/text_formatter.py, format_mark).
+// in this order (backend/mark_checker/services/text_formatter.py, format_mark).
 const FIELD_LABELS = [
   'Mark',
   'Goods & services',

@@ -17,9 +17,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 
-from app.main import app  # noqa: I001  (loads .env before app.auth reads SESSION_SECRET)
-from app.auth import SessionUser, current_user
-from app.db import get_session
+from mark_checker.main import app  # noqa: I001  (loads .env before mark_checker.core.auth reads SESSION_SECRET)
+from mark_checker.core.auth import SessionUser, current_user
+from mark_checker.core.db import get_session
 
 _client = TestClient(app)
 

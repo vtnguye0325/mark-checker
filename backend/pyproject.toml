@@ -1,3 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mark-checker"
+version = "0.1.0"
+description = "Trademark registrability checker backend"
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["mark_checker*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
@@ -12,9 +29,9 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 # Prompt template with intentionally long lines sent to the LLM
-"app/services/llm_service.py" = ["E501", "RUF001"]
+"mark_checker/services/llm_service.py" = ["E501", "RUF001"]
 # NICE class descriptions are government-defined data strings, not code
-"app/services/text_formatter.py" = ["E501"]
+"mark_checker/services/text_formatter.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

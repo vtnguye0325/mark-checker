@@ -9,12 +9,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
-from app.auth import SessionUser, current_user
-from app.db import get_session
-from app.limiter import DEFAULT_LIMIT, limiter
-from app.models import Query
-from app.services.model_service import predict_one
-from app.services.text_formatter import format_mark
+from mark_checker.core.auth import SessionUser, current_user
+from mark_checker.core.db import get_session
+from mark_checker.core.limiter import DEFAULT_LIMIT, limiter
+from mark_checker.core.models import Query
+from mark_checker.services.model_service import predict_one
+from mark_checker.services.text_formatter import format_mark
 
 log = logging.getLogger(__name__)
 router = APIRouter()

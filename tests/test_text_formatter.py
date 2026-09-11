@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 
-from app.services.text_formatter import (
+from mark_checker.services.text_formatter import (
     NICE_DESCRIPTIONS,
     _pseudo_mark,
     _translation,
@@ -156,7 +156,7 @@ def test_wordnet_flag_raises_when_unavailable():
     # (which would corrupt the WordNet field of every prediction).
     import sys
 
-    from app.services import text_formatter as tf
+    from mark_checker.services import text_formatter as tf
 
     tf._wordnet.cache_clear()
     saved = sys.modules.get("nltk.corpus", ...)

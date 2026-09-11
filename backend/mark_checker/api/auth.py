@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import (
+from mark_checker.core.auth import (
     COOKIE_NAME,
     COOKIE_SECURE,
     SESSION_TTL_HOURS,
@@ -16,9 +16,9 @@ from app.auth import (
     current_user,
     verify_google_id_token,
 )
-from app.db import get_session
-from app.limiter import limiter
-from app.models import User
+from mark_checker.core.db import get_session
+from mark_checker.core.limiter import limiter
+from mark_checker.core.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

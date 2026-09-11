@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+from mark_checker.main import app
 
 client = TestClient(app)
 
@@ -130,7 +130,7 @@ _ANALYZE_PAYLOAD = {
 
 
 def _mock_turnstile_client(success: bool):
-    """Return a context-manager patch for app.turnstile.httpx.AsyncClient.
+    """Return a context-manager patch for mark_checker.core.turnstile.httpx.AsyncClient.
 
     httpx's Response.json() and raise_for_status() are synchronous, so we use
     MagicMock for the response object and only AsyncMock for the awaitable post().
@@ -146,7 +146,7 @@ def _mock_turnstile_client(success: bool):
     mock_cls = MagicMock()
     mock_cls.return_value.__aenter__ = AsyncMock(return_value=instance)
     mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
-    return patch("app.turnstile.httpx.AsyncClient", mock_cls)
+    return patch("mark_checker.core.turnstile.httpx.AsyncClient", mock_cls)
 
 
 # FastAPI resolves Depends before parsing the Pydantic body model, so the
@@ -186,7 +186,7 @@ def test_analyze_no_secret_returns_503(monkeypatch):
 def test_analyze_no_secret_disable_turnstile_bypasses(monkeypatch):
     monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
     monkeypatch.setenv("DISABLE_TURNSTILE", "true")
-    with patch("app.routes.analyze.analyze_trademark") as mock_analyze:
+    with patch("mark_checker.api.analyze.analyze_trademark") as mock_analyze:
         mock_analyze.return_value = {"analysis": "Bypassed.", "sources": None}
         r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
     assert r.status_code == 200
@@ -195,7 +195,7 @@ def test_analyze_no_secret_disable_turnstile_bypasses(monkeypatch):
 def test_analyze_valid_token_returns_200(monkeypatch):
     monkeypatch.setenv("TURNSTILE_SECRET", "dummy-secret")
     with _mock_turnstile_client(success=True), \
-         patch("app.routes.analyze.analyze_trademark") as mock_analyze:
+         patch("mark_checker.api.analyze.analyze_trademark") as mock_analyze:
         mock_analyze.return_value = {"analysis": "Test analysis.", "sources": None}
         r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
     assert r.status_code == 200

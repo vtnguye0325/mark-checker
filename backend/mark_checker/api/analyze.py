@@ -8,13 +8,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
-from app.auth import SessionUser, current_user
-from app.db import get_session
-from app.limiter import ANALYZE_IP_LIMIT, ANALYZE_USER_LIMIT, _session_key, limiter
-from app.query_store import update_query_stage
-from app.routes.explain import Attribution
-from app.services.llm_service import analyze_trademark
-from app.turnstile import verify_turnstile
+from mark_checker.api.explain import Attribution
+from mark_checker.core.auth import SessionUser, current_user
+from mark_checker.core.db import get_session
+from mark_checker.core.limiter import ANALYZE_IP_LIMIT, ANALYZE_USER_LIMIT, _session_key, limiter
+from mark_checker.core.turnstile import verify_turnstile
+from mark_checker.services.llm_service import analyze_trademark
+from mark_checker.services.query_store import update_query_stage
 
 log = logging.getLogger(__name__)
 router = APIRouter()

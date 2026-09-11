@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pypdf
 
-from rag.chunker import split_text
+from mark_checker.rag.chunker import split_text
 
 # CFR body headers: "§ 2.35  Title."
 # Requires 2+ spaces between section number and title to exclude cross-refs

@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 
 import torch
 
-from app.services import model_service
-from app.services.model_service import ModelHandle, explain_one, predict_one
-from app.services.text_formatter import format_mark
+from mark_checker.services import model_service
+from mark_checker.services.model_service import ModelHandle, explain_one, predict_one
+from mark_checker.services.text_formatter import format_mark
 
 _FAKE_HANDLE = ModelHandle(tokenizer=MagicMock(), model=MagicMock(), device=torch.device("cpu"))
 

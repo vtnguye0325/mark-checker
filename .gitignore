@@ -52,7 +52,7 @@ logs/
 skills-lock.json
 chroma_db/
 data/chroma/
-backend/rag/data/
+backend/mark_checker/rag/data/
 graphify-out
 # Impeccable skill scratch
 .impeccable/

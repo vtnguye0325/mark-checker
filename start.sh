@@ -89,6 +89,7 @@ fi
 
 echo "Syncing backend dependencies…"
 "$BACKEND_PYTHON" -m pip install -q -r "$ROOT/backend/requirements.txt"
+"$BACKEND_PYTHON" -m pip install -q --no-deps -e "$ROOT/backend"
 
 # --- Frontend setup ----------------------------------------------------------
 if [[ ! -d "$ROOT/frontend/node_modules" ]]; then
@@ -98,7 +99,7 @@ fi
 
 echo "Starting backend on :8000…"
 cd "$ROOT/backend"
-"$BACKEND_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+"$BACKEND_PYTHON" -m uvicorn mark_checker.main:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 echo "Starting frontend on :5173…"

@@ -7,7 +7,7 @@ from sqlalchemy import update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Query
+from mark_checker.core.models import Query
 
 log = logging.getLogger(__name__)
 

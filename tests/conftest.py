@@ -1,11 +1,8 @@
-import sys
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 _MODEL_DIR = Path(__file__).resolve().parents[1] / "backend" / "model"
 
@@ -19,9 +16,9 @@ def _auth_and_db_overrides():
     writes are no-ops. ``update_query_stage`` reads ``result.rowcount``, so the
     fake ``execute`` returns a row count of 1.
     """
-    from app.auth import SessionUser, current_user
-    from app.db import get_session
-    from app.main import app
+    from mark_checker.core.auth import SessionUser, current_user
+    from mark_checker.core.db import get_session
+    from mark_checker.main import app
 
     test_user = SessionUser(id=uuid.uuid4(), email="test@example.com")
 

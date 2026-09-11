@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import time
 
-from app.services.llm_client import LLM_MODEL, get_llm_client
-from app.services.text_formatter import NICE_DESCRIPTIONS
+from mark_checker.core.llm_client import LLM_MODEL, get_llm_client
+from mark_checker.services.text_formatter import NICE_DESCRIPTIONS
 
 log = logging.getLogger(__name__)
 
@@ -163,7 +163,7 @@ def _retrieve_doctrine(
     """Return (doctrine_prefix, sources_dict). Both empty/None on failure."""
     try:
         try:
-            from rag.retriever import format_context, retrieve
+            from mark_checker.rag.retriever import format_context, retrieve
         except ImportError:
             from backend.rag.retriever import format_context, retrieve
 

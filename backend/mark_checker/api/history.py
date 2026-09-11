@@ -10,10 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import SessionUser, current_user
-from app.db import get_session
-from app.limiter import DEFAULT_LIMIT, limiter
-from app.models import Query
+from mark_checker.core.auth import SessionUser, current_user
+from mark_checker.core.db import get_session
+from mark_checker.core.limiter import DEFAULT_LIMIT, limiter
+from mark_checker.core.models import Query
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/history", tags=["history"])

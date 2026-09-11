@@ -26,14 +26,14 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from slowapi import _rate_limit_exceeded_handler  # noqa: E402
 from slowapi.errors import RateLimitExceeded  # noqa: E402
 
-from app.db import init_models  # noqa: E402
-from app.limiter import limiter  # noqa: E402
-from app.routes.analyze import router as analyze_router  # noqa: E402
-from app.routes.auth import router as auth_router  # noqa: E402
-from app.routes.explain import router as explain_router  # noqa: E402
-from app.routes.history import router as history_router  # noqa: E402
-from app.routes.predict import router as predict_router  # noqa: E402
-from app.services.model_service import is_loaded, warm_up  # noqa: E402
+from mark_checker.api.analyze import router as analyze_router  # noqa: E402
+from mark_checker.api.auth import router as auth_router  # noqa: E402
+from mark_checker.api.explain import router as explain_router  # noqa: E402
+from mark_checker.api.history import router as history_router  # noqa: E402
+from mark_checker.api.predict import router as predict_router  # noqa: E402
+from mark_checker.core.db import init_models  # noqa: E402
+from mark_checker.core.limiter import limiter  # noqa: E402
+from mark_checker.services.model_service import is_loaded, warm_up  # noqa: E402
 
 _DEFAULT_CORS = (
     "http://localhost:5173,http://localhost:3000,"

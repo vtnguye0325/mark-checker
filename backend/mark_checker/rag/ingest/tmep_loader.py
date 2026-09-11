@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pypdf
 
-from rag.chunker import split_text
+from mark_checker.rag.chunker import split_text
 
 # Matches body section headers: "1209  Refusal on Basis..." (2-6 spaces, then text)
 # Captures paren subsections too: "1209.01(c)  Generic Terms",

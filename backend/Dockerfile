@@ -16,8 +16,10 @@ RUN pip install --no-cache-dir --upgrade pip \
 ENV NLTK_DATA=/usr/share/nltk_data
 RUN python -m nltk.downloader -d "${NLTK_DATA}" wordnet omw-1.4
 
-COPY app/ app/
-COPY rag/ rag/
+# Install the backend as a package so imports resolve as mark_checker.*
+# --no-deps keeps the CPU torch wheel installed above; requirements.txt already ran.
+COPY . .
+RUN pip install --no-cache-dir --no-deps -e .
 
 # MODEL_DIR accepts a local path or a HF repo id (e.g. "org/model-name").
 # HF_TOKEN is required for private repos.
@@ -40,4 +42,4 @@ PYEOF
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["uvicorn", "mark_checker.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

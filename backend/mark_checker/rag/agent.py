@@ -17,13 +17,9 @@ import logging
 import os
 import time
 
-try:
-    from app.services.llm_client import LLM_MODEL, get_llm_client
-except ImportError:  # when the repo root, not backend/, is on sys.path
-    from backend.app.services.llm_client import LLM_MODEL, get_llm_client
-
-from rag.embedder import embed_query
-from rag.store import get_tmep_collection, get_ttab_collection
+from mark_checker.core.llm_client import LLM_MODEL, get_llm_client
+from mark_checker.rag.embedder import embed_query
+from mark_checker.rag.store import get_tmep_collection, get_ttab_collection
 
 log = logging.getLogger(__name__)
 

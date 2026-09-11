@@ -47,7 +47,7 @@ async def init_models() -> None:
     """
     from sqlalchemy.exc import OperationalError
 
-    from app import models  # noqa: F401  (register the ORM classes on Base)
+    from mark_checker.core import models  # noqa: F401  (register the ORM classes on Base)
 
     last_error: Exception | None = None
     for attempt in range(1, 11):
