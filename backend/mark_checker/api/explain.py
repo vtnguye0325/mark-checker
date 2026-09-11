@@ -1,41 +1,18 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from mark_checker.core.auth import SessionUser, current_user
 from mark_checker.core.db import get_session
 from mark_checker.core.limiter import DEFAULT_LIMIT, limiter
+from mark_checker.schemas.analysis import ExplainRequest, ExplainResponse
 from mark_checker.services.model_service import explain_one
 from mark_checker.services.query_store import update_query_stage
 from mark_checker.services.text_formatter import format_mark
 
 router = APIRouter()
-
-
-class ExplainRequest(BaseModel):
-    mark: str = Field(..., min_length=1, max_length=200)
-    description: str = Field(..., min_length=1, max_length=2000)
-    nice_class: int = Field(..., ge=1, le=45)
-    translation: str = Field("", max_length=200)
-    pseudo_mark: str = Field("", max_length=200)
-    query_id: str | None = Field(None, max_length=64)
-
-
-class Attribution(BaseModel):
-    field: str = Field(..., max_length=64)
-    value: str = Field(..., max_length=2000)
-    attribution: float
-
-
-class ExplainResponse(BaseModel):
-    label: str
-    prob_distinctive: float
-    prob_not_distinctive: float
-    formatted_input: str
-    attributions: list[Attribution]
 
 
 @router.post("/llm-explain", response_model=ExplainResponse)

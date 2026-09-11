@@ -33,6 +33,7 @@ from mark_checker.api.history import router as history_router  # noqa: E402
 from mark_checker.api.predict import router as predict_router  # noqa: E402
 from mark_checker.core.db import init_models  # noqa: E402
 from mark_checker.core.limiter import limiter  # noqa: E402
+from mark_checker.core.llm_errors import register_llm_error_handler  # noqa: E402
 from mark_checker.services.model_service import is_loaded, warm_up  # noqa: E402
 
 _DEFAULT_CORS = (
@@ -55,6 +56,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Trademark Distinctiveness API", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+register_llm_error_handler(app)
 
 app.add_middleware(
     CORSMiddleware,

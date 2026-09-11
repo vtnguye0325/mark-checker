@@ -2,60 +2,20 @@ from __future__ import annotations
 
 import logging
 
-import openai
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
-from mark_checker.api.explain import Attribution
 from mark_checker.core.auth import SessionUser, current_user
 from mark_checker.core.db import get_session
 from mark_checker.core.limiter import ANALYZE_IP_LIMIT, ANALYZE_USER_LIMIT, _session_key, limiter
 from mark_checker.core.turnstile import verify_turnstile
+from mark_checker.schemas.analysis import AnalyzeRequest, AnalyzeResponse
 from mark_checker.services.llm_service import analyze_trademark
 from mark_checker.services.query_store import update_query_stage
 
 log = logging.getLogger(__name__)
 router = APIRouter()
-
-# Words a Gemini free-tier 429 carries when the daily request quota, not the
-# per-minute one, is the cap that fired. The daily wait is hours, so the user
-# must see a different message and stop retrying.
-_DAILY_QUOTA_MARKERS = ("per day", "perday", "requests per day", "daily limit")
-
-# Words a 429 carries when the account has no billing balance, not when it is
-# rate-limited. This never clears on its own, so it is an operator problem: a
-# 503, not a "try again".
-_BILLING_MARKERS = ("prepayment credits", "billing", "depleted", "check your plan")
-
-
-def _retry_after_seconds(exc: openai.APIStatusError) -> str | None:
-    response = getattr(exc, "response", None)
-    if response is None:
-        return None
-    return response.headers.get("retry-after")
-
-
-def _matches(exc: Exception, markers: tuple[str, ...]) -> bool:
-    text = str(getattr(exc, "message", "") or exc).lower()
-    return any(marker in text for marker in markers)
-
-
-class AnalyzeRequest(BaseModel):
-    mark: str = Field(..., min_length=1, max_length=200)
-    description: str = Field(..., min_length=1, max_length=2000)
-    nice_class: int = Field(..., ge=1, le=45)
-    label: str = Field(..., max_length=64)
-    prob_distinctive: float = Field(..., ge=0.0, le=1.0)
-    attributions: list[Attribution] = Field(..., max_length=16)
-    turnstile_token: str = Field("", max_length=2048)
-    query_id: str | None = Field(None, max_length=64)
-
-
-class AnalyzeResponse(BaseModel):
-    analysis: str
-    sources: dict | None = None
 
 
 @router.post("/llm-assess", response_model=AnalyzeResponse)
@@ -76,6 +36,7 @@ async def analyze(
         # analyze_trademark blocks: an LLM call plus ChromaDB retrieval. This
         # route is async, so run it in the threadpool or it stalls the event
         # loop, and one uvicorn worker means the whole backend stalls with it.
+        # An openai.APIError goes to the handler in core/llm_errors.py.
         result = await run_in_threadpool(
             analyze_trademark,
             mark=req.mark,
@@ -85,36 +46,6 @@ async def analyze(
             prob_distinctive=req.prob_distinctive,
             attributions=[a.model_dump() for a in req.attributions],
         )
-    except openai.RateLimitError as exc:
-        if _matches(exc, _BILLING_MARKERS):
-            # No balance on the account. This does not clear on a retry, so it
-            # is a 503 and an operator alert, not a "try again".
-            log.error("analyze: provider billing exhausted — check the API account")
-            raise HTTPException(
-                status_code=503, detail="The analysis service is unavailable right now."
-            ) from exc
-        if _matches(exc, _DAILY_QUOTA_MARKERS):
-            log.warning("analyze: provider daily quota reached")
-            raise HTTPException(
-                status_code=429,
-                detail=(
-                    "The analysis service has reached its free-tier limit for today. "
-                    "The quota resets at midnight Pacific time. Please try again tomorrow."
-                ),
-            ) from exc
-        retry_after = _retry_after_seconds(exc)
-        log.warning("analyze: provider rate limit, retry-after=%s", retry_after)
-        raise HTTPException(
-            status_code=429,
-            detail="The analysis service is busy right now. Please try again shortly.",
-            headers={"Retry-After": retry_after} if retry_after else None,
-        ) from exc
-    except openai.APIError as exc:
-        # Covers APITimeoutError and APIConnectionError, both subclasses.
-        log.error("analyze: provider error: %s", exc)
-        raise HTTPException(
-            status_code=503, detail="The analysis service is unavailable right now."
-        ) from exc
     except RuntimeError as exc:
         log.error("analyze failed: %s", exc)
         raise HTTPException(status_code=503, detail=str(exc)) from exc

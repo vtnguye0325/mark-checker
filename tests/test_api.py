@@ -3,8 +3,12 @@
 from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
+import openai
+
 from fastapi.testclient import TestClient
 
+from mark_checker.core.limiter import limiter
 from mark_checker.main import app
 
 client = TestClient(app)
@@ -200,3 +204,56 @@ def test_analyze_valid_token_returns_200(monkeypatch):
         r = client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
     assert r.status_code == 200
     assert "analysis" in r.json()
+
+
+# ---------------------------------------------------------------------------
+# Provider errors — the handler in mark_checker/core/llm_errors.py maps these
+# ---------------------------------------------------------------------------
+
+
+def _rate_limit_error(message: str) -> openai.RateLimitError:
+    response = httpx.Response(
+        429,
+        headers={"retry-after": "42"},
+        request=httpx.Request("POST", "https://provider.example/v1/chat"),
+    )
+    return openai.RateLimitError(message, response=response, body=None)
+
+
+def _post_analyze_raising(monkeypatch, exc: Exception):
+    # The analyze route stacks an account limit and an IP limit. The earlier
+    # tests in this file already spend part of that quota, so clear the
+    # counters or the fourth call here gets a 429 from slowapi, not from the
+    # provider error under test.
+    limiter.reset()
+    monkeypatch.delenv("TURNSTILE_SECRET", raising=False)
+    monkeypatch.setenv("DISABLE_TURNSTILE", "true")
+    with patch("mark_checker.api.analyze.analyze_trademark", side_effect=exc):
+        return client.post("/llm-assess", json=_ANALYZE_PAYLOAD)
+
+
+def test_analyze_billing_exhausted_returns_503(monkeypatch):
+    r = _post_analyze_raising(monkeypatch, _rate_limit_error("prepayment credits depleted"))
+    assert r.status_code == 503
+    assert r.json()["detail"] == "The analysis service is unavailable right now."
+
+
+def test_analyze_daily_quota_returns_429_with_the_daily_message(monkeypatch):
+    r = _post_analyze_raising(monkeypatch, _rate_limit_error("quota: requests per day exceeded"))
+    assert r.status_code == 429
+    assert "today" in r.json()["detail"]
+
+
+def test_analyze_rate_limit_returns_429_with_retry_after(monkeypatch):
+    r = _post_analyze_raising(monkeypatch, _rate_limit_error("too many requests"))
+    assert r.status_code == 429
+    assert r.headers["retry-after"] == "42"
+    assert "busy" in r.json()["detail"]
+
+
+def test_analyze_connection_error_returns_503(monkeypatch):
+    exc = openai.APIConnectionError(
+        request=httpx.Request("POST", "https://provider.example/v1/chat")
+    )
+    r = _post_analyze_raising(monkeypatch, exc)
+    assert r.status_code == 503
