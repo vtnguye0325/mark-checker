@@ -23,7 +23,12 @@ _DAILY_QUOTA_MARKERS = ("per day", "perday", "requests per day", "daily limit")
 # Words a 429 carries when the account has no billing balance, not when it is
 # rate-limited. This never clears on its own, so it is an operator problem: a
 # 503, not a "try again".
-_BILLING_MARKERS = ("prepayment credits", "billing", "depleted", "check your plan")
+#
+# "check your plan" and "billing" are out: a Gemini free-tier quota 429 reads
+# "please check your plan and billing details", so those words match an
+# ordinary quota error too. The daily-quota check runs first for the same
+# reason.
+_BILLING_MARKERS = ("prepayment credits", "depleted", "insufficient balance")
 
 _UNAVAILABLE = "The analysis service is unavailable right now."
 _BUSY = "The analysis service is busy right now. Please try again shortly."
@@ -61,14 +66,14 @@ class LLMErrorDetail:
 def llm_error_detail(exc: openai.APIError) -> LLMErrorDetail:
     """Map a provider error to the status and message the frontend reads."""
     if isinstance(exc, openai.RateLimitError):
+        if _matches(exc, _DAILY_QUOTA_MARKERS):
+            log.warning("analyze: provider daily quota reached")
+            return LLMErrorDetail(429, _DAILY_QUOTA)
         if _matches(exc, _BILLING_MARKERS):
             # No balance on the account. This does not clear on a retry, so it
             # is a 503 and an operator alert, not a "try again".
             log.error("analyze: provider billing exhausted — check the API account")
             return LLMErrorDetail(503, _UNAVAILABLE)
-        if _matches(exc, _DAILY_QUOTA_MARKERS):
-            log.warning("analyze: provider daily quota reached")
-            return LLMErrorDetail(429, _DAILY_QUOTA)
         retry_after = _retry_after_seconds(exc)
         log.warning("analyze: provider rate limit, retry-after=%s", retry_after)
         return LLMErrorDetail(429, _BUSY, retry_after)

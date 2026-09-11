@@ -24,6 +24,12 @@ async def update_query_stage(
     another user's row. A missing row, a foreign row, or a database error all
     log and return — stage 2 and stage 3 already cost a paid LLM call, so the
     user must still get the answer.
+
+    The catch names ``OSError`` next to ``SQLAlchemyError``: an unreachable
+    Postgres makes asyncpg raise a bare ``ConnectionRefusedError``,
+    ``socket.gaierror``, or ``TimeoutError``, all outside the SQLAlchemy
+    hierarchy. Without it that error escapes and masks the provider error that
+    the caller is in the middle of reporting.
     """
     if not query_id:
         return
@@ -37,8 +43,13 @@ async def update_query_stage(
             update(Query).where(Query.id == row_id, Query.user_id == user_id).values(**values)
         )
         await session.commit()
-    except SQLAlchemyError as exc:
-        await session.rollback()
+    except (SQLAlchemyError, OSError) as exc:
+        try:
+            await session.rollback()
+        except (SQLAlchemyError, OSError) as rollback_exc:
+            # A dead connection fails the rollback too. The session is discarded
+            # after the request, so log it and keep the provider error intact.
+            log.error("update_query_stage: rollback failed: %s", rollback_exc)
         log.error("update_query_stage: database error for query_id %s: %s", row_id, exc)
         return
     if result.rowcount == 0:

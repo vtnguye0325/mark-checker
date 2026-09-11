@@ -19,8 +19,8 @@ from mark_checker.services.query_store import update_query_stage
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-# What the history page shows for a stage-3 RuntimeError. The raw message names
-# internals, so it goes to the log only.
+# What the history page and the client both show for a stage-3 RuntimeError.
+# The raw message names internals, so it goes to the log only.
 _RUNTIME_FAILURE_DETAIL = "The analysis service is unavailable. Run the check again."
 
 
@@ -85,7 +85,7 @@ async def analyze(
         # fixed message and keep the raw text in the log.
         log.error("analyze failed: %s", exc)
         await _mark_analysis_failed(session, req, user, _RUNTIME_FAILURE_DETAIL)
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise HTTPException(status_code=503, detail=_RUNTIME_FAILURE_DETAIL) from exc
 
     await update_query_stage(
         session,

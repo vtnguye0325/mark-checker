@@ -54,8 +54,13 @@ async def predict(
     session.add(row)
     try:
         await session.commit()
-    except SQLAlchemyError as exc:
-        await session.rollback()
+    # An unreachable Postgres makes asyncpg raise a bare OSError subclass
+    # outside the SQLAlchemy hierarchy, so the catch names OSError as well.
+    except (SQLAlchemyError, OSError) as exc:
+        try:
+            await session.rollback()
+        except (SQLAlchemyError, OSError) as rollback_exc:
+            log.error("ml-predict: rollback failed: %s", rollback_exc)
         log.error("ml-predict: failed to save the query row: %s", exc)
         raise HTTPException(status_code=503, detail="Cannot save your check right now") from exc
 

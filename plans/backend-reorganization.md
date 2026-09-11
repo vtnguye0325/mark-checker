@@ -64,45 +64,71 @@ files.
       `0002_query_analysis_error`. `alembic revision --autogenerate` reports no
       drift against the models.
 
-## Open
+## Done, in the working tree, not committed (Steps 6-8)
 
-- [ ] **Step 6 — Consolidate the tests and the scripts.**
-      1. Split `tests/` into `tests/unit/` and `tests/api/`, because
-         `test_api.py` now holds route tests, error-mapping tests, and
-         Turnstile tests together.
-      2. Move the shared builders (`_ANALYZE_PAYLOAD`, `_rate_limit_error`,
-         `_post_analyze_raising`, the `_row()` helper in `test_history.py`)
-         into `conftest.py` as fixtures.
-      3. Fix the ruff errors in the scripts that predate this work:
-         `scripts/build_rag_index.py` lines 18-22 (`E402`) and
-         `scripts/eval_rag_retrieval.py` lines 248 and 280 (`F541`).
-      4. Give `scripts/` a short README that says what each script needs, and
-         delete `scripts/__pycache__` from the tree if git tracks it.
+- [x] **Step 6 — Consolidate the tests and the scripts.** `tests/unit/` holds
+      the pure-function, model, and import-layering tests; `tests/api/` holds
+      the route tests. `test_api.py` split into `test_health.py`,
+      `test_predict.py`, `test_analyze_turnstile.py`, and
+      `test_analyze_errors.py`.
+      - `tests/conftest.py` keeps only the model-dependent skip rule. The rule
+        now names `test_predict.py`, where every validation case ends in 422.
+      - `tests/api/conftest.py` holds the shared fixtures: `client`, the
+        auth-and-session override, `predict_payload`, `analyze_payload`,
+        `mock_turnstile_client`, `rate_limit_error`, `post_analyze_raising`,
+        and `history_row`.
+      - `scripts/build_rag_index.py` no longer trips `E402`, and
+        `scripts/eval_rag_retrieval.py` no longer trips `F541`.
+      - `scripts/README.md` says what each script needs. `__pycache__` is out
+        of the index.
 
-- [ ] **Step 7 — Give the frontend one API module.** Three files call `fetch`
-      directly: `components/HistoryPanel.jsx`, `hooks/useTrademarkPipeline.js`,
-      and `hooks/useAuth.js`. Each repeats the base URL, the credentials mode,
-      and its own error reading.
-      1. Add `frontend/src/lib/api.js` with one request helper plus a named
-         function per endpoint: `predict`, `explain`, `assess`, `history`,
-         `historyRecord`, and the auth calls.
-      2. Read the error body in one place, so a `detail` string and a
-         `Retry-After` header reach the caller the same way every time.
-      3. Move the three call sites onto it and keep the components free of
-         URLs.
+- [x] **Step 7 — Give the frontend one API module.**
+      `frontend/src/lib/api.js` holds one `request()` helper plus `predict`,
+      `explain`, `assess`, `history`, `historyRecord`, `me`,
+      `signInWithGoogle`, and `signOut`.
+      - `request()` owns the base URL, the cookie mode, the single 401 retry,
+        and the error reading. A non-2xx response throws an `ApiError` that
+        carries `status`, `detail`, and `retryAfter`, so a `detail` string and
+        a `Retry-After` header reach every caller the same way.
+      - `HistoryPanel.jsx`, `useTrademarkPipeline.js`, and `useAuth.js` hold no
+        URL and call no `fetch`.
 
-- [ ] **Step 8 — Clean up the docs.** `docs/` mixes live documentation with
-      finished plans, generated reports, and binary output.
-      1. Keep `API.md`, `DEPLOYMENT.md`, `DEVELOPMENT.md`, `ENGINEERING.md`,
-         `DESIGN_PRINCIPLES.md`, and `RAG.md` as the live set.
-      2. Move the finished plans (`PLAN.md`, `IMPLEMENTATION_PLAN_D.md`,
-         `README_REWRITE_PLAN.md`, `FRONTEND_CRITIQUE.md`) under
-         `docs/archive/`, or delete the ones the git history already covers.
-      3. Decide what happens to the generated files: the
-         `architecture-review-*.html` report, the `langgraph-workflow*`
-         HTML, JSON, and PNG output, and `Final_Report.pdf`. Either gitignore
-         the generated set or move it out of `docs/`.
-      4. Point the root `README.md` at the live set.
+- [x] **Step 8 — Clean up the docs.** The live set is `API.md`,
+      `DEPLOYMENT.md`, `DEVELOPMENT.md`, `ENGINEERING.md`,
+      `DESIGN_PRINCIPLES.md`, and `RAG.md`.
+      - `docs/archive/` holds the finished plans (`PLAN.md`,
+        `IMPLEMENTATION_PLAN_D.md`, `README_REWRITE_PLAN.md`,
+        `FRONTEND_CRITIQUE.md`) and the generated output (the
+        architecture-review HTML and `Final_Report.pdf`), with a README that
+        says what each one is.
+      - `.gitignore` now drops future `docs/architecture-review-*.html` and
+        `docs/langgraph-workflow*` output.
+      - The root `README.md` gained a Documentation table that points at the
+        live set. `docs/DEVELOPMENT.md` carries the new test layout.
+
+### Fixes from the review of Steps 6-8
+
+The review found four defects in code that predates this work.
+
+- [x] **`api/analyze.py`** — the stage-3 `RuntimeError` path returned
+      `str(exc)` to the client, so a missing provider key or a missing corpus
+      path left the backend. It now returns `_RUNTIME_FAILURE_DETAIL`, the same
+      text that the row carries.
+- [x] **`services/query_store.py` and `api/predict.py`** — both caught
+      `SQLAlchemyError` only. An unreachable Postgres makes asyncpg raise a
+      bare `OSError` subclass outside that hierarchy, so the error escaped and
+      masked the provider error with a 500. Both catches now name `OSError`,
+      and a failed rollback no longer escapes either.
+- [x] **`core/llm_errors.py`** — `_BILLING_MARKERS` held "billing" and "check
+      your plan", the exact words of a Gemini free-tier quota 429, so an
+      ordinary quota error read as billing exhaustion and returned a 503 with
+      no retry guidance. The markers are narrow now, and the daily-quota check
+      runs first.
+- New tests: `tests/unit/test_query_store.py` and
+  `tests/unit/test_llm_error_mapping.py`.
+
+Suite after Steps 6-8: 75 passed, 63 skipped. Ruff is clean on `backend/`,
+`scripts/`, and `tests/`. The frontend build passes.
 
 ## Then
 
