@@ -70,7 +70,7 @@ flowchart LR
 - **Feature attribution makes the verdict auditable.** Every result shows the per-field
   contribution, so a user sees whether the mark text or the goods description drove the
   call — not just a number.
-- **A 50-case regression suite guards against model drift.** `tests/test_model_predictions.py`
+- **A 50-case regression suite guards against model drift.** `tests/unit/test_model_predictions.py`
   pins 50 known-good predictions; a checkpoint swap that breaks them fails CI.
 - **Safe public deployment.** Per-IP rate limits, a Cloudflare Turnstile check on the paid
   LLM endpoint, and a Cloudflare Tunnel that keeps the backend off the public internet.

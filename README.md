@@ -126,6 +126,20 @@ You see only your own checks, and no other account can see them.
 You will meet these same words on the trademark office's own forms, so the app uses them
 instead of friendlier substitutes.
 
+## Documentation
+
+| File | What it covers |
+|---|---|
+| [`docs/API.md`](docs/API.md) | Every endpoint, the request and response shapes, and the rate limits. |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Requirements, the local run, the tests, and the project tree. |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Docker, the Cloudflare tunnel, the database migrations, and the security checklist. |
+| [`docs/ENGINEERING.md`](docs/ENGINEERING.md) | The decisions behind the model, the pipeline, and the trade-offs. |
+| [`docs/RAG.md`](docs/RAG.md) | The ChromaDB index: the sources, the build, and the retrieval eval. |
+| [`docs/DESIGN_PRINCIPLES.md`](docs/DESIGN_PRINCIPLES.md) | The binding rules for the interface. |
+
+Finished plans and generated reports sit in [`docs/archive/`](docs/archive/). They record
+what was done, not how the system works now.
+
 ---
 
 Built by Vy Nguyen.

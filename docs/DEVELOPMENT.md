@@ -52,10 +52,14 @@ python -m pytest tests/ -v
 
 | File | What it tests | Loads model? |
 |------|--------------|:------------:|
-| `tests/test_text_formatter.py` (26 tests) | `format_mark()` output, the 8-field layout, NICE descriptions, translation, pseudo mark | No |
-| `tests/test_model_service.py` (9 tests) | `predict_one()` return shape, probability bounds, `label` consistency, canonical examples | Yes |
-| `tests/test_api.py` (20 tests) | `/health` and `/ml-predict` endpoints, all 422 validation cases | Yes |
-| `tests/test_model_predictions.py` | Regression suite — 50 known-good predictions from `predictions.csv`; catches model drift | Yes |
+| `tests/unit/test_text_formatter.py` (26 tests) | `format_mark()` output, the 8-field layout, NICE descriptions, translation, pseudo mark | No |
+| `tests/unit/test_model_service.py` (9 tests) | `predict_one()` return shape, probability bounds, `label` consistency, canonical examples | Yes |
+| `tests/unit/test_model_predictions.py` | Regression suite — 50 known-good predictions from `predictions.csv`; catches model drift | Yes |
+| `tests/unit/test_import_layering.py` | The dependency direction `api → services → rag → core` | No |
+| `tests/api/test_health.py`, `tests/api/test_predict.py` | `/health` and `/ml-predict`, all 422 validation cases | Yes |
+| `tests/api/test_analyze_turnstile.py` | `/llm-assess` Turnstile verification: 403, 503, and the bypass | No |
+| `tests/api/test_analyze_errors.py` | `/llm-assess` provider failures: the status mapping and the recorded `analysis_error` | No |
+| `tests/api/test_history.py` | `/history` and `/history/{query_id}`: the user filter, the 404s, and the database-down 503 | No |
 
 The model-loading files pay a ~5–10 s cost on the first test and stay fast for the rest of
 the session.
@@ -123,7 +127,8 @@ mark-checker/
 │   ├── model/                   # Fine-tuned weights (local dev only)
 │   └── scripts/
 │       └── build_rag_index.py
-├── docs/                        # DEPLOYMENT, API, RAG, DEVELOPMENT, PLAN
+├── docs/                        # API, DEPLOYMENT, DEVELOPMENT, ENGINEERING, RAG, DESIGN_PRINCIPLES
+│   └── archive/                 # Finished plans and generated reports
 ├── scripts/
 │   ├── build_rag_index.py       # Ingest TMEP/TTAB/Lanham into ChromaDB (idempotent)
 │   ├── eval_rag_retrieval.py    # Section reachability + spot-check eval
@@ -140,9 +145,7 @@ mark-checker/
 │       └── lib/
 │           └── parseLegalAnalysis.js    # Pure parsers for the LLM analysis sections
 └── tests/
-    ├── conftest.py
-    ├── test_text_formatter.py
-    ├── test_model_service.py
-    ├── test_api.py
-    └── test_model_predictions.py
+    ├── conftest.py              # Skips the model-dependent tests when backend/model/ is absent
+    ├── unit/                    # Pure functions, the model service, the import-layering guard
+    └── api/                     # Route tests; conftest.py holds the shared fixtures
 ```

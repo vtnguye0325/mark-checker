@@ -56,3 +56,7 @@ backend/mark_checker/rag/data/
 graphify-out
 # Impeccable skill scratch
 .impeccable/
+
+# Generated reports and diagrams under docs/
+docs/architecture-review-*.html
+docs/langgraph-workflow*
