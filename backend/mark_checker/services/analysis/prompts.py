@@ -13,6 +13,8 @@ When citing a TMEP section use "TMEP §XXXX". When citing a case use the mark na
 
 """
 
+# REQUIRED_HEADERS below must match the four headers in this prompt exactly.
+# If a later phase rewords a header, change REQUIRED_HEADERS in the same commit.
 _SYSTEM_PROMPT = """\
 You are a trademark advisor helping a small business owner understand an AI classifier's assessment of their trademark application.
 
@@ -61,4 +63,27 @@ IN DICTIONARY (WordNet): {wordnet_flag}
 
 SIGNALS (positive = supports distinctiveness, negative = opposes it):
 {attributions_block}\
+"""
+
+# These four headers must match the four headers in _SYSTEM_PROMPT above,
+# exactly. If a later phase rewords a header, change this constant in the
+# same commit — parseSections() on the frontend accepts any bold line, so it
+# does not catch a drift.
+REQUIRED_HEADERS = (
+    "**What the model found**",
+    "**Where this mark sits on the trademark spectrum**",
+    "**Why the classifier leaned this way — key signals**",
+    "**What to do next**",
+)
+
+REPAIR_TMPL = """\
+Your previous analysis had the following problems:
+{violations}
+
+Here is your previous analysis:
+{draft}
+
+Write a corrected analysis. Keep the same conclusions and the same four \
+headers. Fix only the problems listed above. Respond with the corrected \
+analysis only — no preamble, no explanation of what changed.\
 """
