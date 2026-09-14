@@ -44,13 +44,26 @@ def get_llm_client() -> OpenAI:
 
     Raises RuntimeError, naming the missing variable, when the key for the
     chosen provider is unset. `/llm-assess` maps that to a 503.
+
+    When `LANGSMITH_TRACING=true`, the client is wrapped with
+    `langsmith.wrappers.wrap_openai()`, so LangSmith records the prompts, the
+    tool calls, and the token counts inside each node's span. The wrap is
+    read once here because this function is cached: changing
+    `LANGSMITH_TRACING` needs a process restart to take effect.
     """
     key = os.environ.get(_CONFIG["key_var"])
     if not key:
         raise RuntimeError(f"{_CONFIG['key_var']} environment variable is not set")
-    return OpenAI(
+    client = OpenAI(
         api_key=key,
         base_url=_CONFIG["base_url"],
         timeout=30.0,
         max_retries=1,
     )
+    if os.getenv("LANGSMITH_TRACING", "").strip().lower() == "true":
+        # Imported inside the branch, so a production image with tracing off
+        # never loads the wrapper.
+        from langsmith.wrappers import wrap_openai
+
+        client = wrap_openai(client)
+    return client
