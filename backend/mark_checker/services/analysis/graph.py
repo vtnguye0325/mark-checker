@@ -147,7 +147,8 @@ def _attribution_lines(attributions: list[dict]) -> str:
 
 def _attribution_str(attributions: list[dict]) -> str:
     # Top 5, skipping the two fields that are not SHAP signals — the same
-    # filter `_retrieve_doctrine()` used.
+    # filter the old `_retrieve_doctrine()` used, before Phase 10 moved this
+    # into the `retrieve` node.
     return ", ".join(
         f"{a['field']}: {a['attribution']:+.2f}"
         for a in attributions[:5]

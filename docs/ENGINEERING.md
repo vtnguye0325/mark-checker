@@ -102,6 +102,33 @@ account. The app tells the user this in the check form before they run a check. 
 acceptable while the app has no paying users. Revisit it before the app takes paying users,
 or switch to `LLM_PROVIDER=deepseek` for a paid API that does not train on request content.
 
+Since Phase 10, `/llm-assess` runs a LangGraph agent that can loop and repair its own draft.
+One analysis sends up to 4 requests to the LLM: one `retrieve` call per retrieval round (up
+to `RAG_MAX_ROUNDS`, default 2), one `draft` call, and one `revise` call when `validate` finds
+a violation. The happy path still sends 2 or 3 requests, the same as Phase 9. Size the Gemini
+free tier against 4 requests per analysis, not 3: divide the published daily request cap by 4
+to get the number of analyses the app can run per day before the daily limit returns a 429.
+If you raise `RAG_MAX_ROUNDS`, the worst case is `RAG_MAX_ROUNDS + 2` requests per analysis.
+
+## Tracing with LangSmith
+
+Tracing is off by default. To turn it on, set `LANGSMITH_TRACING=true` and
+`LANGSMITH_API_KEY` in `.env`, then restart the backend — `get_llm_client()` caches the
+client, so a running process does not pick up the change. Set `LANGSMITH_PROJECT` to send
+traces to one named project instead of `default`.
+
+With tracing on, LangSmith cloud receives, for every analysis: the user's mark, the goods
+description, the retrieved TMEP and TTAB text, the full four-section analysis, the prompts
+and completions of every LLM call, and the token counts and timings for every node in the
+graph. Keep tracing off in production by default, because this is the same user business
+information the free-tier notice above already covers. If production tracing is needed, set
+`LANGSMITH_HIDE_INPUTS=true` and `LANGSMITH_HIDE_OUTPUTS=true` — the trace still shows the
+graph shape, the node names, and the timings, but not the prompts or the completions.
+
+If LangSmith is unreachable, or the API key is wrong, the trace upload fails in the
+background and the request still returns a normal analysis. No request ever fails because of
+a tracing problem.
+
 ## Documentation
 
 | Doc | Contents |

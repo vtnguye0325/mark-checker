@@ -23,6 +23,12 @@ Inject as LEGAL DOCTRINE + ILLUSTRATIVE CASES into final LLM prompt
 
 **Why HyDE:** Raw mark names ("CHARCOAL TOOTHPASTE") embed far from TMEP legal text. The HyDE paragraph bridges the vocabulary gap by generating text that already sounds like doctrine before embedding.
 
+**Since Phase 10:** the live `/llm-assess` path does not call `run_agent()` any more. A
+LangGraph state machine in `services/analysis/graph.py` runs the same retrieve/search loop as
+its own nodes, so it can also validate the draft and repair a bad citation. `run_agent()` and
+`retriever.retrieve()` stay in this module unchanged, and the RAG evaluation scripts below
+still call `run_agent()` directly to test retrieval quality on its own.
+
 ---
 
 ## TMEP Index
