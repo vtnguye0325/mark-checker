@@ -8,9 +8,8 @@ import RecordBar from './components/RecordBar'
 import HistoryPanel from './components/HistoryPanel'
 import RecordPlate from './components/RecordPlate'
 import RecordRail from './components/RecordRail'
-import RecordScale from './components/RecordScale'
+import SpectrumDial from './components/SpectrumDial'
 import MarkForm from './components/MarkForm'
-import Marquee from './components/Marquee'
 import HowItWorks from './components/HowItWorks'
 import MethodPage from './components/MethodPage'
 import ProgressBar from './components/ui/ProgressBar'
@@ -19,6 +18,7 @@ import PartBasis from './components/parts/PartBasis'
 import PartAuthority from './components/parts/PartAuthority'
 import PartAction from './components/parts/PartAction'
 import PartInput from './components/parts/PartInput'
+import { isValidProbability } from './lib/spectrum'
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
 
@@ -75,7 +75,7 @@ export default function App() {
   const pendingPayloadRef = useRef(null)
   // Resolver for an onAuthExpired promise while the pipeline waits on a re-sign-in.
   const authResolverRef = useRef(null)
-  const { submit, reset, state } = useTrademarkPipeline()
+  const { submit, retryAssessment, reset, state } = useTrademarkPipeline()
 
   const onFieldChange = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
@@ -107,6 +107,10 @@ export default function App() {
   const handleSubmit = (e) => {
     e.preventDefault()
     const payload = buildPayload()
+    if (import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS === 'true') {
+      runSubmit(payload)
+      return
+    }
     // Prompt for the sign-in at the check button, not at page load. Keep the
     // typed values and run the check from the modal callback.
     if (status !== 'signed-in') {
@@ -196,7 +200,7 @@ export default function App() {
   const meta = {
     filed: filedRef.current,
     nice_class: result?.nice_class ?? null,
-    score: Number.isFinite(result?.prob_distinctive) ? result.prob_distinctive.toFixed(2) : null,
+    score: isValidProbability(result?.prob_distinctive) ? result.prob_distinctive.toFixed(2) : null,
     model: result ? 'ModernBERT' : null,
     sources: sourceCount || null,
   }
@@ -206,142 +210,155 @@ export default function App() {
   // against. Do not show it once the user is signed in.
   const canOpenSignIn = status !== 'signed-in'
 
-  // The landing state is the specimen page: masthead, headline, marquee, and
-  // the ledger form. The record state adds the accent rule, the ink record bar,
-  // the plate, and the rail. See docs/DESIGN_PRINCIPLES.md 9.
+  // The landing state teaches the spectrum and leads to the form.
   const landing = view === 'check' && !hasActivity
 
   return (
-    <div className={`record ${accent}`}>
-      {!landing && view !== 'method' && <div className="accent-rule" />}
-      <RecordBar
-        landing={landing}
-        status={status}
-        email={user?.email}
-        onSignIn={() => setSignInOpen(true)}
-        onSignOut={signOut}
-        showingHistory={view === 'history'}
-        onToggleHistory={() => setView((v) => (v === 'history' ? 'check' : 'history'))}
-        showingMethod={view === 'method'}
-        onToggleMethod={() => setView((v) => (v === 'method' ? 'check' : 'method'))}
-      />
-
-      {signInOpen && canOpenSignIn && (
-        <SignInModal
-          onCredential={signIn}
-          onSignedIn={handleSignedIn}
-          onClose={handleSignInClose}
-        />
-      )}
-
-      {view === 'history' && <HistoryPanel onSessionExpired={sessionExpired} />}
-
-      {view === 'method' && (
-        <>
-          <MethodPage onBack={() => setView('check')} />
-          <footer className="foot">
-            <span>Mark Checker</span>
-            <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
-            <span>Probability, never certainty.</span>
-          </footer>
-        </>
-      )}
-
-      {landing && (
-        <>
-          <section className="head">
-            <h1 className="headline"><span className="headline-lead">Is your</span>trademark<em>registrable?</em></h1>
-            <div className="deck">
-              <span className="stamp">First read. Not legal advice</span>
-              <p>
-                Our agent reads your trademark name and grades its distinctiveness on the Abercrombie
-                spectrum, from <b>generic</b> to <b>distinctive</b>, with the reason for the
-                grade. The more distinctive the name, the better it registers. Fill the sheet
-                to start.
-              </p>
-            </div>
-          </section>
-          <Marquee />
-          <MarkForm
-            form={form}
-            onFieldChange={onFieldChange}
-            error={state.error}
-            loading={loading}
-            onSubmit={handleSubmit}
-            canSubmit={canSubmit}
-            turnstileRef={turnstileRef}
-            onTurnstileToken={setTurnstileToken}
-            turnstileSiteKey={TURNSTILE_SITE_KEY}
+    <div className={landing ? 'landing-motion' : undefined}>
+        <div className={`record ${accent}`}>
+          {!landing && view !== 'method' && <div className="accent-rule" />}
+          <RecordBar
+            landing={landing}
+            status={status}
+            email={user?.email}
+            onSignIn={() => setSignInOpen(true)}
+            onSignOut={signOut}
+            showingHistory={view === 'history'}
+            onToggleHistory={() => setView((v) => (v === 'history' ? 'check' : 'history'))}
+            showingMethod={view === 'method'}
+            onToggleMethod={() => setView((v) => (v === 'method' ? 'check' : 'method'))}
           />
-          <HowItWorks onOpenMethod={() => setView('method')} />
-          <footer className="foot">
-            <span>Mark Checker</span>
-            <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
-          </footer>
-        </>
-      )}
 
-      {view === 'check' && result && (
-        <RecordPlate
-          result={result}
-          llmData={state.llmData}
-          llmLoading={state.llmLoading}
-          llmError={state.llmError}
-          explainError={state.explainError}
-        />
-      )}
-      {view === 'check' && result && <RecordScale score={result.prob_distinctive} />}
-
-      {view === 'check' && hasActivity && (
-      <div className="doc">
-        <RecordRail meta={meta} parts={parts} current={currentPart} />
-
-        <main className="body">
-          {loading && !result && (
-            <ProgressBar
-              trackClassName="progress"
-              indicatorClassName="progress-ind"
-              getValueLabel={() => 'Reading the mark'}
+          {signInOpen && canOpenSignIn && (
+            <SignInModal
+              onCredential={signIn}
+              onSignedIn={handleSignedIn}
+              onClose={handleSignInClose}
             />
           )}
 
-          {result && (
-            <>
-              <section className="part" id="p1">
-                <PartSpectrum score={result.prob_distinctive} />
-              </section>
-              <section className="part" id="p2">
-                <PartAction loading={state.llmLoading} data={state.llmData} error={state.llmError} explainError={state.explainError} />
-              </section>
-              <section className="part" id="p3">
-                <PartAuthority loading={state.llmLoading} data={state.llmData} error={state.llmError} explainError={state.explainError} />
-              </section>
-              <section className="part" id="p4">
-                <PartBasis loading={state.explainLoading} data={state.explainData} error={state.explainError} />
-              </section>
-              <section className="part" id="p5">
-                <PartInput formattedInput={result.formatted_input} />
-              </section>
+          {view === 'history' && <HistoryPanel onSessionExpired={sessionExpired} />}
 
-              <div className="close">
-                <p>One check at a time. A new record clears this one from the screen, not from your history.</p>
-                <button type="button" className="btn btn--wide" onClick={handleReset}>
-                  Check another name <span className="btn-arrow" aria-hidden="true">→</span>
-                </button>
-              </div>
+          {view === 'method' && (
+            <>
+              <MethodPage onBack={() => setView('check')} />
+              <footer className="foot">
+                <span>Mark Checker</span>
+                <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+                <span>Probability, never certainty.</span>
+              </footer>
             </>
           )}
-        </main>
-      </div>
-      )}
 
-      {view === 'check' && result && (
-        <footer className="foot">
-          <span>Mark Checker</span>
-          <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
-          <span>Probability, never certainty.</span>
-        </footer>
-      )}
+          {landing && (
+            <>
+              <section className="landing-hero">
+                <div className="landing-copy">
+                  <h1 className="headline">Where does your mark stand?</h1>
+                  <p className="landing-deck">
+                    Every name sits somewhere on the spectrum. Explore the categories, then check
+                    your mark against its goods and services.
+                  </p>
+                  <a className="text-link" href="#start">Find your place <span aria-hidden="true">↗</span></a>
+                  <p className="first-read-note">A first read from a model. Not legal advice.</p>
+                </div>
+                <SpectrumDial mode="explore" />
+              </section>
+              <section className="entry" id="start">
+                <div className="entry-head">
+                  <h2>A name.<br />A little context.</h2>
+                  <p>Enter the mark, its goods or services, and the NICE class.</p>
+                </div>
+                <MarkForm
+                  form={form}
+                  onFieldChange={onFieldChange}
+                  error={state.error}
+                  loading={loading}
+                  onSubmit={handleSubmit}
+                  canSubmit={canSubmit}
+                  turnstileRef={turnstileRef}
+                  onTurnstileToken={setTurnstileToken}
+                  turnstileSiteKey={TURNSTILE_SITE_KEY}
+                />
+              </section>
+              <HowItWorks onOpenMethod={() => setView('method')} />
+              <footer className="foot">
+                <span>Mark Checker</span>
+                <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+              </footer>
+            </>
+          )}
+
+          {view === 'check' && result && (
+            <RecordPlate
+              result={result}
+              llmData={state.llmData}
+              llmLoading={state.llmLoading}
+              llmError={state.llmError}
+              explainError={state.explainError}
+            />
+          )}
+          {view === 'check' && result && <SpectrumDial mode="result" score={result.prob_distinctive} />}
+
+          {view === 'check' && hasActivity && (
+          <div className="doc">
+            <RecordRail meta={meta} parts={parts} current={currentPart} />
+
+            <main className="body">
+              {loading && !result && (
+                <ProgressBar
+                  trackClassName="progress"
+                  indicatorClassName="progress-ind"
+                  getValueLabel={() => 'Reading the mark'}
+                />
+              )}
+
+              {result && (
+                <>
+                  <section className="part" id="p1">
+                    <PartSpectrum score={result.prob_distinctive} />
+                  </section>
+                  <section className="part" id="p2">
+                    <PartAction
+                      loading={state.llmLoading}
+                      data={state.llmData}
+                      error={state.llmError}
+                      explainError={state.explainError}
+                      retryAt={state.llmRetryAt}
+                      onRetry={retryAssessment}
+                      turnstileSiteKey={TURNSTILE_SITE_KEY}
+                    />
+                  </section>
+                  <section className="part" id="p3">
+                    <PartAuthority loading={state.llmLoading} data={state.llmData} error={state.llmError} explainError={state.explainError} />
+                  </section>
+                  <section className="part" id="p4">
+                    <PartBasis loading={state.explainLoading} data={state.explainData} error={state.explainError} />
+                  </section>
+                  <section className="part" id="p5">
+                    <PartInput formattedInput={result.formatted_input} />
+                  </section>
+
+                  <div className="close">
+                    <p>One check at a time. A new record clears this one from the screen, not from your history.</p>
+                    <button type="button" className="btn btn--wide" onClick={handleReset}>
+                      Check another name <span className="btn-arrow" aria-hidden="true">→</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </main>
+          </div>
+          )}
+
+          {view === 'check' && result && (
+            <footer className="foot">
+              <span>Mark Checker</span>
+              <span>ModernBERT classifier · TMEP + TTAB retrieval</span>
+              <span>Probability, never certainty.</span>
+            </footer>
+          )}
+        </div>
     </div>
   )
 }

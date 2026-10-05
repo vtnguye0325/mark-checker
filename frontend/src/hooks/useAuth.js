@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import * as api from '../lib/api'
+
+const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS === 'true'
 
 /**
  * Session state for the app.
@@ -17,9 +20,15 @@ export function useAuth() {
   const [status, setStatus] = useState('loading')
 
   useEffect(() => {
+    if (DEV_AUTH_BYPASS) {
+      setUser({ id: 'local-development-user', email: 'dev@localhost', name: 'Local developer' })
+      setStatus('signed-in')
+      return
+    }
+
     let cancelled = false
-    fetch('/auth/me', { credentials: 'include' })
-      .then((res) => (res.ok ? res.json() : null))
+    api
+      .me()
       .then((data) => {
         if (cancelled) return
         setUser(data)
@@ -35,25 +44,21 @@ export function useAuth() {
   }, [])
 
   const signIn = useCallback(async (credential) => {
-    const res = await fetch('/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ credential }),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
+    let data
+    try {
+      data = await api.signInWithGoogle(credential)
+    } catch (err) {
       throw new Error(err.detail || 'Sign-in failed')
     }
-    const data = await res.json()
     setUser(data)
     setStatus('signed-in')
     return data
   }, [])
 
   const signOut = useCallback(async () => {
+    if (DEV_AUTH_BYPASS) return
     try {
-      await fetch('/auth/logout', { method: 'POST', credentials: 'include' })
+      await api.signOut()
     } finally {
       // Stop GIS from signing the user straight back in on the next visit.
       window.google?.accounts?.id?.disableAutoSelect?.()

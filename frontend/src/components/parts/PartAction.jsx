@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from 'react'
 import { parseSections } from '../../lib/parseLegalAnalysis'
 import PartError from './PartError'
 import PartPending from './PartPending'
+import TurnstileWidget from '../TurnstileWidget'
 
 // Copied verbatim from LLMAnalysis.jsx, which Phase 7 deletes.
 function renderInline(text) {
@@ -60,7 +62,23 @@ function renderBlocks(blocks) {
 }
 
 // Part 02 — the recommended action, as prose under one heading.
-export default function PartAction({ loading, data, error, explainError }) {
+export default function PartAction({ loading, data, error, explainError, retryAt, onRetry, turnstileSiteKey }) {
+  const retryWidgetRef = useRef(null)
+  const [retryToken, setRetryToken] = useState('')
+  const [secondsLeft, setSecondsLeft] = useState(0)
+
+  useEffect(() => {
+    if (!retryAt) return undefined
+    const update = () => setSecondsLeft(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)))
+    update()
+    if (retryAt <= Date.now()) return undefined
+    const timer = window.setInterval(() => {
+      update()
+      if (retryAt <= Date.now()) window.clearInterval(timer)
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [retryAt])
+
   const head = (
     <div className="part-head">
       <span className="part-no">Part 02</span>
@@ -87,6 +105,33 @@ export default function PartAction({ loading, data, error, explainError }) {
         <p className="key">
           The recommended action is part of the analysis, which did not arrive.
         </p>
+        {retryAt && onRetry && (
+          <div className="retry-panel">
+            <p className="t-body">
+              {secondsLeft > 0
+                ? `Wait ${secondsLeft} seconds before you retry the analysis.`
+                : 'Retry the analysis with the score and breakdown above.'}
+            </p>
+            {turnstileSiteKey && (
+              <div className="retry-verification">
+                <p className="t-label">Verify before retry</p>
+                <TurnstileWidget ref={retryWidgetRef} siteKey={turnstileSiteKey} onToken={setRetryToken} />
+              </div>
+            )}
+            <button
+              type="button"
+              className="btn"
+              disabled={loading || secondsLeft > 0 || (!!turnstileSiteKey && !retryToken)}
+              onClick={() => {
+                onRetry(retryToken)
+                setRetryToken('')
+                retryWidgetRef.current?.reset()
+              }}
+            >
+              Retry analysis
+            </button>
+          </div>
+        )}
       </>
     )
   }

@@ -20,7 +20,7 @@ $VENV/bin/ruff format --check "$ROOT/backend/"
 
 echo "=== Unit Tests ==="
 cd "$ROOT"
-$PY -m pytest tests/test_text_formatter.py -v
+$PY -m pytest tests/unit/test_text_formatter.py -v
 
 echo "=== Frontend Build ==="
 cd "$ROOT/frontend"

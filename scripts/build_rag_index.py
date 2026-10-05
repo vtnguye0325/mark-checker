@@ -2,29 +2,31 @@
 Build (or rebuild) the RAG ChromaDB index.
 
 Usage:
-  python scripts/build_rag_index.py --tmep backend/rag/data/tmep_2026.zip
-  python scripts/build_rag_index.py --tmep backend/rag/data/tmep_2026.zip \
-                                     --ttab backend/rag/data/ttab_bulk.zip \
+  python scripts/build_rag_index.py --tmep backend/mark_checker/rag/data/tmep_2026.zip
+  python scripts/build_rag_index.py --tmep backend/mark_checker/rag/data/tmep_2026.zip \
+                                     --ttab backend/mark_checker/rag/data/ttab_bulk.zip \
                                      --max-ttab 1000
-  python scripts/build_rag_index.py --lanham backend/rag/data/tmlaw.pdf
+  python scripts/build_rag_index.py --lanham backend/mark_checker/rag/data/tmlaw.pdf
   python scripts/build_rag_index.py --reset   # wipe and rebuild from scratch
 """
 
 import argparse
-import sys
 from pathlib import Path
 
+from mark_checker.rag.embedder import embed_documents
+from mark_checker.rag.ingest.lanham_loader import load_lanham_chunks
+from mark_checker.rag.ingest.tmep_loader import load_tmep_chunks
+from mark_checker.rag.ingest.ttab_loader import load_landmark_chunks, load_ttab_chunks
+from mark_checker.rag.store import (
+    get_statute_collection,
+    get_tmep_collection,
+    get_ttab_collection,
+    reset_collections,
+)
+
 _ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_ROOT))
-sys.path.insert(0, str(_ROOT / "backend"))
 
-from rag.store import get_tmep_collection, get_ttab_collection, get_statute_collection, reset_collections
-from rag.embedder import embed_documents
-from rag.ingest.tmep_loader import load_tmep_chunks
-from rag.ingest.ttab_loader import load_ttab_chunks, load_landmark_chunks
-from rag.ingest.lanham_loader import load_lanham_chunks
-
-LANDMARK_JSON = _ROOT / "backend/rag/ingest/landmark_cases.json"
+LANDMARK_JSON = _ROOT / "backend/mark_checker/rag/ingest/landmark_cases.json"
 BATCH_SIZE = 64
 
 

@@ -16,16 +16,9 @@ Usage:
 """
 
 import argparse
-import sys
-from pathlib import Path
 
-_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_ROOT))
-# agent.py uses Docker-style imports (`from rag.X`); add backend/ so they resolve.
-sys.path.insert(0, str(_ROOT / "backend"))
-
-from backend.rag.embedder import embed_query
-from backend.rag.store import get_tmep_collection, get_ttab_collection
+from mark_checker.rag.embedder import embed_query
+from mark_checker.rag.store import get_tmep_collection, get_ttab_collection
 
 N_RESULTS = 5
 
@@ -200,9 +193,9 @@ def run_spot_checks() -> None:
 
     # Heavy deps (torch, DeepSeek client) — imported lazily so the cheap
     # reachability path never pays for them.
-    from app.services.text_formatter import format_mark
-    from app.services.model_service import explain_one
-    from rag.agent import run_agent
+    from mark_checker.services.text_formatter import format_mark
+    from mark_checker.services.model_service import explain_one
+    from mark_checker.rag.agent import run_agent
 
     for check in SPOT_CHECKS:
         mark, desc, nice = check["mark"], check["description"], check["nice_class"]
@@ -252,7 +245,7 @@ def run_custom_query(query: str) -> None:
 def print_collection_stats() -> None:
     tmep = get_tmep_collection()
     ttab = get_ttab_collection()
-    print(f"\n=== COLLECTION STATS ===")
+    print("\n=== COLLECTION STATS ===")
     print(f"  tmep collection: {tmep.count()} docs")
     print(f"  ttab collection: {ttab.count()} docs")
 
@@ -284,7 +277,7 @@ def main() -> None:
     passed, total = run_reachability()
     print(f"\n{'═'*60}")
     print(f"  Reachability: {passed}/{total} key sections surfaced in top-5")
-    print(f"  (run with --spot for the model→agent inspection)")
+    print("  (run with --spot for the model→agent inspection)")
     print(f"{'═'*60}")
 
 

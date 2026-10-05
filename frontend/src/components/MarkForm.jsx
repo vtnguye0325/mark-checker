@@ -1,9 +1,8 @@
 import { NICE_CLASSES } from '../constants/niceClasses'
 import TurnstileWidget from './TurnstileWidget'
 
-// The landing form as a ledger: one row per field, the label in the left
-// column, the input in the right. The mark row is inverted. See
-// docs/DESIGN_PRINCIPLES.md 9, "Landing state".
+const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS === 'true'
+
 export default function MarkForm({
   form,
   onFieldChange,
@@ -16,15 +15,15 @@ export default function MarkForm({
   turnstileSiteKey,
 }) {
   return (
-    <form className="ledger" onSubmit={onSubmit} noValidate>
+    <form className="ledger" onSubmit={onSubmit} noValidate aria-label="Trademark name check">
       <div className="ledger-row ledger-row--mark">
-        <label className="t-label ledger-lbl" htmlFor="mark">Subject of this record</label>
+        <label className="t-label ledger-lbl" htmlFor="mark">Your mark</label>
         <div className="ledger-cell">
           <input
             id="mark"
             className="field-input field-input--mark"
             type="text"
-            placeholder="ENTER A MARK"
+            placeholder="e.g. ZEPHYR"
             value={form.mark}
             onChange={onFieldChange('mark')}
             autoComplete="off"
@@ -35,7 +34,7 @@ export default function MarkForm({
       </div>
 
       <div className="ledger-row">
-        <label className="t-label ledger-lbl" htmlFor="description">Goods &amp; services</label>
+          <label className="t-label ledger-lbl" htmlFor="description">Goods or services</label>
         <div className="ledger-cell">
           <input
             id="description"
@@ -124,8 +123,9 @@ export default function MarkForm({
       <div className="notice">
         <span className="t-label notice-tag">Read this</span>
         <p>
-          The service keeps a record of each check that you run. Sign in to read that
-          history at any time.
+          {DEV_AUTH_BYPASS
+            ? 'Development mode uses a local account. This check stays in the local development database.'
+            : 'The service keeps a record of each check that you run. Sign in to read that history at any time.'}
         </p>
       </div>
 
@@ -136,7 +136,7 @@ export default function MarkForm({
             : 'Enter the mark, the goods, and the NICE class to open the record.'}
         </p>
         <button type="submit" className="btn btn--wide" disabled={!canSubmit || loading}>
-          {loading ? 'Opening…' : 'Open record'} <span className="btn-arrow" aria-hidden="true">→</span>
+          {loading ? 'Checking…' : 'Check this name'} <span className="btn-arrow" aria-hidden="true">↗</span>
         </button>
       </div>
     </form>

@@ -12,3 +12,5 @@ venv
 .git
 .gitignore
 model/
+mark_checker/rag/chroma_db/
+mark_checker/rag/data/

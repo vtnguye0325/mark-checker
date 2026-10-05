@@ -8,8 +8,12 @@ export const SPECTRUM_TIERS = [
   { id: 'fanciful', label: 'Fanciful', range: [0.88, 1.0], note: 'Strongest protection' },
 ]
 
+export function isValidProbability(probDistinctive) {
+  return Number.isFinite(probDistinctive) && probDistinctive >= 0 && probDistinctive <= 1
+}
+
 export function deriveCategory(probDistinctive) {
-  if (!Number.isFinite(probDistinctive)) return null
+  if (!isValidProbability(probDistinctive)) return null
   if (probDistinctive >= 0.88) return 'fanciful'
   if (probDistinctive >= 0.7) return 'arbitrary'
   if (probDistinctive >= 0.5) return 'suggestive'
