@@ -47,7 +47,7 @@ export default function RecordBar({
 
   return (
     <div className="recordbar">
-      <span><b>Trademark Name Checker</b></span>
+      <span><b>Mark Checker</b></span>
       <span className="recordbar-account">
         <span>Not legal advice</span>
         {actions}

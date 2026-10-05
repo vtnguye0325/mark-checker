@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
+from sqlalchemy.dialects.postgresql import insert
 
 # Load .env from the repo root (two levels up from this file) so local dev
 # picks up TURNSTILE_SECRET, DISABLE_TURNSTILE, etc. without manual exports.
@@ -31,9 +32,11 @@ from mark_checker.api.auth import router as auth_router  # noqa: E402
 from mark_checker.api.explain import router as explain_router  # noqa: E402
 from mark_checker.api.history import router as history_router  # noqa: E402
 from mark_checker.api.predict import router as predict_router  # noqa: E402
-from mark_checker.core.db import init_models  # noqa: E402
+from mark_checker.core.auth import DEV_AUTH_BYPASS  # noqa: E402
+from mark_checker.core.db import AsyncSessionLocal, init_models  # noqa: E402
 from mark_checker.core.limiter import limiter  # noqa: E402
 from mark_checker.core.llm_errors import register_llm_error_handler  # noqa: E402
+from mark_checker.core.models import User  # noqa: E402
 from mark_checker.services.model_service import is_loaded, warm_up  # noqa: E402
 
 _DEFAULT_CORS = (
@@ -49,6 +52,19 @@ allow_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await init_models()
+    if DEV_AUTH_BYPASS:
+        async with AsyncSessionLocal() as session:
+            await session.execute(
+                insert(User)
+                .values(
+                    id="00000000-0000-4000-8000-000000000001",
+                    google_sub="local-development-user",
+                    email="dev@localhost",
+                    name="Local developer",
+                )
+                .on_conflict_do_nothing(index_elements=["google_sub"])
+            )
+            await session.commit()
     warm_up()
     yield
 

@@ -1,4 +1,5 @@
 import { extractConfidence } from '../lib/parseLegalAnalysis'
+import { isValidProbability } from '../lib/spectrum'
 
 // The confidence row fills late, from stage 3. See IMPLEMENTATION_PLAN_D.md 2.4.
 // Print `Pending` until stage 3 lands, then the scraped word. Print `Unavailable`
@@ -16,7 +17,7 @@ export default function RecordPlate({ result, llmData, llmLoading, llmError, exp
   const isDistinctive = result.label === 'distinctive'
   const verdict = isDistinctive ? 'Distinctive' : 'Not distinctive'
   const mark = result.mark
-  const score = Number.isFinite(result.prob_distinctive)
+  const score = isValidProbability(result.prob_distinctive)
     ? result.prob_distinctive.toFixed(2)
     : 'Unavailable'
   const confidence = deriveConfidence({ llmData, llmLoading, llmError, explainError })
@@ -44,7 +45,7 @@ export default function RecordPlate({ result, llmData, llmLoading, llmError, exp
             <span className="row-val mono t-small">{result.nice_class ?? '—'}</span>
           </div>
           <div className="row">
-            <span className="t-label dim-on-ink">Score</span>
+            <span className="t-label dim-on-ink">Model score</span>
             <span className="row-val mono t-h3">{score}</span>
           </div>
           <div className="row">

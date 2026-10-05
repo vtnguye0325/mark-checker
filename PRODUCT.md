@@ -20,9 +20,9 @@ change what the interface says, only how well it shows the pipeline it runs.
 
 ## Product Purpose
 
-Mark Checker grades a proposed brand name on the Abercrombie spectrum, which runs from *generic*
-(never protectable) through *descriptive* and *suggestive* to *arbitrary* and *fanciful*. The grade
-decides whether the trademark office will register the name.
+Mark Checker grades a proposed brand name on the Abercrombie spectrum. The spectrum runs from
+*generic* through *descriptive* and *suggestive* to *arbitrary* and *fanciful*. The grade gives a
+first read about distinctiveness. It does not decide whether the trademark office will register the name.
 
 That grade is a judgment call that costs hundreds of dollars and takes days to get from a lawyer,
 and two lawyers can disagree. The product gives an instant first read, so the applicant knows where
@@ -93,13 +93,13 @@ optional fields, or the model-input debug panel. The user has declared all of th
 
 The product name is **Mark Checker**.
 
-The user has made `docs/DESIGN_PRINCIPLES.md` binding. It commits the interface to a Bauhaus and
-Swiss typographic language: monochrome base with the three primaries as signal only, one grotesk
-family, 0px corner radius, no shadows, an 8px spacing scale, asymmetric composition, and extreme
-contrast of type scale. The document also fixes the accent meanings — red for conflict and high
-risk, blue for link and primary action, yellow for caution and pending.
+The user selected the Spectrum dial direction from `docs/BLEIBTGLEICH26_DESIGN_STUDY.md`.
+`docs/DESIGN_PRINCIPLES.md` defines the binding design rules. `docs/VIBE.md` defines the tone.
+The selected direction uses an olive instrument scene, paper reading surfaces, large sans-serif
+type, thin rules, and a dial that explains the five spectrum categories.
 
-The document's own reference is the "Bauhaus Legacy" concept by Eugene Shuklin.
+The landing dial teaches the categories. The result dial shows the category from the model score.
+The design keeps the finding, its limits, the written reading, and the source details clear.
 
 ## Evidence on Hand
 
@@ -109,7 +109,10 @@ The document's own reference is the "Bauhaus Legacy" concept by Eugene Shuklin.
 - The NICE classification is a real, fixed list of 45 classes (`frontend/src/constants/niceClasses.js`).
 - No customers, no testimonials, no pricing, no benchmark numbers, and no accuracy figure have been
   established. Future work must not invent any of them.
-- No screenshot assets exist yet; `docs/assets/result.png` is a TODO in the README.
+- Saved result images exist in `docs/assets/02-the-verdict.jpg` and
+  `docs/assets/03-basis-for-the-finding.jpg`. They show the current result content.
+- The selected mockups exist in `docs/mockups/bleibtgleich26/b-spectrum-dial.html` and
+  `docs/mockups/bleibtgleich26/b-spectrum-dial-result.html`. They use sample data.
 
 ## Product Principles
 

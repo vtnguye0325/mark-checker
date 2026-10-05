@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as api from '../lib/api'
 
+const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS === 'true'
+
 /**
  * Session state for the app.
  *
@@ -18,6 +20,12 @@ export function useAuth() {
   const [status, setStatus] = useState('loading')
 
   useEffect(() => {
+    if (DEV_AUTH_BYPASS) {
+      setUser({ id: 'local-development-user', email: 'dev@localhost', name: 'Local developer' })
+      setStatus('signed-in')
+      return
+    }
+
     let cancelled = false
     api
       .me()
@@ -48,6 +56,7 @@ export function useAuth() {
   }, [])
 
   const signOut = useCallback(async () => {
+    if (DEV_AUTH_BYPASS) return
     try {
       await api.signOut()
     } finally {

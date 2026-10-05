@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useScrollSpy } from '../hooks/useScrollSpy'
 import * as api from '../lib/api'
 import RecordPlate from './RecordPlate'
+import SpectrumDial from './SpectrumDial'
 import RecordRail from './RecordRail'
 import PartSpectrum from './parts/PartSpectrum'
 import PartBasis from './parts/PartBasis'
@@ -79,6 +80,7 @@ function DetailView({ row, onBack }) {
         Back to the list
       </button>
       <RecordPlate result={result} llmData={llmData} llmLoading={false} llmError={llmError} explainError={null} />
+      <SpectrumDial mode="result" score={result.prob_distinctive} />
       <div className="doc">
         <RecordRail meta={meta} parts={parts} current={current} />
         <main className="body">

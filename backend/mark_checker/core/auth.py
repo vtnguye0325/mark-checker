@@ -16,11 +16,15 @@ from starlette.requests import Request
 # Fail closed at import, in the same style as db.DATABASE_URL and TURNSTILE_SECRET.
 # A silent unauthenticated deploy is the worse outcome.
 SESSION_SECRET = os.getenv("SESSION_SECRET")
-if not SESSION_SECRET:
+DEV_AUTH_BYPASS = (
+    os.getenv("APP_ENV", "production").strip().lower() == "development"
+    and os.getenv("DEV_AUTH_BYPASS", "false").strip().lower() == "true"
+)
+if not SESSION_SECRET and not DEV_AUTH_BYPASS:
     raise RuntimeError("SESSION_SECRET is unset. Set it before you start the backend.")
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-if not GOOGLE_CLIENT_ID:
+if not GOOGLE_CLIENT_ID and not DEV_AUTH_BYPASS:
     raise RuntimeError("GOOGLE_CLIENT_ID is unset. Set it before you start the backend.")
 
 SESSION_TTL_HOURS = int(os.getenv("SESSION_TTL_HOURS", "168"))
@@ -49,6 +53,9 @@ async def verify_google_id_token(token: str) -> dict:
     The verify call is blocking and, on the first call, fetches Google's
     certificates, so run it in the threadpool.
     """
+
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=503, detail="Google sign-in is not configured")
 
     def _verify() -> dict:
         # Build the transport inside the worker thread. requests.Session is not
@@ -102,6 +109,15 @@ def current_user(request: Request) -> SessionUser:
     This dependency reads no database. The JWT is self-contained, so a Postgres
     outage cannot log every user out.
     """
+    if DEV_AUTH_BYPASS:
+        user = SessionUser(
+            id=uuid.UUID("00000000-0000-4000-8000-000000000001"),
+            email="dev@localhost",
+            name="Local developer",
+        )
+        request.state.user = user
+        return user
+
     raw = request.cookies.get(COOKIE_NAME)
     if not raw:
         raise HTTPException(status_code=401, detail="Not signed in")

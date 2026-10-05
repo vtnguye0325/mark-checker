@@ -13,12 +13,12 @@ if [[ -f "$ROOT/.env" ]]; then
   source "$ROOT/.env"
   set +a
 fi
+DEV_DB_PORT="${DEV_DB_PORT:-5432}"
 
-# This script runs the backend on the host, not in the compose network, so the
-# compose service name "postgres-dev" does not resolve. docker-compose.dev.yml
-# publishes Postgres on 127.0.0.1:5432, so rewrite the host for the host run.
+# The host backend cannot resolve the Compose service name.
+# Use the host port that docker-compose.dev.yml publishes for Postgres.
 if [[ -n "${DATABASE_URL:-}" ]]; then
-  export DATABASE_URL="${DATABASE_URL/@postgres-dev:/@127.0.0.1:}"
+  export DATABASE_URL="${DATABASE_URL/@postgres-dev:5432/@127.0.0.1:${DEV_DB_PORT}}"
 fi
 
 # --- Postgres --------------------------------------------------------------
